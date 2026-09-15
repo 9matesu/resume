@@ -33,6 +33,21 @@ try {
       }
     });
   }
+  // Motor local sobe sozinho quando a extensao carrega (browser startup,
+  // install/update e wake-up do SW). Fire-and-forget: o painel tem o
+  // fallback com botao; nada aqui pode lancar no registro do SW.
+  const ensureBackend = () => {
+    try {
+      chrome.runtime.sendNativeMessage("com.resume.host", { action: "ensure-backend" }, () => {
+        void chrome.runtime.lastError; // host ausente = painel mostra instrucoes
+      });
+    } catch (e) {
+      console.error("resuMe SW ensure:", e);
+    }
+  };
+  if (chrome.runtime.onInstalled) chrome.runtime.onInstalled.addListener(ensureBackend);
+  if (chrome.runtime.onStartup) chrome.runtime.onStartup.addListener(ensureBackend);
+  ensureBackend(); // wake-up do service worker (MV3 morre e renasce)
 } catch (e) {
   console.error("resuMe SW:", e);
 }
