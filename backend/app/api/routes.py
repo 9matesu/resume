@@ -44,9 +44,6 @@ class CompilePayload(BaseModel):
     lang: str = "en"
     job: dict | None = None
 
-class AdaptJobPayload(BaseModel):
-    job: dict
-    lang: str = "en"
 
 @router.get("/health")
 def health_check():
@@ -333,51 +330,6 @@ def adapt_from_text(payload: TextAdaptPayload):
     return _run_adapt_pipeline(job_data, captured_chars=len(payload.job_text))
 
 
-@router.post("/adapt-job")
-def adapt_job_endpoint(payload: AdaptJobPayload):
-    cand = profile_model.get_active()
-    if not cand:
-        raise HTTPException(status_code=400, detail="No master profile found. Please complete onboarding first.")
-    master_profile = cand["profile"]
-    s = get_settings()
-
-    job_data = payload.job
-    lang = payload.lang or latex_engine.detect_language(job_data)
-    prov = gateway.get_provider(s)
-    user_prompt = prompts.build_adapt_payload(master_profile, job_data, lang=lang)
-    adapted_raw = prov.chat(prompts.SYSTEM_RULES, user_prompt, expect_json=True)
-    adapted_json = gateway.AIProvider._extract_json(adapted_raw)
-
-    tailored_profile = _merge_tailored(master_profile, adapted_json)
-    match_score = float(adapted_json.get("match_score") or 90.0)
-    recruiter_pitch = adapted_json.get("recruiter_pitch") or ""
-
-    job_rec = job_model.save_job({**job_data, "match_score": match_score})
-    batch_label = db.new_id("run")
-    gen_result = latex_engine.generate(s.default_template, tailored_profile, job_data, batch_label)
-
-    res_rec = job_model.save_adapted_resume(
-        job_id=job_rec["id"],
-        candidate_id=cand["id"],
-        tailored_json=tailored_profile,
-        tex_code=gen_result["tex"],
-        pdf_path=gen_result["pdf_path"],
-        recruiter_pitch=recruiter_pitch,
-        match_score=match_score,
-    )
-
-    return {
-        "job": job_rec,
-        "adaptation": {
-            "id": res_rec["id"],
-            "match_score": match_score,
-            "recruiter_pitch": recruiter_pitch,
-            "tailored_profile": tailored_profile,
-            "tex_code": gen_result["tex"],
-            "pdf_url": f"/api/resumes/{res_rec['id']}/pdf",
-        }
-    }
-
 @router.post("/compile")
 def compile_resume_endpoint(payload: CompilePayload):
     s = get_settings()
@@ -426,6 +378,64 @@ def polish_bullet_endpoint(payload: PolishBulletPayload):
 @router.get("/history")
 def get_history_endpoint():
     return {"history": job_model.list_history(50)}
+
+@router.get("/resumes/{res_id}")
+def get_resume_detail(res_id: str):
+    """Registro completo no shape que o Estúdio consome (reabrir do histórico)."""
+    res = job_model.get_adapted_resume(res_id)
+    if not res:
+        raise HTTPException(status_code=404, detail="Resume not found.")
+    job_rec = job_model.get_job(res["job_id"]) or {"title": "", "company": ""}
+    return {
+        "job": {
+            "id": job_rec.get("id"),
+            "title": job_rec.get("title", ""),
+            "company": job_rec.get("company", ""),
+            "location": job_rec.get("location", ""),
+            "url": job_rec.get("url", ""),
+        },
+        "adaptation": {
+            "id": res["id"],
+            "match_score": res["match_score"],
+            "applied_keywords": [],
+            "tailored_profile": res["tailored_profile"],
+            "tex_code": res["tex_code"],
+            "pdf_url": f"/api/resumes/{res['id']}/pdf",
+        },
+    }
+
+class ResumeUpdatePayload(BaseModel):
+    tex_code: str | None = None
+    profile: dict | None = None
+
+@router.put("/resumes/{res_id}")
+def update_resume(res_id: str, payload: ResumeUpdatePayload):
+    """Estúdio persiste a edição no MESMO registro e recompila o PDF dele."""
+    res = job_model.get_adapted_resume(res_id)
+    if not res:
+        raise HTTPException(status_code=404, detail="Resume not found.")
+    tex = payload.tex_code if payload.tex_code is not None else res["tex_code"]
+    cols: dict = {}
+    if payload.tex_code is not None:
+        cols["tex_code"] = tex
+    if payload.profile is not None:
+        cols["tailored_json"] = payload.profile
+    if payload.tex_code is not None:
+        out_dir = Path(res["pdf_path"]).parent if res["pdf_path"] else OUTPUT_DIR / "resumes" / res_id
+        try:
+            pdf_path = latex_engine.compile_pdf(tex, out_dir)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Compilação falhou: {e}")
+        cols["pdf_path"] = str(pdf_path)
+    if cols:
+        job_model.update_adapted_resume(res_id, **cols)
+    return {"status": "saved", "pdf_url": f"/api/resumes/{res_id}/pdf"}
+
+@router.delete("/resumes/{res_id}")
+def delete_resume_endpoint(res_id: str):
+    if not job_model.delete_adapted_resume(res_id):
+        raise HTTPException(status_code=404, detail="Resume not found.")
+    return {"status": "deleted"}
 
 @router.get("/resumes/{res_id}/pdf")
 def get_resume_pdf(res_id: str):

@@ -285,3 +285,72 @@ def test_adapt_text_misconfig_never_500(monkeypatch):
         "page_url": "https://example.com/job/2",
     })
     assert resp2.status_code in (400, 409)
+
+
+def _make_resume(client):
+    """Helper: active profile + job + adapted row with a real PDF on disk."""
+    from app.models import job as job_model, profile as profile_model
+    from app.services.latex import engine as latex_engine
+
+    client.post("/api/profile", json={"name": "T", "email": "t@e.com",
+                                      "profile": profile_model.EMPTY_PROFILE})
+    cand = profile_model.get_active()
+    j = job_model.save_job({"title": "Eng", "company": "ACME"})
+    fake_pdf = b"%PDF-1.4 fake\n"
+
+    def _fake_compile(tex, out_dir):
+        out_dir.mkdir(parents=True, exist_ok=True)
+        p = out_dir / "resume.pdf"
+        p.write_bytes(fake_pdf)
+        return p
+
+    orig = latex_engine.compile_pdf
+    latex_engine.compile_pdf = _fake_compile
+    try:
+        gen = latex_engine.generate("devcelio", profile_model.EMPTY_PROFILE,
+                                    {"title": "Eng", "company": "ACME"}, "test_batch")
+    finally:
+        latex_engine.compile_pdf = orig
+    # generate() may have compiled for real; force the stubbed artifact path
+    rec = job_model.save_adapted_resume(j["id"], cand["id"],
+                                        profile_model.EMPTY_PROFILE,
+                                        gen["tex"], gen["pdf_path"], "", 50.0)
+    return rec
+
+
+def test_resume_detail_roundtrip(client=None):
+    c = TestClient(app)
+    rec = _make_resume(c)
+    resp = c.get(f"/api/resumes/{rec['id']}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["adaptation"]["id"] == rec["id"]
+    assert body["adaptation"]["tex_code"] == rec["tex_code"]
+    assert body["job"]["title"] == "Eng"
+    assert c.get("/api/resumes/nope_missing").status_code == 404
+
+
+def test_resume_update_persists(client=None):
+    c = TestClient(app)
+    rec = _make_resume(c)
+    new_tex = rec["tex_code"].replace("\documentclass", "% edited\n\documentclass", 1)
+    resp = c.put(f"/api/resumes/{rec['id']}", json={"tex_code": new_tex})
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["pdf_url"].startswith(f"/api/resumes/{rec['id']}/pdf")
+    from app.models import job as job_model
+    saved = job_model.get_adapted_resume(rec["id"])
+    assert saved["tex_code"] == new_tex
+    assert saved["pdf_path"] != rec["pdf_path"] or saved["pdf_path"]  # recompiled somewhere real
+    hist = c.get("/api/history").json()["history"]
+    assert any(h["id"] == rec["id"] for h in hist)
+
+
+def test_resume_delete_removes_row_and_pdf(client=None):
+    c = TestClient(app)
+    rec = _make_resume(c)
+    resp = c.delete(f"/api/resumes/{rec['id']}")
+    assert resp.status_code == 200
+    from app.models import job as job_model
+    assert job_model.get_adapted_resume(rec["id"]) is None
+    hist = c.get("/api/history").json()["history"]
+    assert not any(h["id"] == rec["id"] for h in hist)

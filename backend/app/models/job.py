@@ -2,7 +2,11 @@
 from __future__ import annotations
 
 import json
+import shutil
+from pathlib import Path
+
 from .. import db
+from ..config import OUTPUT_DIR
 
 def save_job(job_data: dict) -> dict:
     jid = db.new_id("job")
@@ -72,3 +76,39 @@ def list_history(limit: int = 50) -> list[dict]:
         (limit,)
     )
     return rows
+
+_UPDATABLE = ("tailored_json", "tex_code", "pdf_path", "recruiter_pitch", "match_score")
+
+def update_adapted_resume(res_id: str, **cols) -> dict | None:
+    """Persiste edicoes do Estudio no mesmo registro (uma vaga = um registro vivo)."""
+    sets, params = [], []
+    for k, v in cols.items():
+        if k not in _UPDATABLE:
+            continue
+        if k == "tailored_json" and isinstance(v, dict):
+            v = json.dumps(v, ensure_ascii=False)
+        sets.append(f"{k}=?")
+        params.append(v)
+    if not sets:
+        return get_adapted_resume(res_id)
+    params.append(res_id)
+    db.execute(f"UPDATE adapted_resumes SET {', '.join(sets)} WHERE id=?", tuple(params))
+    return get_adapted_resume(res_id)
+
+def delete_adapted_resume(res_id: str) -> bool:
+    row = db.query_one("SELECT pdf_path FROM adapted_resumes WHERE id=?", (res_id,))
+    if not row:
+        return False
+    db.execute("DELETE FROM adapted_resumes WHERE id=?", (res_id,))
+    if row["pdf_path"]:
+        p = Path(row["pdf_path"])
+        p.unlink(missing_ok=True)
+        # sobe a partir da pasta do pdf apagando diretorios vazios do lote,
+        # parando no resumes/ (nunca acima dele)
+        d = p.parent
+        stop = OUTPUT_DIR / "resumes"
+        while d != stop and d.is_relative_to(stop) and not any(d.iterdir()):
+            parent = d.parent
+            shutil.rmtree(d, ignore_errors=True)
+            d = parent
+    return True
