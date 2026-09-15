@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   Download,
-  RefreshCw,
   FileCode,
   Sliders,
   Trash2,
@@ -9,7 +8,7 @@ import {
   Wand2,
 } from 'lucide-react';
 import {
-  compileResume,
+  saveResumeEdit,
   polishBullet,
   fetchHistory,
   resumePdfUrl,
@@ -56,6 +55,8 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
   const [pdfStatus, setPdfStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [pdfKey, setPdfKey] = useState(0);
   const [expired, setExpired] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [savedFlash, setSavedFlash] = useState(false);
 
   // Revalida o snapshot do chrome.storage contra o histórico: o registro
   // pode ter sumido (limpeza) ou o backend pode ter reiniciado.
@@ -80,21 +81,23 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Recompile PDF
+  // Salvar edicao: persiste no registro do historico e recompila o PDF dele.
   const handleRecompile = async () => {
     setCompiling(true);
     setPdfStatus('loading');
+    setSaveError('');
     try {
-      if (activeTab === 'latex') {
-        const res = await compileResume({ raw_tex: rawTex, job: adaptedData.job });
-        setPdfUrl(`${res.pdf_url}?t=${Date.now()}`);
-      } else {
-        const res = await compileResume({ profile, job: adaptedData.job });
-        setPdfUrl(`${res.pdf_url}?t=${Date.now()}`);
-        setRawTex(res.tex);
-      }
+      const res =
+        activeTab === 'latex'
+          ? await saveResumeEdit(adaptedData.adaptation.id, { tex_code: rawTex })
+          : await saveResumeEdit(adaptedData.adaptation.id, { profile });
+      setRawTex(res.tex);
+      setPdfUrl(`${res.pdf_url}?t=${Date.now()}`);
+      setSavedFlash(true);
+      setTimeout(() => setSavedFlash(false), 2000);
     } catch (err: any) {
-      alert('Erro de compilação: ' + err.message);
+      setSaveError(err.message || 'Falha ao salvar');
+      setPdfStatus('error');
     } finally {
       setCompiling(false);
     }
@@ -618,17 +621,21 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
         </div>
 
         {/* Bottom Action Footer */}
-        <div className="p-4 hairline-t bg-white flex items-center justify-between">
-          <span className="text-xs text-neutral-600 font-mono">
-            {compiling ? 'Compilando LaTeX com Tectonic...' : 'Alterações prontas para recompilação'}
-          </span>
+        <div className="p-4 hairline-t bg-white flex items-center justify-between gap-3">
+          {saveError ? (
+            <span className="text-xs font-mono text-red-700">{saveError}</span>
+          ) : (
+            <span className="text-xs text-neutral-600 font-mono">
+              {compiling ? 'Compilando LaTeX...' : savedFlash ? 'Salvo no histórico' : 'Edições não salvas até você clicar'}
+            </span>
+          )}
           <button
             onClick={handleRecompile}
             disabled={compiling}
-            className="brutal-btn-yellow flex items-center gap-2 px-5 py-2.5 text-xs tracking-wider"
+            className="brutal-btn-yellow flex items-center gap-2 px-5 py-2.5 text-xs tracking-wider shrink-0"
           >
-            {compiling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-            <span>{compiling ? 'Compilando PDF...' : 'Recompilar e Atualizar PDF'}</span>
+            {compiling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+            <span>{compiling ? 'Compilando PDF...' : 'Salvar e Atualizar PDF'}</span>
           </button>
         </div>
       </div>

@@ -37,13 +37,6 @@ class PolishBulletPayload(BaseModel):
     bullet: str
     role_context: str | None = ""
 
-class CompilePayload(BaseModel):
-    profile: dict | None = None
-    raw_tex: str | None = None
-    template: str = "devcelio"
-    lang: str = "en"
-    job: dict | None = None
-
 
 @router.get("/health")
 def health_check():
@@ -330,36 +323,6 @@ def adapt_from_text(payload: TextAdaptPayload):
     return _run_adapt_pipeline(job_data, captured_chars=len(payload.job_text))
 
 
-@router.post("/compile")
-def compile_resume_endpoint(payload: CompilePayload):
-    s = get_settings()
-    cand = profile_model.get_active()
-    cand_id = cand["id"] if cand else "anon"
-    job = payload.job or {"title": "Application", "company": "Company"}
-    
-    batch_label = db.new_id("preview")
-    folder = latex_engine.slugify(job.get("company", "app"), job.get("title", "role"))
-    out_dir = OUTPUT_DIR / "resumes" / batch_label / folder
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    if payload.raw_tex:
-        tex = payload.raw_tex
-        (out_dir / "resume.tex").write_text(tex, encoding="utf-8")
-        pdf_path = latex_engine.compile_pdf(tex, out_dir)
-    elif payload.profile:
-        tex = latex_engine.render_tex(payload.template or s.default_template, payload.profile, job, lang=payload.lang)
-        (out_dir / "resume.tex").write_text(tex, encoding="utf-8")
-        pdf_path = latex_engine.compile_pdf(tex, out_dir)
-    else:
-        raise HTTPException(status_code=400, detail="Must provide profile or raw_tex")
-
-    return {
-        "status": "compiled",
-        "pdf_path": str(pdf_path),
-        "tex": tex,
-        "pdf_url": f"/output/resumes/{batch_label}/{folder}/resume.pdf"
-    }
-
 @router.post("/polish-bullet")
 def polish_bullet_endpoint(payload: PolishBulletPayload):
     s = get_settings()
@@ -410,26 +373,29 @@ class ResumeUpdatePayload(BaseModel):
 
 @router.put("/resumes/{res_id}")
 def update_resume(res_id: str, payload: ResumeUpdatePayload):
-    """Estúdio persiste a edição no MESMO registro e recompila o PDF dele."""
+    """Unica escrita do Estudio: persiste no MESMO registro e recompila o
+    PDF dele no mesmo lote (sem preview orphan). tex_code vence sobre profile."""
     res = job_model.get_adapted_resume(res_id)
     if not res:
         raise HTTPException(status_code=404, detail="Resume not found.")
-    tex = payload.tex_code if payload.tex_code is not None else res["tex_code"]
-    cols: dict = {}
+    s = get_settings()
+    tex = res["tex_code"]
     if payload.tex_code is not None:
-        cols["tex_code"] = tex
+        tex = payload.tex_code
+    elif payload.profile is not None:
+        job_rec = job_model.get_job(res["job_id"]) or {"title": "Application", "company": "Company"}
+        tex = latex_engine.render_tex(s.default_template, payload.profile, job_rec, lang=s.default_lang)
+    out_dir = (Path(res["pdf_path"]).parent if res["pdf_path"]
+               else OUTPUT_DIR / "resumes" / res_id)
+    try:
+        pdf_path = latex_engine.compile_pdf(tex, out_dir)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Compilação falhou: {e}")
+    cols: dict = {"tex_code": tex, "pdf_path": str(pdf_path)}
     if payload.profile is not None:
         cols["tailored_json"] = payload.profile
-    if payload.tex_code is not None:
-        out_dir = Path(res["pdf_path"]).parent if res["pdf_path"] else OUTPUT_DIR / "resumes" / res_id
-        try:
-            pdf_path = latex_engine.compile_pdf(tex, out_dir)
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Compilação falhou: {e}")
-        cols["pdf_path"] = str(pdf_path)
-    if cols:
-        job_model.update_adapted_resume(res_id, **cols)
-    return {"status": "saved", "pdf_url": f"/api/resumes/{res_id}/pdf"}
+    job_model.update_adapted_resume(res_id, **cols)
+    return {"status": "saved", "tex": tex, "pdf_url": f"/api/resumes/{res_id}/pdf"}
 
 @router.delete("/resumes/{res_id}")
 def delete_resume_endpoint(res_id: str):

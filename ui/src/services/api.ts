@@ -245,24 +245,32 @@ export async function adaptText(jobText: string, pageTitle = '', pageUrl = ''): 
   return withAbsolutePdf(await res.json());
 }
 
-export async function compileResume(payload: {
-  profile?: CandidateProfile;
-  raw_tex?: string;
-  job?: JobData;
-  template?: string;
-  lang?: string;
-}): Promise<{ status: string; pdf_url: string; tex: string }> {
-  const res = await fetch(`${API_BASE}/compile`, {
-    method: 'POST',
+export async function saveResumeEdit(
+  id: string,
+  payload: { profile?: CandidateProfile; tex_code?: string }
+): Promise<{ status: string; tex: string; pdf_url: string }> {
+  const res = await fetch(`${API_BASE}/resumes/${id}`, {
+    method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.detail || 'Recompilacao LaTeX falhou');
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Salvou mas a recompilação falhou');
   }
   const data = await res.json();
   return { ...data, pdf_url: absUrl(data.pdf_url) };
+}
+
+export async function fetchResumeDetail(id: string): Promise<AdaptedResult> {
+  const res = await fetch(`${API_BASE}/resumes/${id}`);
+  if (!res.ok) throw new Error('Registro não encontrado');
+  return withAbsolutePdf(await res.json());
+}
+
+export async function deleteResume(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/resumes/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Falha ao remover');
 }
 
 export async function polishBullet(bullet: string, roleContext?: string): Promise<string> {
