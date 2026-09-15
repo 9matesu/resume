@@ -1,4 +1,4 @@
-# Registra o native host + abre o Chrome com o caminho da extensao copiado.
+﻿# Registra o native host + abre o Chrome com o caminho da extensao copiado.
 # Uso: duplo clique (ou roda do proprio instalador .exe; aqui e o fallback zip).
 $ErrorActionPreference = "Stop"
 & (Join-Path $PSScriptRoot "native-host\install-host.ps1")

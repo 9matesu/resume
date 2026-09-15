@@ -38,11 +38,11 @@ export const ApplicationHistory: React.FC = () => {
     <div className="max-w-5xl mx-auto p-6 select-none overflow-y-auto h-full">
       <div className="flex items-end justify-between mb-6 hairline-b pb-4">
         <div>
-          <h1 className="font-editorial text-3xl text-black leading-[1.05] tracking-tight">
-            Histórico de Candidaturas & Exportações
+          <h1 className="font-editorial text-2xl text-black leading-[1.05] tracking-tight">
+            Arquivo de candidaturas
           </h1>
-          <p className="text-xs text-neutral-600 mt-2 font-mono">
-            Currículos adaptados em LaTeX gerados a partir do seu perfil mestre.
+          <p className="text-xs text-neutral-600 mt-1 font-mono">
+            Cada linha é um currículo adaptado — edite no Estúdio ou baixe o PDF.
           </p>
         </div>
       </div>
@@ -56,7 +56,7 @@ export const ApplicationHistory: React.FC = () => {
         <div className="py-20 text-center brutal-card p-8">
           <h3 className="font-editorial text-xl normal-case">Nenhuma vaga adaptada ainda</h3>
           <p className="text-xs text-neutral-600 mt-2 max-w-sm mx-auto font-mono">
-            Abra uma vaga no navegador e clique em "Capturar Vaga" para adaptá-la instantaneamente.
+            Abra uma vaga no navegador e use Captura.
           </p>
         </div>
       ) : (

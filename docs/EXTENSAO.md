@@ -70,7 +70,7 @@ O entregável é sempre o currículo customizado.
    O LLM devolve JSON estruturado (título, empresa, local, requisitos,
    keywords) usando **só a vaga principal** (cursos/promos/vagas relacionadas
    são ignorados por instrução explícita) e sem inventar nada. A resposta
-   traz `captured_chars`, exibido no card do painel.
+   disponível para diagnóstico.
 4. **Adaptação** — o LLM recebe o perfil mestre + a vaga e devolve o
    currículo customizado: resumo reescrito para o papel, habilidades e
    experiências reordenadas/reescritas (**mesmos fatos, outra ênfase**),

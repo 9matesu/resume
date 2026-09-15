@@ -1,4 +1,4 @@
-# scripts/package-release.ps1 — builds dist/resuMe-<ver>-windows-x64.zip
+﻿# scripts/package-release.ps1  -  builds dist/resuMe-<ver>-windows-x64.zip
 # Portable backend: embedded CPython (python-build-standalone) + pip deps + bundled Tectonic.
 # Run from repo root:  powershell -ExecutionPolicy Bypass -File .\scripts\package-release.ps1
 $ErrorActionPreference = "Stop"
@@ -85,5 +85,5 @@ if ($iscc) {
   if ($LASTEXITCODE -ne 0) { throw "ISCC falhou ($LASTEXITCODE)" }
   Write-Host "OK -> dist\resuMe-$ver-setup.exe" -ForegroundColor Green
 } else {
-  Write-Host "AVISO: Inno Setup nao encontrado — so o zip foi gerado. winget install JRSoftware.InnoSetup" -ForegroundColor Yellow
+  Write-Host "AVISO: Inno Setup nao encontrado  -  so o zip foi gerado. winget install JRSoftware.InnoSetup" -ForegroundColor Yellow
 }

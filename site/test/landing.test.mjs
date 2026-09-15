@@ -103,3 +103,7 @@ test('assets existem no disco e hero-bg.mp4/jpg antigos foram removidos', () => 
   assert.ok(!existsSync(new URL('../assets/hero-bg.mp4', import.meta.url)));
   assert.ok(!existsSync(new URL('../assets/hero-bg.jpg', import.meta.url)));
 });
+
+test('F7: sem overflow horizontal — 100vw do hero sob clip', () => {
+  assert.match(css, /overflow-x:\s*clip/);
+});

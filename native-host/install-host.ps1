@@ -1,4 +1,4 @@
-# Registers the resuMe native messaging host for Chrome.
+﻿# Registers the resuMe native messaging host for Chrome.
 # Run once: powershell -ExecutionPolicy Bypass -File .\native-host\install-host.ps1
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot

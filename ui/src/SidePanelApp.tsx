@@ -25,9 +25,9 @@ import { SettingsPanel } from './components/settings/SettingsPanel';
 type View = 'capture' | 'history' | 'settings';
 
 const NAV: Array<{ id: View; label: string }> = [
-  { id: 'capture', label: '1. Captura' },
-  { id: 'history', label: '2. Arquivo' },
-  { id: 'settings', label: '3. Config' },
+  { id: 'capture', label: 'Captura' },
+  { id: 'history', label: 'Arquivo' },
+  { id: 'settings', label: 'Ajustes' },
 ];
 
 export function SidePanelApp() {
@@ -259,11 +259,6 @@ export function SidePanelApp() {
                       {result.job.company}
                       {result.job.location ? ` — ${result.job.location}` : ''}
                     </p>
-                    {result.captured_chars != null && result.captured_chars > 0 && (
-                      <p className="text-[10px] font-mono text-neutral-400 mt-0.5">
-                        texto capturado: ~{result.captured_chars >= 1000 ? `${(result.captured_chars / 1000).toFixed(1).replace('.', ',')}k` : result.captured_chars} chars
-                      </p>
-                    )}
                   </div>
                   {result.adaptation.match_score != null && result.adaptation.match_score > 0 && (
                     <span className="brutal-tag brutal-tag-yellow shrink-0">

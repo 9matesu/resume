@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.1.0] — 2026-09-14
+
+### Added
+
+- **Motor inicia sozinho ao carregar o Chrome** — manifest agora declara
+  `nativeMessaging` (antes `sendNativeMessage` falhava silenciosamente) e o
+  service worker chama `ensure-backend` em `onStartup`/`onInstalled`/wake-up.
+- **Instalador `resuMe-<v>-setup.exe`** (Inno Setup, gratuito): motor +
+  registro do host + Chrome aberto na página certa com o caminho da extensão
+  na área de transferência. Restam 2 cliques dentro do navegador (limitação
+  do Chrome fora da Store). Landing com CTA único **"Instalar extensão"**.
+- **Edições do Estúdio persistem**: `PUT /api/resumes/{id}` grava LaTeX e
+  recompila o PDF do próprio registro (acabou o `preview_*` descartável).
+- **Histórico navegável**: cada linha abre no Estúdio (`GET /api/resumes/{id}`)
+  e pode ser removida (`DELETE`, apaga linha + PDF).
+- `instalar.ps1` no zip portável (equivale ao .exe).
+
+### Removed
+
+- `POST /api/adapt-job` e `POST /api/compile` (zero callers — o caminho único
+  é adapt-text → PUT/estúdio).
+- Nav numerado ("1. Captura") e a linha "texto capturado: ~Nk chars".
+
+### Changed
+
+- Botão do Estúdio: "Salvar e Atualizar PDF" (antes "Recompilar" não salvava
+  nada); erros inline no lugar de `alert()`.
+- Tela "Motor offline" sem dev-speak (hint do PowerShell agora em "Para técnicos").
+
 ## [1.0.0] — 2026-09-08
 
 Primeiro release oficial — e rename de **AutoJob Studio** para **resuMe**.

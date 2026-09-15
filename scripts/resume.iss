@@ -1,4 +1,4 @@
-; resuMe — instalador Windows (Inno Setup 6, gratuito).
+﻿; resuMe  -  instalador Windows (Inno Setup 6, gratuito).
 ; Chamado por scripts/package-release.ps1 com /DAppVersion /DStageDir /DOutputDir.
 [Setup]
 AppName=resuMe
@@ -14,13 +14,13 @@ ArchitecturesInstallIn64BitMode=x64compatible
 Compression=lzma2/max
 SolidCompression=yes
 PrivilegesRequired=lowest
-SetupIconFile={#StageDir}\extension\assets\icon-128.png
+SetupIconFile={#SourcePath}resume-setup.ico
 
 [Files]
 Source: "{#StageDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Run]
-; 1. registra o native host (auto-start do motor) — silencioso, espera acabar
+; 1. registra o native host (auto-start do motor)  -  silencioso, espera acabar
 Filename: "powershell.exe"; \
   Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\native-host\install-host.ps1"""; \
   StatusMsg: "Registrando o motor local..."; Flags: runhidden waituntilterminated

@@ -176,3 +176,6 @@ dialog#howto { border: 2px solid #000; border-radius: 0; padding: 28px; max-widt
 dialog#howto::backdrop { background: rgba(0, 0, 0, 0.62); }
 dialog#howto ol { padding-left: 20px; display: grid; gap: 10px; font-size: 14px; }
 dialog#howto h3 { margin: 0 0 12px; }
+
+/* 100vw do hero passa do clientWidth quando ha scrollbar vertical */
+html, body { overflow-x: clip; }
