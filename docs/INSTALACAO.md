@@ -26,7 +26,7 @@ sem pip, sem PATH.
 
 ### Windows SmartScreen
 
-O zip e o `ResumeHost.exe` não são assinados digitalmente. Se o SmartScreen
+O .exe, o zip e o `ResumeHost.exe` não são assinados digitalmente. Se o SmartScreen
 avisar: botão direito → Propriedades → **Desbloquear**, ou
 "Mais informações → Executar assim mesmo" no aviso. É esperado para software
 distribuído sem certificado pago.

@@ -30,7 +30,7 @@
       <a href="#como" class="hide-sm">Como funciona</a>
       <a href="#faq" class="hide-sm">Perguntas</a>
       <a href="https://github.com/9matesu/autojob-ext" class="hide-sm">GitHub</a>
-      <a class="btn sm" href="https://github.com/9matesu/autojob-ext/releases/download/v1.0.0/resuMe-1.0.0-windows-x64.zip">Baixar grátis</a>
+      <a class="btn sm" href="https://github.com/9matesu/autojob-ext/releases/download/v1.1.0/resuMe-1.1.0-setup.exe" download>Instalar grátis</a>
     </nav>
   </div>
 </header>
@@ -53,10 +53,10 @@
         tela, só fato.
       </p>
       <div class="cta-row">
-        <a class="btn baixar-cta"
-           href="https://github.com/9matesu/autojob-ext/releases/download/v1.0.0/resuMe-1.0.0-windows-x64.zip">
-          Baixar grátis — instala em 2 minutos
+        <a class="btn install-cta" href="https://github.com/9matesu/autojob-ext/releases/download/v1.1.0/resuMe-1.1.0-setup.exe" download data-exe="https://github.com/9matesu/autojob-ext/releases/download/v1.1.0/resuMe-1.1.0-setup.exe">
+          Instalar extensão — grátis
         </a>
+        <a class="btn ghost" href="https://github.com/9matesu/autojob-ext/releases/download/v1.1.0/resuMe-1.1.0-windows-x64.zip">zip portável</a>
         <a class="btn ghost" href="#como">Role para a sério ↓</a>
       </div>
       <p class="meta cta-note">Windows 10/11 · Google Chrome · roda offline depois de instalado</p>
@@ -72,10 +72,11 @@
       <div class="steps-big">
         <div class="st reveal">
           <div>
-            <h3>Instale em 2 minutos</h3>
-            <p>Baixe o zip, descompacte onde quiser e arraste a pasta
-            <code>extension</code> para dentro do Chrome. Não tem instalador,
-            não pede direitos de administrador, não mexe no seu Python. O <a
+            <h3>Instale em 2 cliques</h3>
+            <p>Baixe o <code>resuMe-1.1.0-setup.exe</code> e abra. Ele instala o
+            motor, registra tudo sozinho, abre o Chrome na página certa e deixa
+            o caminho da extensão copiado pra você colar. Não pede
+            administrador, não mexe no seu Python, não abre terminal. O <a
             href="https://github.com/9matesu/autojob-ext/blob/master/docs/INSTALACAO.md">guia ilustrado</a>
             mostra cada clique.</p>
           </div>
@@ -181,13 +182,22 @@
   <section id="baixar" class="content page final">
     <div class="wrap">
       <h2>Pare de reescrever currículo. Comece a capturar vagas.</h2>
-      <a class="btn baixar-cta" style="font-size:15px;padding:18px 32px"
-         href="https://github.com/9matesu/autojob-ext/releases/download/v1.0.0/resuMe-1.0.0-windows-x64.zip">
-        Baixar resuMe 1.0 — grátis
+      <a class="btn install-cta" style="font-size:15px;padding:18px 32px" href="https://github.com/9matesu/autojob-ext/releases/download/v1.1.0/resuMe-1.1.0-setup.exe" download data-exe="https://github.com/9matesu/autojob-ext/releases/download/v1.1.0/resuMe-1.1.0-setup.exe">
+        Instalar resuMe 1.1 — grátis
       </a>
-      <p class="meta" style="margin-top:14px">zip portável · Windows · sem instalador</p>
+      <p class="meta" style="margin-top:14px">um .exe · Windows · o resto acontece dentro do Chrome</p>
     </div>
   </section>
+  <!-- dialog de instalacao assistida: um click baixa o .exe, o resto e dentro do navegador -->
+  <dialog id="howto">
+    <h3>Quase lá — 2 cliques dentro do Chrome</h3>
+    <ol>
+      <li>O download do <code>resuMe-1.1.0-setup.exe</code> já começou. Abra o arquivo e clique <strong>Instalar</strong>.</li>
+      <li>O instalador abre o Chrome já na página de extensões com o caminho copiado. Ative <strong>Modo do desenvolvedor</strong> e clique <strong>Carregar sem compactação</strong> — cole (Ctrl+V) o caminho.</li>
+    </ol>
+    <p class="meta">Depois disso o motor inicia sozinho com o Chrome. Zero terminal, zero PowerShell.</p>
+    <form method="dialog"><button class="btn sm">Fechar</button></form>
+  </dialog>
 </main>
 
 <footer class="site">
@@ -203,7 +213,7 @@
 
 <div class="sticky-bar">
   <span class="wordmark" style="font-size:13px">resu<span class="me">Me</span> · grátis</span>
-  <a class="btn sm" href="https://github.com/9matesu/autojob-ext/releases/download/v1.0.0/resuMe-1.0.0-windows-x64.zip">Baixar</a>
+  <a class="btn sm install-cta" href="https://github.com/9matesu/autojob-ext/releases/download/v1.1.0/resuMe-1.1.0-setup.exe" download data-exe="https://github.com/9matesu/autojob-ext/releases/download/v1.1.0/resuMe-1.1.0-setup.exe">Instalar</a>
 </div>
 
 </body>

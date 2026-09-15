@@ -51,24 +51,39 @@ New-Item -ItemType Directory -Path "$stage\backend\bin" -Force | Out-Null
 Expand-Archive $tectZip -DestinationPath "$stage\backend\bin"
 if (-not (Test-Path "$stage\backend\bin\tectonic.exe")) { throw "tectonic.exe nao encontrado no zip." }
 
-Write-Host "[6/7] Launcher + LEIA-ME" -ForegroundColor Yellow
+Write-Host "[6/8] Launcher + LEIA-ME + instalar.ps1" -ForegroundColor Yellow
 @'
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 & "$root\python-embedded\python.exe" -m uvicorn app.main:app --host 127.0.0.1 --port 8322 --app-dir "$root\backend"
 '@ | Set-Content "$stage\start-engine.ps1" -Encoding UTF8
+Copy-Item "$root\scripts\instalar.ps1" "$stage\instalar.ps1"
 @'
-resuMe 1.0 - instalacao
+resuMe - instalacao (modo zip portable)
 1. Descompacte esta pasta em um local FIXO (ex.: C:\resuMe) - o native host aponta caminhos absolutos.
-2. Chrome: abra chrome://extensions, ative "Modo do desenvolvedor", clique "Carregar sem compactacao" e escolha a pasta extension\.
-3. Uma vez so: powershell -ExecutionPolicy Bypass -File .\native-host\install-host.ps1
-   (auto-inicia o motor ao abrir o painel lateral; log em backend\data\resume-backend.log)
-   Sem o passo 3, execute start-engine.ps1 antes de usar.
-4. Clique no icone da extensao -> painel lateral -> envie seu curriculo base -> capture uma vaga.
+2. Duplo clique em instalar.ps1 (PowerShell). Ele registra o motor e abre o
+   Chrome na pagina de extensoes com o caminho da pasta extension\ JA COPIADO.
+3. No Chrome: ative "Modo do desenvolvedor" (tope esquerdo) ->
+   "Carregar sem compactacao" -> cole o caminho copiado (Ctrl+V no seletor).
+Pronto. O motor inicia sozinho daqui em diante ao abrir o Chrome.
 Fontes: Instrument Serif e Schibsted Grotesk (licencas OFL em extension\fonts\).
 '@ | Set-Content "$stage\LEIA-ME.txt" -Encoding UTF8
 
-Write-Host "[7/7] Zip" -ForegroundColor Yellow
+Write-Host "[7/8] Zip" -ForegroundColor Yellow
 New-Item -ItemType Directory -Path "$root\dist" -Force | Out-Null
-Compress-Archive -Path "$stage\*" -DestinationPath "$root\dist\resuMe-$ver-windows-x64.zip" -Force
-Write-Host "OK -> dist\resuMe-$ver-windows-x64.zip" -ForegroundColor Green
+Remove-Item "$root\dist\resuMe-$ver-windows-x64.zip" -Force -ErrorAction SilentlyContinue
+Compress-Archive -Path "$stage\*" -DestinationPath "$root\dist\resuMe-$ver-windows-x64.zip"
+
+Write-Host "[8/8] Instalador .exe (Inno Setup)" -ForegroundColor Yellow
+$iscc = @(
+  "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+  "C:\Program Files\Inno Setup 6\ISCC.exe",
+  "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe"
+) | Where-Object { Test-Path $_ } | Select-Object -First 1
+if ($iscc) {
+  & $iscc "/DAppVersion=$ver" "/DStageDir=$stage" "/DOutputDir=$root\dist" "$root\scripts\resume.iss"
+  if ($LASTEXITCODE -ne 0) { throw "ISCC falhou ($LASTEXITCODE)" }
+  Write-Host "OK -> dist\resuMe-$ver-setup.exe" -ForegroundColor Green
+} else {
+  Write-Host "AVISO: Inno Setup nao encontrado — so o zip foi gerado. winget install JRSoftware.InnoSetup" -ForegroundColor Yellow
+}

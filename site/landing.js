@@ -22,4 +22,11 @@
     bgVideo.removeAttribute('src');
     bgVideo.load(); // poster assume
   }
+
+  // CTA Install: o click dispara o download do .exe (href+download) e abre o
+  // howto na hora — o usuario nao perde o contexto nem sai da pagina.
+  var dlg = document.getElementById('howto');
+  document.querySelectorAll('.install-cta').forEach(function (a) {
+    a.addEventListener('click', function () { if (dlg) dlg.showModal(); });
+  });
 })();

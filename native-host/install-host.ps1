@@ -4,16 +4,18 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $nativeDir = Join-Path $root "native-host"
 $backendDir = Join-Path $root "backend"
-$pythonExe = Join-Path $backendDir ".venv\Scripts\python.exe"
+# ordem: python embutido do zip/instalador primeiro, senao venv de dev
+$pythonExe = Join-Path $root "python-embedded\python.exe"
+if (-not (Test-Path $pythonExe)) { $pythonExe = Join-Path $backendDir ".venv\Scripts\python.exe" }
 $hostExe = Join-Path $nativeDir "ResumeHost.exe"
 
-# 1. Ensure venv + pyinstaller
+# 1. Ensure venv + pyinstaller (sozinho no modo dev; o zip ja traz deps)
 if (-not (Test-Path $pythonExe)) {
     Write-Host "[1/5] Creating backend venv..." -ForegroundColor Yellow
     python -m venv (Join-Path $backendDir ".venv")
     & $pythonExe -m pip install -q -r (Join-Path $backendDir "requirements.txt")
 } else {
-    Write-Host "[1/5] Backend venv present." -ForegroundColor Green
+    Write-Host "[1/5] Python presente." -ForegroundColor Green
 }
 
 # 2. Build the host exe

@@ -169,3 +169,10 @@ details p { margin: 0 0 14px; font-size: 14px; line-height: 1.7; color: #333; ma
 footer.site { padding: 28px 0 40px; font-size: 11px; color: var(--mute); display: flex;
   justify-content: space-between; gap: 16px; flex-wrap: wrap; text-transform: uppercase; letter-spacing: .05em;
   scroll-snap-align: end; }
+
+/* F2: install CTA reusa .btn; dialog nativo sem lib */
+dialog#howto { border: 2px solid #000; border-radius: 0; padding: 28px; max-width: 460px;
+  font-family: inherit; background: #fff; color: #000; box-shadow: 8px 8px 0 #000; }
+dialog#howto::backdrop { background: rgba(0, 0, 0, 0.62); }
+dialog#howto ol { padding-left: 20px; display: grid; gap: 10px; font-size: 14px; }
+dialog#howto h3 { margin: 0 0 12px; }

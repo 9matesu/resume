@@ -167,17 +167,22 @@ export function SidePanelApp() {
     }
     return (
       <div className="h-full flex flex-col items-center justify-center p-6 text-center gap-4">
-        <h1 className="font-editorial text-3xl">Motor Offline</h1>
+        <h1 className="font-editorial text-3xl">Motor offline</h1>
         <p className="text-xs font-mono text-neutral-700 leading-relaxed">
-          O servidor local do resuMe não respondeu em http://127.0.0.1:8322.
-          {startError ? ` ${startError}` : ' Execute start-backend.ps1 na pasta do projeto e tente novamente.'}
+          O servidor local não respondeu.
         </p>
         <button
           onClick={() => (isExtension ? startBackend() : void init())}
           className="brutal-btn px-4 py-2 text-xs"
         >
-          Tentar Novamente
+          Tentar novamente
         </button>
+        {startError && (
+          <details className="text-[10px] font-mono text-neutral-500">
+            <summary className="cursor-pointer">Para técnicos</summary>
+            <p className="mt-2 leading-relaxed">{startError} — ou rode start-backend.ps1 na pasta do projeto.</p>
+          </details>
+        )}
       </div>
     );
   }
