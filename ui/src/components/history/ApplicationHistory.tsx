@@ -1,13 +1,22 @@
 import { useEffect, useState } from 'react';
 import {
   Download,
+  Maximize2,
+  Trash2,
   Loader2,
 } from 'lucide-react';
-import { fetchHistory, resumePdfUrl } from '../../services/api';
+import {
+  fetchHistory,
+  fetchResumeDetail,
+  deleteResume,
+  resumePdfUrl,
+} from '../../services/api';
+import { saveStudioPayload, openStudioTab } from '../../chrome';
 
 export const ApplicationHistory: React.FC = () => {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const loadHistory = async () => {
     try {
@@ -87,11 +96,47 @@ export const ApplicationHistory: React.FC = () => {
                     <a
                       href={resumePdfUrl(item.id)}
                       download={`Curriculo_${item.company}_${item.title}.pdf`}
-                      className="brutal-btn-yellow flex items-center gap-1 px-3 py-1 text-[11px]"
+                      className="brutal-btn flex items-center gap-1 px-3 py-1 text-[11px]"
                     >
                       <Download className="w-3 h-3" />
-                      <span>Baixar PDF</span>
+                      <span>PDF</span>
                     </a>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const detail = await fetchResumeDetail(item.id);
+                          await saveStudioPayload(detail);
+                          openStudioTab();
+                        } catch (err) {
+                          console.error('Falha ao abrir no estúdio:', err);
+                        }
+                      }}
+                      className="brutal-btn-yellow flex items-center gap-1 px-3 py-1 text-[11px]"
+                    >
+                      <Maximize2 className="w-3 h-3" />
+                      <span>Estúdio</span>
+                    </button>
+                    {confirmDelete === item.id ? (
+                      <button
+                        onClick={async () => {
+                          await deleteResume(item.id);
+                          setHistory(history.filter((h) => h.id !== item.id));
+                          setConfirmDelete(null);
+                        }}
+                        className="brutal-btn flex items-center gap-1 px-3 py-1 text-[11px]"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Confirmar</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmDelete(item.id)}
+                        title="Remover do histórico"
+                        className="brutal-btn p-1.5"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
