@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0] — 2026-09-16
+
+### Added
+
+- **Chaves de API por provedor**: salvar uma chave por provedor (Gemini,
+  OpenAI, Groq…) fica guardada no SQLite local; trocar de provedor no
+  dropdown já recupera a chave dele. Quem tem chave salva aparece marcado no
+  seletor. Nada de valor vaza em respostas HTTP — só nomes.
+- **Pipeline ATS de duas passadas**: a adaptação agora espelha a terminologia
+  exata da vaga (sem inventar), lista `honest_gaps`, e roda um segundo passe
+  caçando as keywords que ficaram de fora. O card do painel mostra a
+  cobertura (X/Y keywords) e o que ficou de fora.
+
 ## [1.1.0] — 2026-09-14
 
 ### Added
