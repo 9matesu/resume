@@ -81,6 +81,9 @@ def get_settings_endpoint():
         "compiler_preference": s.compiler_preference,
         "detected_compiler": comp_type,
         "compiler_path": comp_path,
+        # quais provedores ja tem chave salva (nomes so, nunca valores)
+        "key_providers": [row["key"].split(":", 1)[1]
+                          for row in db.query("SELECT key FROM settings WHERE key LIKE 'api_key:%'")],
     }
 
 @router.post("/settings")

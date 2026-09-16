@@ -104,10 +104,11 @@ export const SettingsPanel: React.FC = () => {
               onModelChange={setAiModel}
               onApiKeyChange={setAiApiKey}
               onBaseUrlChange={setAiBaseUrl}
+              keyProviders={settings?.key_providers || []}
               keyHint={
-                settings?.has_key ? (
+                settings?.key_providers?.includes(aiProvider) ? (
                   <span className="text-neutral-500 normal-case tracking-normal">
-                    (Configurada: {settings.ai_api_key_masked})
+                    (Chave salva para este provedor.)
                   </span>
                 ) : undefined
               }

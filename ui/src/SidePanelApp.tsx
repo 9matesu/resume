@@ -267,6 +267,15 @@ export function SidePanelApp() {
                   )}
                 </div>
 
+                {result.adaptation.ats && result.adaptation.ats.wanted > 0 && (
+                  <p className="text-[10px] font-mono text-neutral-500">
+                    cobertura ATS: {result.adaptation.ats.covered.length}/{result.adaptation.ats.wanted} keywords
+                    {result.adaptation.ats.refined ? ' · 2a passada de refino' : ''}
+                    {result.adaptation.ats.missing.length
+                      ? ` · fora: ${result.adaptation.ats.missing.slice(0, 4).join(', ')}`
+                      : ''}
+                  </p>
+                )}
                 {(result.adaptation.applied_keywords?.length ?? 0) > 0 && (
                   <div className="hairline-b pb-3">
                     <div className="text-[10px] font-bold uppercase mb-1.5">Palavras-chave aplicadas</div>

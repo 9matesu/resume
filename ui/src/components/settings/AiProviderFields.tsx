@@ -13,6 +13,7 @@ interface AiProviderFieldsProps {
   onApiKeyChange: (v: string) => void;
   onBaseUrlChange: (v: string) => void;
   keyHint?: React.ReactNode;
+  keyProviders?: string[];
 }
 
 export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
@@ -26,6 +27,7 @@ export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
   onApiKeyChange,
   onBaseUrlChange,
   keyHint,
+  keyProviders = [],
 }) => {
   const [models, setModels] = useState<string[]>([]);
   const [detecting, setDetecting] = useState(false);
@@ -91,7 +93,7 @@ export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
         <select value={provider} onChange={(e) => handleProvider(e.target.value)} className="brutal-input cursor-pointer">
           {catalog.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.label}
+              {p.label}{keyProviders.includes(p.id) ? ' · chave salva' : ''}
             </option>
           ))}
         </select>

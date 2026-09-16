@@ -381,6 +381,9 @@ def test_per_provider_api_keys_are_saved_and_resolved(monkeypatch):
     s3 = get_settings()
     s3.ai_provider = "groq"
     assert _resolve_key_for(s3) in ("sk-openai-key",)  # ultimo global salvo
+    # /api/settings lista os provedores que tem chave salva (sem valores)
+    kp = client.get("/api/settings").json()["key_providers"]
+    assert set(kp) == {"gemini", "openai"}
     # masked: /api/settings mostra a chave do provider ATIVO
     masked = client.get("/api/settings").json()["ai_api_key_masked"]
     assert masked.endswith("key") or "..." in masked

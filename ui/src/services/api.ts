@@ -64,6 +64,8 @@ export interface AdaptedResult {
     tailored_profile: CandidateProfile;
     tex_code: string;
     pdf_url: string;
+    ats?: { coverage: number; wanted: number; covered: string[]; missing: string[]; refined: boolean };
+    honest_gaps?: string[];
   };
 }
 
@@ -82,6 +84,7 @@ export interface AppSettings {
   ai_provider: string;
   ai_model: string;
   ai_api_key_masked: string;
+  key_providers?: string[];
   has_key: boolean;
   ai_base_url: string;
   default_template: string;
