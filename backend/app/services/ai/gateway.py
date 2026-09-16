@@ -55,8 +55,7 @@ class AIProvider(abc.ABC):
         model = (self.s.ai_model or "").strip()
         if not model:
             raise AIError(
-                "Nenhum modelo selecionado. Abra o painel → Config e use "
-                "'Detectar' para listar os modelos do provedor.",
+                "Nenhum modelo selecionado. Abra Ajustes e toque em Detectar modelos.",
                 transient=False,
             )
         return model
@@ -65,20 +64,20 @@ class AIProvider(abc.ABC):
         try:
             resp = httpx.get(url, headers=headers, timeout=timeout)
         except httpx.TimeoutException as e:
-            raise AIError(f"AI request timed out: {e}", transient=True) from e
+            raise AIError(f"A IA demorou demais para responder: {e}", transient=True) from e
         except httpx.HTTPError as e:
-            raise AIError(f"AI network error: {e}", transient=True) from e
+            raise AIError(f"Sem conexão com a IA: {e}", transient=True) from e
         if resp.status_code == 429:
-            raise AIError("AI rate limited (429)", transient=True)
+            raise AIError("A IA está limitando as chamadas agora (429). Tente de novo em instantes.", transient=True)
         if resp.status_code >= 500:
-            raise AIError(f"AI server error ({resp.status_code})", transient=True)
+            raise AIError(f"A IA está com erro interno ({resp.status_code}). Tente de novo.", transient=True)
         if resp.status_code >= 400:
-            raise AIError(f"AI client error ({resp.status_code}): {resp.text[:300]}",
+            raise AIError(f"A IA rejeitou a chamada ({resp.status_code}): {resp.text[:300]}",
                           transient=False)
         try:
             return resp.json()
         except ValueError as e:
-            raise AIError("AI returned non-JSON output", transient=False) from e
+            raise AIError("A IA respondeu em um formato que não entendi.", transient=False) from e
 
     def models(self) -> list[str]:
         """Model IDs available on this provider. Never fabricates: returns
@@ -88,15 +87,15 @@ class AIProvider(abc.ABC):
         try:
             resp = httpx.post(url, json=payload, headers=headers, timeout=timeout)
         except httpx.TimeoutException as e:
-            raise AIError(f"AI request timed out: {e}", transient=True) from e
+            raise AIError(f"A IA demorou demais para responder: {e}", transient=True) from e
         except httpx.HTTPError as e:
-            raise AIError(f"AI network error: {e}", transient=True) from e
+            raise AIError(f"Sem conexão com a IA: {e}", transient=True) from e
         if resp.status_code == 429:
-            raise AIError("AI rate limited (429)", transient=True)
+            raise AIError("A IA está limitando as chamadas agora (429). Tente de novo em instantes.", transient=True)
         if resp.status_code >= 500:
-            raise AIError(f"AI server error ({resp.status_code})", transient=True)
+            raise AIError(f"A IA está com erro interno ({resp.status_code}). Tente de novo.", transient=True)
         if resp.status_code >= 400:
-            raise AIError(f"AI client error ({resp.status_code}): {resp.text[:300]}",
+            raise AIError(f"A IA rejeitou a chamada ({resp.status_code}): {resp.text[:300]}",
                           transient=False)
         return resp.json()
 
@@ -115,7 +114,7 @@ class AIProvider(abc.ABC):
             start, end = t.find("{"), t.rfind("}")
             if start != -1 and end > start:
                 return json.loads(t[start:end + 1])
-            raise AIError(f"AI returned non-JSON output: {t[:200]}", transient=True) from None
+            raise AIError(f"A IA respondeu em um formato que não entendi: {t[:200]}", transient=True) from None
 
 
 class OpenAICompatible(AIProvider):
@@ -419,8 +418,7 @@ def get_provider(settings) -> AIProvider:
     prov_name = (settings.ai_provider or "").lower()
     if prov_name in CLOUD_PROVIDERS and not getattr(settings, "ai_api_key", ""):
         raise AIError(
-            "Nenhuma chave de API configurada. Abra o painel → Config e "
-            "informe sua chave para usar este provedor.",
+            "Falta a chave de API. Em Ajustes, informe sua chave para este provedor.",
             transient=False,
         )
     cls = _PROVIDERS.get(prov_name)

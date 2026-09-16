@@ -67,7 +67,7 @@ def ensure_backend(cfg: dict) -> dict:
     python = cfg.get("python")
     backend_dir = cfg.get("backend_dir")
     if not python or not backend_dir or not Path(python).exists() or not Path(backend_dir).exists():
-        return {"running": False, "error": "Host nao configurado. Execute install-host.ps1."}
+        return {"running": False, "error": "O motor ainda não foi instalado. Abra o setup.exe uma vez."}
 
     log_path = Path(cfg.get("log") or (Path(backend_dir) / "data" / "resume-backend.log"))
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -95,7 +95,7 @@ def ensure_backend(cfg: dict) -> dict:
             return {"running": True, "spawned": True}
         time.sleep(0.4)
 
-    return {"running": False, "spawned": True, "error": "Backend nao respondeu dentro do prazo."}
+    return {"running": False, "spawned": True, "error": "O motor não respondeu a tempo."}
 
 
 def main() -> None:

@@ -198,7 +198,7 @@ async def parse_resume_file(file: UploadFile = File(...)):
         parsed = importer.parse_resume_text(text)
         return {"status": "success", "profile": parsed, "raw_preview": text[:500]}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to parse resume: {e}")
+        raise HTTPException(status_code=400, detail=f"Não consegui ler esse currículo: {e}")
 
 class ParsePathPayload(BaseModel):
     file_path: str
@@ -208,14 +208,14 @@ def parse_resume_from_path(payload: ParsePathPayload):
     from pathlib import Path
     p = Path(payload.file_path)
     if not p.exists() or not p.is_file():
-        raise HTTPException(status_code=400, detail="File path does not exist")
+        raise HTTPException(status_code=400, detail="Esse caminho de arquivo não existe.")
     try:
         raw = p.read_bytes()
         text = importer.extract_text(p.name, raw)
         parsed = importer.parse_resume_text(text)
         return {"status": "success", "profile": parsed, "raw_preview": text[:500]}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Failed to parse resume: {e}")
+        raise HTTPException(status_code=400, detail=f"Não consegui ler esse currículo: {e}")
 
 def _merge_tailored(master_profile: dict, adapted_json: dict) -> dict:
     """Mescla o JSON adaptado pela IA sobre o perfil mestre.
@@ -251,7 +251,7 @@ def _run_adapt_pipeline(job_data: dict, captured_chars: int | None = None) -> di
     except AIError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Adaptação de currículo falhou: {e}")
+        raise HTTPException(status_code=500, detail=f"A adaptação quebrou: {e}")
 
     tailored_profile = _merge_tailored(master_profile, adapted_json)
     try:
@@ -268,7 +268,7 @@ def _run_adapt_pipeline(job_data: dict, captured_chars: int | None = None) -> di
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Compilação LaTeX falhou: {e}")
+        raise HTTPException(status_code=500, detail=f"O LaTeX não compilou: {e}")
 
     res_rec = job_model.save_adapted_resume(
         job_id=job_rec["id"],
@@ -304,7 +304,7 @@ class TextAdaptPayload(BaseModel):
 def adapt_from_text(payload: TextAdaptPayload):
     """DOM-based capture path: raw job panel text from the browser extension."""
     if not payload.job_text or len(payload.job_text.strip()) < 80:
-        raise HTTPException(status_code=400, detail="Texto da vaga muito curto para extração.")
+        raise HTTPException(status_code=400, detail="Texto curto demais para extrair a vaga.")
     if not profile_model.get_active():
         raise HTTPException(status_code=400, detail="Perfil mestre não encontrado. Complete o onboarding primeiro.")
     s = get_settings()
@@ -319,7 +319,7 @@ def adapt_from_text(payload: TextAdaptPayload):
     except AIError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Extração da vaga falhou: {e}")
+        raise HTTPException(status_code=500, detail=f"Não consegui extrair a vaga: {e}")
     return _run_adapt_pipeline(job_data, captured_chars=len(payload.job_text))
 
 
@@ -347,7 +347,7 @@ def get_resume_detail(res_id: str):
     """Registro completo no shape que o Estúdio consome (reabrir do histórico)."""
     res = job_model.get_adapted_resume(res_id)
     if not res:
-        raise HTTPException(status_code=404, detail="Resume not found.")
+        raise HTTPException(status_code=404, detail="Esse registro não existe mais.")
     job_rec = job_model.get_job(res["job_id"]) or {"title": "", "company": ""}
     return {
         "job": {
@@ -377,7 +377,7 @@ def update_resume(res_id: str, payload: ResumeUpdatePayload):
     PDF dele no mesmo lote (sem preview orphan). tex_code vence sobre profile."""
     res = job_model.get_adapted_resume(res_id)
     if not res:
-        raise HTTPException(status_code=404, detail="Resume not found.")
+        raise HTTPException(status_code=404, detail="Esse registro não existe mais.")
     s = get_settings()
     tex = res["tex_code"]
     if payload.tex_code is not None:
@@ -390,7 +390,7 @@ def update_resume(res_id: str, payload: ResumeUpdatePayload):
     try:
         pdf_path = latex_engine.compile_pdf(tex, out_dir)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Compilação falhou: {e}")
+        raise HTTPException(status_code=500, detail=f"O LaTeX não compilou: {e}")
     cols: dict = {"tex_code": tex, "pdf_path": str(pdf_path)}
     if payload.profile is not None:
         cols["tailored_json"] = payload.profile
@@ -400,17 +400,17 @@ def update_resume(res_id: str, payload: ResumeUpdatePayload):
 @router.delete("/resumes/{res_id}")
 def delete_resume_endpoint(res_id: str):
     if not job_model.delete_adapted_resume(res_id):
-        raise HTTPException(status_code=404, detail="Resume not found.")
+        raise HTTPException(status_code=404, detail="Esse registro não existe mais.")
     return {"status": "deleted"}
 
 @router.get("/resumes/{res_id}/pdf")
 def get_resume_pdf(res_id: str):
     res = job_model.get_adapted_resume(res_id)
     if not res or not res.get("pdf_path"):
-        raise HTTPException(status_code=404, detail="Resume PDF not found.")
+        raise HTTPException(status_code=404, detail="Esse registro não tem PDF salvo.")
     p = Path(res["pdf_path"])
     if not p.exists():
-        raise HTTPException(status_code=404, detail="PDF file does not exist on disk.")
+        raise HTTPException(status_code=404, detail="O PDF não está mais no disco. Recompile do Estúdio.")
     pdf_bytes = p.read_bytes()
     return Response(
         content=pdf_bytes,
