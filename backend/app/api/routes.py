@@ -105,7 +105,9 @@ def save_settings_endpoint(payload: SettingsPayload):
 @router.post("/settings/test")
 def test_ai_connection(payload: SettingsPayload):
     s = get_settings()
-    if payload.ai_provider: s.ai_provider = payload.ai_provider
+    if payload.ai_provider:
+        s.ai_provider = payload.ai_provider
+        s.ai_api_key = _resolve_key_for(s)
     if payload.ai_model: s.ai_model = payload.ai_model
     if payload.ai_api_key: s.ai_api_key = payload.ai_api_key
     if payload.ai_base_url: s.ai_base_url = payload.ai_base_url
@@ -136,6 +138,7 @@ def list_models(payload: SettingsPayload):
     s = get_settings()
     if payload.ai_provider:
         s.ai_provider = payload.ai_provider
+        s.ai_api_key = _resolve_key_for(s)
     if payload.ai_api_key:
         s.ai_api_key = payload.ai_api_key
     if payload.ai_base_url:
