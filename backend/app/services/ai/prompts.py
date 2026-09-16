@@ -28,6 +28,11 @@ HARD RULES:
    descriptions.
 4. The deliverable is the resume, not a cover message. Report match_score
    honestly and list only applied_keywords the candidate genuinely supports.
+5. ATS terminology rule: where the candidate has the underlying experience,
+   mirror the JOB DATA's exact wording for job titles, skills and duties
+   (e.g. if the post says "event-driven systems" and the candidate built
+   one, name it that way). Keywords only where factually true. List every
+   job requirement the candidate genuinely lacks in "honest_gaps".
 5. Output strict JSON matching the requested schema. No markdown, no prose.
 """
 
@@ -48,7 +53,9 @@ CANDIDATE DATA. Return JSON with exactly these keys:
      do not inflate; base it on how many job requirements the candidate meets),
   "applied_keywords": array of strings (job keywords that are genuinely
      reflected in the adapted resume because the candidate really has them;
-     never list keywords the candidate lacks)
+     never list keywords the candidate lacks),
+  "honest_gaps": array of strings (job requirements the candidate lacks,
+     short factual phrases; [] if none)
 }"""
 
 LANGUAGE_RULE = """LANGUAGE RULE:
@@ -61,6 +68,22 @@ EMAIL_SCHEMA_HINT = """Return JSON with exactly these keys:
 { "subject": string, "body": string }
 Write a short, professional application email in the same language as the job
 posting. Use only candidate facts. Mention the role and company."""
+
+
+def _all_text(obj) -> str:
+    if isinstance(obj, str):
+        return obj
+    if isinstance(obj, dict):
+        return " ".join(_all_text(v) for v in obj.values())
+    if isinstance(obj, (list, tuple)):
+        return " ".join(_all_text(v) for v in obj)
+    return str(obj) if obj is not None else ""
+
+
+def missing_keywords(keywords: list[str], profile: dict) -> list[str]:
+    """Keywords da vaga sem presenca (case-insensitive, substring) no perfil."""
+    haystack = _all_text(profile).lower()
+    return [k for k in keywords if k and str(k).lower() not in haystack]
 
 
 def _job_block(job: dict) -> str:
@@ -202,3 +225,29 @@ def build_profile_prompt(profile_text: str) -> tuple[str, str]:
         "candidate_story": profile_text,
     }, ensure_ascii=False)
     return PROFILE_BUILDER_RULES + "\n\n" + PROFILE_SCHEMA_HINT, user
+
+
+KEYWORD_REFINE_SUFFIX = """You already produced one adaptation. The resume is
+still missing ATS keywords listed in "missing_keywords". Re-do the adaptation
+from CANDIDATE DATA with maximum keyword fidelity:
+- Re-check every section for facts that can legitimately use the missing
+  terminology (a duty described differently, a project using the tech).
+- A keyword goes in ONLY if the candidate's facts support it. If none
+  support a keyword, leave it out and list it in honest_gaps instead.
+Return the same JSON schema as before."""
+
+
+def build_keyword_refine_request(profile: dict, job: dict,
+                                 missing: list[str], lang: str = "pt") -> tuple[str, str]:
+    """2o chat: mesma adaptacao, cacando as keywords que ficaram de fora."""
+    payload = {
+        "task": "adapt_resume_refine",
+        "output_language": lang,
+        "candidate_profile": profile,
+        "job": _job_block(job),
+        "missing_keywords": missing[:25],
+        "schema": ADAPT_SCHEMA_HINT,
+    }
+    sep = chr(10) * 2
+    return (SYSTEM_RULES + sep + LANGUAGE_RULE + sep
+            + KEYWORD_REFINE_SUFFIX + sep + ADAPT_SCHEMA_HINT), json.dumps(payload, ensure_ascii=False)

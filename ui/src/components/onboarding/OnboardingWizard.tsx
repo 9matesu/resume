@@ -217,7 +217,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         ai_provider: aiProvider,
         ai_model: aiModel,
         ai_base_url: aiBaseUrl || ent?.default_base_url || '',
-        ...(aiApiKey ? { ai_api_key: aiApiKey } : {}),
+        ...(aiApiKey ? { ai_api_key: aiApiKey, provider_for_key: aiProvider } : {}),
       });
       onComplete();
     } catch (err: any) {

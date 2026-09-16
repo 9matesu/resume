@@ -50,6 +50,10 @@ def get_settings() -> Settings:
     if "ai_provider" in db_map: s.ai_provider = db_map["ai_provider"]
     if "ai_model" in db_map: s.ai_model = db_map["ai_model"]
     if "ai_api_key" in db_map: s.ai_api_key = db_map["ai_api_key"]
+    # chave por provedor vence a global quando existe para o provedor ativo
+    per_provider = db_map.get(f"api_key:{s.ai_provider}")
+    if per_provider:
+        s.ai_api_key = per_provider
     if "ai_base_url" in db_map: s.ai_base_url = db_map["ai_base_url"]
     if "default_template" in db_map: s.default_template = db_map["default_template"]
     if "default_lang" in db_map: s.default_lang = db_map["default_lang"]

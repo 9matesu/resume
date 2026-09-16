@@ -118,7 +118,7 @@ export async function fetchSettings(): Promise<AppSettings> {
   return res.json();
 }
 
-export async function saveSettings(settings: Partial<AppSettings & { ai_api_key?: string }>): Promise<void> {
+export async function saveSettings(settings: Partial<AppSettings & { ai_api_key?: string; provider_for_key?: string }>): Promise<void> {
   const res = await fetch(`${API_BASE}/settings`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

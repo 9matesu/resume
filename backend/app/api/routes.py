@@ -18,6 +18,7 @@ router = APIRouter(prefix="/api")
 
 class SettingsPayload(BaseModel):
     ai_provider: str | None = None
+    provider_for_key: str | None = None
     ai_model: str | None = None
     ai_api_key: str | None = None
     ai_base_url: str | None = None
@@ -54,6 +55,13 @@ def health_check():
         "candidate_name": active_cand["name"] if active_cand else None,
     }
 
+def _resolve_key_for(s) -> str:
+    """Chave do provedor salvo em `s.ai_provider`, com fallback global."""
+    row = db.query_one("SELECT value FROM settings WHERE key=?",
+                       (f"api_key:{s.ai_provider}",))
+    return row["value"] if row else (s.ai_api_key or "")
+
+
 @router.get("/settings")
 def get_settings_endpoint():
     s = get_settings()
@@ -81,6 +89,9 @@ def save_settings_endpoint(payload: SettingsPayload):
     if payload.ai_model is not None: update_setting("ai_model", payload.ai_model)
     if payload.ai_api_key is not None:
         update_setting("ai_api_key", payload.ai_api_key)
+        target = payload.provider_for_key or payload.ai_provider
+        if target:
+            update_setting(f"api_key:{target}", payload.ai_api_key)
         gateway.set_runtime_api_key(payload.ai_api_key)
     if payload.ai_base_url is not None: update_setting("ai_base_url", payload.ai_base_url)
     if payload.default_template is not None: update_setting("default_template", payload.default_template)
@@ -260,6 +271,35 @@ def _run_adapt_pipeline(job_data: dict, captured_chars: int | None = None) -> di
         match_score = 0.0
     match_score = max(0.0, min(100.0, match_score))
     applied_keywords = [str(k) for k in (adapted_json.get("applied_keywords") or [])][:20]
+    honest_gaps = [str(g) for g in (adapted_json.get("honest_gaps") or [])][:10]
+
+    # Passe 2 (uma so): cacar keywords ATS que ficaram de fora, sem inventar.
+    wanted = list(dict.fromkeys([str(k) for k in (job_data.get("keywords") or [])]
+                                + [str(x) for x in (job_data.get("requirements") or [])]))[:30]
+    missing = prompts.missing_keywords(wanted, tailored_profile)
+    ats_refined = False
+    if missing:
+        try:
+            sys2, user2 = prompts.build_keyword_refine_request(
+                master_profile, job_data, missing, lang=lang)
+            refined_raw = prov.chat(sys2, user2, expect_json=True)
+            refined_json = gateway.AIProvider._extract_json(refined_raw)
+            missing_after = set(prompts.missing_keywords(wanted, _merge_tailored(master_profile, refined_json)))
+            if len(missing_after) < len(set(missing)):
+                adapted_json = refined_json
+                tailored_profile = _merge_tailored(master_profile, refined_json)
+                try:
+                    match_score = max(match_score, min(100.0, float(refined_json.get("match_score") or 0.0)))
+                except (TypeError, ValueError):
+                    pass
+                applied_keywords = [str(k) for k in (refined_json.get("applied_keywords") or [])][:20]
+                honest_gaps = [str(g) for g in (refined_json.get("honest_gaps") or [])][:10]
+                ats_refined = True
+                missing = sorted(missing_after)
+        except Exception:
+            pass  # refine e bonus; a 1a adaptacao ja e utilizavel
+    covered = [k for k in wanted if k not in missing] if wanted else applied_keywords
+    coverage = round(100.0 * len(covered) / len(wanted), 1) if wanted else match_score
 
     job_rec = job_model.save_job({**job_data, "match_score": match_score})
     batch_label = db.new_id("ext")
@@ -290,6 +330,14 @@ def _run_adapt_pipeline(job_data: dict, captured_chars: int | None = None) -> di
             "tailored_profile": tailored_profile,
             "tex_code": gen_result["tex"],
             "pdf_url": f"/api/resumes/{res_rec['id']}/pdf",
+            "ats": {
+                "coverage": coverage,
+                "wanted": len(wanted),
+                "covered": covered[:30],
+                "missing": missing[:15],
+                "refined": ats_refined,
+            },
+            "honest_gaps": honest_gaps,
         },
     }
 

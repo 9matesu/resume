@@ -163,7 +163,8 @@ def test_get_profile_exposes_source_file():
 
 def test_adapt_text_live():
     from app.config import get_settings
-    if not get_settings().ai_api_key:
+    from app.api.routes import _resolve_key_for
+    if not _resolve_key_for(get_settings()):
         pytest.skip("sem chave de API real; integração opt-in")
     client = TestClient(app)
     test_save_and_get_profile()
@@ -203,7 +204,8 @@ def test_polish_bullet_without_key_fails_loudly(monkeypatch):
 
 def test_polish_bullet_live():
     from app.config import get_settings
-    if not get_settings().ai_api_key:
+    from app.api.routes import _resolve_key_for
+    if not _resolve_key_for(get_settings()):
         pytest.skip("sem chave de API real; integração opt-in")
     client = TestClient(app)
     resp = client.post("/api/polish-bullet", json={
@@ -354,3 +356,104 @@ def test_resume_delete_removes_row_and_pdf(client=None):
     assert job_model.get_adapted_resume(rec["id"]) is None
     hist = c.get("/api/history").json()["history"]
     assert not any(h["id"] == rec["id"] for h in hist)
+
+
+def test_per_provider_api_keys_are_saved_and_resolved(monkeypatch):
+    """Chaves por provedor: salva gemini + openai, ativa openai -> resolve a
+    chave do openai; volta gemini -> resolve a do gemini. Legado: uma chave
+    salva sem provider vira fallback global."""
+    client = TestClient(app)
+    client.post("/api/settings", json={"ai_provider": "gemini",
+                                       "ai_api_key": "gk-gemini-key",
+                                       "provider_for_key": "gemini"})
+    client.post("/api/settings", json={"ai_provider": "openai",
+                                       "ai_api_key": "sk-openai-key",
+                                       "provider_for_key": "openai"})
+    from app.config import get_settings
+    s = get_settings()
+    assert s.ai_provider == "openai"
+    assert s.ai_api_key == "sk-openai-key"
+    s2 = get_settings()
+    s2.ai_provider = "gemini"
+    from app.api.routes import _resolve_key_for
+    assert _resolve_key_for(s2) == "gk-gemini-key"
+    # o global ainda existe como fallback para um provider sem chave propria
+    s3 = get_settings()
+    s3.ai_provider = "groq"
+    assert _resolve_key_for(s3) in ("sk-openai-key",)  # ultimo global salvo
+    # masked: /api/settings mostra a chave do provider ATIVO
+    masked = client.get("/api/settings").json()["ai_api_key_masked"]
+    assert masked.endswith("key") or "..." in masked
+    # nao poluir o DB compartilhado: os testes live pulam sem chave real
+    from app.api.routes import db as _db
+    _db.execute("DELETE FROM settings WHERE key LIKE 'api_key:%' OR key='ai_api_key'")
+
+
+def test_missing_keywords_case_insensitive():
+    from app.services.ai import prompts
+    kws = ["Python", "Kubernetes", "Kafka"]
+    profile = {"summary": "Senior dev", "skills": ["Python", "Kubernetes (K8s)"]}
+    assert prompts.missing_keywords(kws, profile) == ["Kafka"]
+
+
+def test_adapt_prompt_has_ats_rules_and_gaps():
+    from app.services.ai import prompts
+    system, _ = prompts.build_adapt_request({"personal": {}}, {"title": "Dev"}, lang="pt")
+    assert "honest_gaps" in system
+    assert "ATS" in system  # regra de terminologia espelhada
+
+
+def test_keyword_refine_request_lists_missing():
+    from app.services.ai import prompts
+    system, user = prompts.build_keyword_refine_request(
+        {"summary": "x"}, {"title": "T", "company": "C"}, ["Kafka", "Terraform"], "pt")
+    assert "Kafka" in user and "Terraform" in user
+    assert "never" in system.lower()  # guarda anti-invencao mantida
+
+
+def test_run_adapt_pipeline_refines_once(monkeypatch):
+    """1o chat deixa gaps; refine (2o chat) cobra as keywords faltantes."""
+    import json
+    from app.api import routes
+    from app.config import Settings
+    from app.models import profile as profile_model
+    from app.services.ai import gateway
+
+    client = TestClient(app)
+    client.post("/api/profile", json={"name": "T", "profile": profile_model.EMPTY_PROFILE})
+
+    first = json.dumps({"summary": "dev", "skills": ["Python"], "experience": [],
+                        "projects": [], "leadership": [], "match_score": 55,
+                        "applied_keywords": ["Python"], "honest_gaps": ["Kafka"]})
+    refined = json.dumps({"summary": "dev com Kafka", "skills": ["Python", "Kafka"],
+                          "experience": [], "projects": [], "leadership": [],
+                          "match_score": 70, "applied_keywords": ["Python", "Kafka"],
+                          "honest_gaps": []})
+    calls = {"n": 0}
+
+    job_json = json.dumps({"title": "Eng", "company": "ACME", "location": "SP",
+                           "workplace_type": "remote",
+                           "requirements": ["Kafka", "Python"],
+                           "description": "d", "keywords": ["Kafka", "Python"]})
+
+    class FakeProv:
+        def chat(self, system, user, *, expect_json=False):
+            if "extract_job" in user:
+                return job_json
+            calls["n"] += 1
+            return refined if calls["n"] > 1 else first
+
+    monkeypatch.setattr(routes, "get_settings",
+                        lambda: Settings(ai_provider="ollama", ai_model="m", ai_temperature=0.2))
+    from app.services.ai import vision
+    monkeypatch.setattr(gateway, "get_provider", lambda s: FakeProv())
+    monkeypatch.setattr(vision, "get_provider", lambda s: FakeProv())
+    monkeypatch.setattr(routes.latex_engine, "generate",
+                        lambda *a, **k: {"tex": "x", "pdf_path": "none.pdf", "lang": "en"})
+    resp = client.post("/api/adapt-text", json={"job_text": SAMPLE_JOB_TEXT})
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert calls["n"] == 2
+    ats = body["adaptation"]["ats"]
+    assert ats["refined"] is True
+    assert "Kafka" in ats["covered"]

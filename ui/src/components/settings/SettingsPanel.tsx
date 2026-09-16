@@ -70,7 +70,7 @@ export const SettingsPanel: React.FC = () => {
         ai_provider: aiProvider,
         ai_model: aiModel,
         ai_base_url: effectiveBaseUrl(),
-        ...(aiApiKey ? { ai_api_key: aiApiKey } : {}),
+        ...(aiApiKey ? { ai_api_key: aiApiKey, provider_for_key: aiProvider } : {}),
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);

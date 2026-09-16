@@ -186,7 +186,9 @@ def test_get_provider_new_cloud_ids_require_key(monkeypatch):
 
 def test_models_live():
     from app.config import get_settings
+    from app.api.routes import _resolve_key_for
     s = get_settings()
+    s.ai_api_key = _resolve_key_for(s) or s.ai_api_key
     if not s.ai_api_key:
         pytest.skip("sem chave de API real; integração opt-in")
     resp = client.post("/api/models", json={
