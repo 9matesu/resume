@@ -54,7 +54,7 @@ O entregável é sempre o currículo customizado.
    bullets, com junção de quebras de linha do PDF). Você revisa e confirma
    cada seção no passo 2 e configura a IA no passo 3. O perfil mestre fica
    no SQLite local e é a **única fonte de fatos** para todas as adaptações.
-   Para trocar o currículo: Config → "Trocar currículo base".
+   Para trocar o currículo: Ajustes → "Trocar currículo base".
 2. **Captura (modo inspetor)** — na página da vaga, clique em "Capturar Vaga"
    no painel ou `Alt+Shift+A`. O content script entra em **modo de seleção**:
    o mouse destaca exatamente o elemento sob o cursor (outline amarelo), o
