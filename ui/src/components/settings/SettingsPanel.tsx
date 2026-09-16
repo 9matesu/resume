@@ -55,7 +55,7 @@ export const SettingsPanel: React.FC = () => {
         ai_model: aiModel,
         ai_base_url: effectiveBaseUrl(),
       });
-      setTestResult({ ok: true, message: 'Conexão com a IA verificada com sucesso.' });
+      setTestResult({ ok: true, message: 'Conectou.' });
     } catch (err: any) {
       setTestResult({ ok: false, message: err.message || 'Falha na conexão' });
     } finally {
@@ -75,7 +75,7 @@ export const SettingsPanel: React.FC = () => {
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (err: any) {
-      alert('Falha ao salvar configurações: ' + err.message);
+      setTestResult({ ok: false, message: 'Não salvei: ' + err.message });
     } finally {
       setSaving(false);
     }
@@ -165,7 +165,7 @@ export const SettingsPanel: React.FC = () => {
                       await deleteMasterProfile();
                       window.location.reload();
                     } catch (err: any) {
-                      alert('Falha ao remover perfil: ' + err.message);
+                      setTestResult({ ok: false, message: 'Não removi o perfil: ' + err.message });
                       setSwapping(false);
                     }
                   }}

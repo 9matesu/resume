@@ -96,7 +96,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
       setSavedFlash(true);
       setTimeout(() => setSavedFlash(false), 2000);
     } catch (err: any) {
-      setSaveError(err.message || 'Falha ao salvar');
+      setSaveError(err.message || 'Não salvou.');
       setPdfStatus('error');
     } finally {
       setCompiling(false);
@@ -626,7 +626,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
             <span className="text-xs font-mono text-red-700">{saveError}</span>
           ) : (
             <span className="text-xs text-neutral-600 font-mono">
-              {compiling ? 'Compilando LaTeX...' : savedFlash ? 'Salvo no histórico' : 'Edições não salvas até você clicar'}
+              {compiling ? 'Compilando LaTeX…' : savedFlash ? 'Salvo no histórico' : 'Não salvou ainda.'}
             </span>
           )}
           <button
@@ -635,7 +635,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
             className="brutal-btn-yellow flex items-center gap-2 px-5 py-2.5 text-xs tracking-wider shrink-0"
           >
             {compiling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-            <span>{compiling ? 'Compilando PDF...' : 'Salvar e Atualizar PDF'}</span>
+            <span>{compiling ? 'Compilando PDF…' : 'Salvar e Atualizar PDF'}</span>
           </button>
         </div>
       </div>
@@ -666,7 +666,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
               <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-6 text-center">
                 <span className="brutal-tag brutal-tag-black">Resultado expirado</span>
                 <p className="text-xs font-mono text-neutral-600 max-w-xs">
-                  Este resultado não está mais no histórico. Capture a vaga novamente no painel.
+                  Este registro não existe mais no motor.
                 </p>
                 <button onClick={() => window.close()} className="brutal-btn px-4 py-2 text-[11px]">
                   Fechar aba
@@ -682,7 +682,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
                 )}
                 {pdfStatus === 'error' && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center bg-white">
-                    <span className="brutal-tag brutal-tag-black">Falha ao carregar</span>
+                    <span className="brutal-tag brutal-tag-black">Não abriu</span>
                     <p className="text-xs font-mono text-neutral-600 max-w-xs">
                       Não foi possível abrir a pré-visualização. Confira se o motor está rodando.
                     </p>

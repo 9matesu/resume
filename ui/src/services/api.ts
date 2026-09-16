@@ -108,13 +108,13 @@ function withAbsolutePdf(result: AdaptedResult): AdaptedResult {
 
 export async function fetchHealth(): Promise<AppHealth> {
   const res = await fetch(`${API_BASE}/health`);
-  if (!res.ok) throw new Error('Falha ao conectar no motor resuMe');
+  if (!res.ok) throw new Error('O motor não responde.');
   return res.json();
 }
 
 export async function fetchSettings(): Promise<AppSettings> {
   const res = await fetch(`${API_BASE}/settings`);
-  if (!res.ok) throw new Error('Falha ao buscar configuracoes');
+  if (!res.ok) throw new Error('Não li as configurações.');
   return res.json();
 }
 
@@ -124,7 +124,7 @@ export async function saveSettings(settings: Partial<AppSettings & { ai_api_key?
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(settings),
   });
-  if (!res.ok) throw new Error('Falha ao salvar configuracoes');
+  if (!res.ok) throw new Error('Não salvei as configurações.');
 }
 
 export async function testAiConnection(payload: { ai_provider: string; ai_api_key: string; ai_model?: string; ai_base_url?: string }): Promise<{ status: string }> {
@@ -135,7 +135,7 @@ export async function testAiConnection(payload: { ai_provider: string; ai_api_ke
   });
   if (!res.ok) {
     const err = await res.json();
-    throw new Error(err.detail || 'Teste de conexao falhou');
+    throw new Error(err.detail || 'A IA não respondeu.');
   }
   return res.json();
 }
@@ -176,7 +176,7 @@ export async function detectModels(payload: { ai_provider: string; ai_api_key?: 
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || 'Falha ao listar modelos');
+    throw new Error(err.detail || 'O provedor não listou modelos.');
   }
   const data = await res.json();
   return {
@@ -194,13 +194,13 @@ export interface MasterCandidate {
 
 export async function fetchMasterProfile(): Promise<{ has_profile: boolean; profile: CandidateProfile; candidate?: MasterCandidate }> {
   const res = await fetch(`${API_BASE}/profile`);
-  if (!res.ok) throw new Error('Falha ao buscar perfil');
+  if (!res.ok) throw new Error('Não li o perfil.');
   return res.json();
 }
 
 export async function deleteMasterProfile(): Promise<{ status: string; had_active: boolean }> {
   const res = await fetch(`${API_BASE}/profile`, { method: 'DELETE' });
-  if (!res.ok) throw new Error('Falha ao remover perfil mestre');
+  if (!res.ok) throw new Error('Não removi o perfil.');
   return res.json();
 }
 
@@ -215,7 +215,7 @@ export async function saveMasterProfile(profile: CandidateProfile): Promise<void
       profile,
     }),
   });
-  if (!res.ok) throw new Error('Falha ao salvar perfil mestre');
+  if (!res.ok) throw new Error('O perfil não foi salvo.');
 }
 
 export async function parseResumeFile(file: File): Promise<{ profile: CandidateProfile; raw_preview: string }> {
@@ -227,7 +227,7 @@ export async function parseResumeFile(file: File): Promise<{ profile: CandidateP
   });
   if (!res.ok) {
     const err = await res.json();
-    throw new Error(err.detail || 'Falha ao extrair texto do curriculo');
+    throw new Error(err.detail || 'Não consegui ler esse currículo.');
   }
   return res.json();
 }
@@ -240,7 +240,7 @@ export async function adaptText(jobText: string, pageTitle = '', pageUrl = ''): 
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || 'Falha ao adaptar vaga a partir do texto');
+    throw new Error(err.detail || 'A captura não virou currículo.');
   }
   return withAbsolutePdf(await res.json());
 }
@@ -256,7 +256,7 @@ export async function saveResumeEdit(
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || 'Salvou mas a recompilação falhou');
+    throw new Error(err.detail || 'Salvei, mas o PDF não compilou.');
   }
   const data = await res.json();
   return { ...data, pdf_url: absUrl(data.pdf_url) };
@@ -264,13 +264,13 @@ export async function saveResumeEdit(
 
 export async function fetchResumeDetail(id: string): Promise<AdaptedResult> {
   const res = await fetch(`${API_BASE}/resumes/${id}`);
-  if (!res.ok) throw new Error('Registro não encontrado');
+  if (!res.ok) throw new Error('Esse registro não existe mais.');
   return withAbsolutePdf(await res.json());
 }
 
 export async function deleteResume(id: string): Promise<void> {
   const res = await fetch(`${API_BASE}/resumes/${id}`, { method: 'DELETE' });
-  if (!res.ok) throw new Error('Falha ao remover');
+  if (!res.ok) throw new Error('Não removi.');
 }
 
 export async function polishBullet(bullet: string, roleContext?: string): Promise<string> {
@@ -279,7 +279,7 @@ export async function polishBullet(bullet: string, roleContext?: string): Promis
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ bullet, role_context: roleContext }),
   });
-  if (!res.ok) throw new Error('Falha ao aprimorar item');
+  if (!res.ok) throw new Error('A IA não melhorou esse item.');
   const data = await res.json();
   return data.polished;
 }
@@ -296,7 +296,7 @@ export async function fetchHistory(): Promise<Array<{
   created_at: string;
 }>> {
   const res = await fetch(`${API_BASE}/history`);
-  if (!res.ok) throw new Error('Falha ao buscar historico');
+  if (!res.ok) throw new Error('Não li o histórico.');
   const data = await res.json();
   return data.history;
 }

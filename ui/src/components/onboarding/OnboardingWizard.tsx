@@ -83,7 +83,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
       }));
       setStep(2);
     } catch (err: any) {
-      setUploadError(err.message || 'Falha ao extrair texto do currículo');
+      setUploadError(err.message || 'Não consegui ler esse currículo.');
     } finally {
       setUploading(false);
     }
@@ -121,9 +121,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         ai_model: aiModel,
         ai_base_url: aiBaseUrl || ent?.default_base_url || '',
       });
-      setAiTestResult({ ok: true, message: 'Conexão bem-sucedida. Modelo IA pronto.' });
+      setAiTestResult({ ok: true, message: aiModel ? 'Conectou com ' + aiModel + '.' : 'Conectou.' });
     } catch (err: any) {
-      setAiTestResult({ ok: false, message: err.message || 'Falha na conexão' });
+      setAiTestResult({ ok: false, message: err.message || 'A IA não respondeu.' });
     } finally {
       setTestingAi(false);
     }
@@ -221,7 +221,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
       });
       onComplete();
     } catch (err: any) {
-      alert('Falha ao salvar perfil: ' + err.message);
+      setUploadError('Não salvei o perfil: ' + err.message);
     }
   };
 
@@ -271,7 +271,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
               className="w-full bg-brutal-yellow border-2 border-black p-8 sm:p-12 text-center shadow-[10px_10px_0px_0px_#000000] cursor-pointer"
             >
               <h1 className="font-editorial text-4xl sm:text-5xl text-black font-normal leading-[1.05] tracking-tight mb-4">
-                {uploading ? 'Analisando seu currículo...' : 'Arraste seu currículo para cá'}
+                {uploading ? 'Lendo o currículo…' : 'Arraste seu currículo para cá'}
               </h1>
               <p className="font-mono text-xs sm:text-sm text-neutral-900 mb-6 max-w-lg mx-auto font-medium">
                 Compativel com{' '}
@@ -306,7 +306,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                   onClick={(e) => { e.stopPropagation(); setStep(2); }}
                   className="text-neutral-900 hover:underline font-bold hover:bg-black hover:text-white px-1 py-0.5 transition-colors cursor-pointer"
                 >
-                  Preencher Manualmente →
+                  Preencher à mão
                 </button>
               </div>
             </div>

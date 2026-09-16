@@ -60,7 +60,7 @@ export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
       }
     } catch (err: any) {
       setModels([]);
-      setDetectMsg(err.message || 'Falha ao listar modelos');
+      setDetectMsg(err.message || 'O provedor não listou modelos.');
     } finally {
       setDetecting(false);
     }
@@ -146,7 +146,7 @@ export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
             onClick={() => void autoDetect(provider, apiKey, baseUrl)}
             disabled={detecting}
             className="brutal-btn px-3 py-2 text-[11px] shrink-0 flex items-center gap-1.5"
-            title="Detectar modelos disponíveis no provedor"
+            title="Detectar modelos"
           >
             {detecting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             <span>{detecting ? 'Lendo...' : 'Detectar'}</span>

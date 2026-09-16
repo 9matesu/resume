@@ -10,19 +10,19 @@ export interface EnsureBackendResult {
 }
 
 export async function ensureBackend(): Promise<EnsureBackendResult> {
-  if (!isExtension) return { running: false, error: 'Fora da extensao.' };
+  if (!isExtension) return { running: false, error: 'Fora da extensão.' };
   try {
     const res = (await chrome.runtime.sendNativeMessage('com.resume.host', {
       action: 'ensure-backend',
     })) as EnsureBackendResult;
-    return res || { running: false, error: 'Host sem resposta.' };
+    return res || { running: false, error: 'O host não respondeu.' };
   } catch (err: any) {
     return { running: false, error: String(err?.message || err) };
   }
 }
 
 export async function startCaptureSelection(): Promise<void> {
-  if (!isExtension) throw new Error('Captura disponivel apenas dentro da extensao.');
+  if (!isExtension) throw new Error('Captura só funciona dentro da extensão.');
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) throw new Error('Nenhuma aba ativa encontrada.');
   let ack: { ok?: boolean; error?: string } | undefined;
@@ -31,9 +31,9 @@ export async function startCaptureSelection(): Promise<void> {
       | { ok?: boolean; error?: string }
       | undefined;
   } catch {
-    throw new Error('Recarregue a pagina da vaga (F5) e tente novamente.');
+    throw new Error('Recarregue a página da vaga (F5) e tente de novo.');
   }
-  if (!ack?.ok) throw new Error(ack?.error || 'Falha ao iniciar a selecao do painel.');
+  if (!ack?.ok) throw new Error(ack?.error || 'Não deu para selecionar o painel.');
 }
 
 export function onCaptureResult(

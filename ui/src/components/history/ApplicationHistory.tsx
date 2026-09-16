@@ -24,7 +24,7 @@ export const ApplicationHistory: React.FC = () => {
       const data = await fetchHistory();
       setHistory(data);
     } catch (err) {
-      console.error('Failed to load history:', err);
+      console.error('history load failed:', err);
     } finally {
       setLoading(false);
     }
