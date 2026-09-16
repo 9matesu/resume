@@ -133,7 +133,7 @@ export function SidePanelApp() {
     setResult(null);
     try {
       await startCaptureSelection();
-      setStatusMsg('Clique no painel → edite a prévia se quiser → CAPTURAR (Esc cancela)');
+      setStatusMsg('Clique no painel da vaga. Edite a prévia se quiser e confirme. Esc cancela.');
     } catch (e: any) {
       setError(e.message || 'Falha ao iniciar a captura');
       setBusy(false);
@@ -239,7 +239,7 @@ export function SidePanelApp() {
               <p className="text-[11px] font-mono mt-2 leading-relaxed">
                 {busy
                   ? statusMsg || 'Processando...'
-                  : 'Destaca os paineis da pagina: clique para ver a prévia e confirmar a captura.'}
+                  : 'Destaca os painéis da página. Clique no painel da vaga para conferir o texto antes de capturar.'}
               </p>
             </button>
 
