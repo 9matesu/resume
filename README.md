@@ -6,7 +6,7 @@ envia o texto ao motor local, que extrai os dados com IA, customiza o
 **currículo base do onboarding**, compila o PDF em LaTeX e registra no histórico.
 
 **Download para usuários**: [página do resuMe](https://matesu.me/resume)
-→ botão "Instalar extensão" (`resuMe-1.1.0-setup.exe`; há também o zip portável:
+→ botão "Instalar extensão" (`resuMe-1.2.0-setup.exe`; há também o zip portável:
 extensão + motor + Python embutido + Tectonic). Instruções em
 [docs/INSTALACAO.md](docs/INSTALACAO.md).
 
