@@ -13,14 +13,14 @@ test('pt-BR + meta viewport + title resuMe', () => {
   assert.match(html, /<title>resuMe/);
 });
 test('F2: CTA unico Install aponta para o setup .exe do release (>=2x)', () => {
-  assert.match(html, /releases\/download\/v1\.1\.0\/resuMe-1\.1\.0-setup\.exe/);
+  assert.match(html, /releases\/download\/v1\.2\.0\/resuMe-1\.2\.0-setup\.exe/);
   assert.ok((html.match(/install-cta/g) || []).length >= 2);
   assert.ok(!/baixar-cta/.test(html), 'baixar-cta foi substituido');
 });
 test('F2: dialog howto in-page + copy do caminho; zip fica rota secundaria', () => {
   assert.match(html, /<dialog id="howto"/);
   assert.match(js, /showModal/);
-  assert.match(html, /resuMe-1\.1\.0-windows-x64\.zip/);
+  assert.match(html, /resuMe-1\.2\.0-windows-x64\.zip/);
 });
 test('V3: hero full — video cobre toda a box, gradiente L->R, texto na extrema esquerda', () => {
   assert.match(html, /class="hero-bg"[\s\S]{0,400}?assets\/demo\.mp4/);
