@@ -213,7 +213,7 @@ def test_compile_pdf_retries_transient_failure(tmp_path, monkeypatch):
             stderr = ""
 
         out = Path(kw["cwd"])
-        (out / "resume.pdf").write_bytes(b"%PDF-1.4 fake")
+        (out / "resume.pdf").write_bytes(b"%PDF-1.4 fake" + b"x" * 3000)
         return R()
 
     monkeypatch.setattr(engine.subprocess, "run", fake_run)

@@ -16,6 +16,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from ...config import BIN_DIR, OUTPUT_DIR, TEMPLATE_DIR
 from .filenames import cv_filename
+from .validation import validate_pdf, ValidationError
 
 
 class LatexError(Exception):
@@ -242,11 +243,13 @@ def download_tectonic_if_missing() -> str | None:
     return None
 
 
-def compile_pdf(tex_source: str, workdir: Path) -> Path:
+def compile_pdf(tex_source: str, workdir: Path, candidate_name: str | None = None) -> Path:
     """Run Tectonic or pdflatex in an isolated temp dir, copy PDF out.
 
     Duas tentativas: falhas transitórias de compilador (lock do MiKTeX,
     varredura de antivírus, timeout) não devem derrubar a captura inteira.
+    O PDF final passa pelo gate de validação (tamanho, header, páginas e,
+    quando o nome é conhecido, nome do candidato no tex).
     """
     tex_path = workdir / "resume.tex"
     tex_path.write_text(tex_source, encoding="utf-8")
@@ -291,6 +294,10 @@ def compile_pdf(tex_source: str, workdir: Path) -> Path:
                     raise LatexError(f"{comp_type} produced no PDF", transient=False)
                 pdf_out = workdir / "resume.pdf"
                 shutil.copyfile(pdf_src, pdf_out)
+                try:
+                    validate_pdf(pdf_out, tex_source, candidate_name)
+                except ValidationError as e:
+                    raise LatexError(f"PDF failed validation: {e}", transient=False)
                 return pdf_out
         except subprocess.TimeoutExpired as e:
             last_err = LatexError(f"{comp_type} timed out after {e} on attempt {attempt}", transient=True)
@@ -317,7 +324,8 @@ def generate(template: str, resume: dict, job: dict, batch_label: str,
     lang = detect_language(job)
     tex = render_tex(template, resume, job, lang=lang)
     (out_dir / "resume.tex").write_text(tex, encoding="utf-8")
-    pdf = compile_pdf(tex, out_dir)
+    pdf = compile_pdf(tex, out_dir,
+                      candidate_name=(resume.get("personal") or {}).get("name", ""))
     # Canonical per-resume filename: CVMateus-Seguranca-da-Informacao.pdf
     try:
         final_name = cv_filename(

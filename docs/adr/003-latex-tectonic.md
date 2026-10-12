@@ -13,5 +13,5 @@ Ordem de compilador: tectonic.exe empacotado, depois tectonic no PATH, depois pd
 Primeira execução pode baixar o Tectonic; lock do MiKTeX ou antivírus transitório não derruba a adaptação; logs de erro retornam apenas a cauda para não vazar o .tex inteiro.
 
 ## Arquivos
-- backend/app/services/latex/engine.py:215 (find_compiler), backend/app/services/latex/engine.py:266 (2 tentativas)
-- backend/app/services/latex/engine.py:270 (ramo tectonic), backend/app/services/latex/engine.py:279 (pdflatex 2 passes), backend/app/services/latex/engine.py:295 (timeout transitório)
+- backend/app/services/latex/engine.py:214 (find_compiler), backend/app/services/latex/engine.py:269 (2 tentativas)
+- backend/app/services/latex/engine.py:273 (ramo tectonic), backend/app/services/latex/engine.py:282 (pdflatex 2 passes), backend/app/services/latex/engine.py:302 (timeout transitório)

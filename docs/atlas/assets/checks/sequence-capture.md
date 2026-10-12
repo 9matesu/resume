@@ -28,9 +28,9 @@ Read the render at full width:
 | ---- | ------ | -------- | -------- |
 | `auto_capture` | `ui/src/SidePanelApp.tsx:160` | yes | yes |
 | `send_msg` | `ui/src/chrome.ts:45` | yes | yes |
-| `job_text` | `extension/content.js:503` | yes | yes |
+| `job_text` | `extension/content.js:407` | yes | yes |
 
-Grep hits: `handleAutoCapture` at SidePanelApp.tsx:160 calls `startAutoCapture()` at SidePanelApp.tsx:166, `chrome.tabs.sendMessage(tab.id, { type: 'resume-capture-auto' })` at chrome.ts:45 into the listener at content.js:493, auto POST at content.js:503 into `@router.post("/adapt-text")` at routes.py:363. Failure branch matches `body.length < 80` at content.js:405 and the short-text 400 at routes.py:367.
+Grep hits: `handleAutoCapture` at SidePanelApp.tsx:160 calls `startAutoCapture()` at SidePanelApp.tsx:166, `chrome.tabs.sendMessage(tab.id, { type: 'resume-capture-auto' })` at chrome.ts:45 into the listener at content.js:497, auto POST at content.js:407 into `@router.post("/adapt-text")` at routes.py:377. Failure branch matches `body.length < 80` at content.js:441 and the short-text 400 at routes.py:381.
 
 ## Verdict
 

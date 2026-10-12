@@ -14,4 +14,4 @@ Menos keywords aplicadas, mais confiança; o front precisa exibir honest_gaps em
 
 ## Arquivos
 - backend/app/services/ai/prompts.py:22 (proibição de inventar), backend/app/services/ai/prompts.py:35 (honest_gaps), backend/app/services/ai/prompts.py:230 (KEYWORD_REFINE_SUFFIX)
-- backend/app/api/routes.py:253 (_run_adapt_pipeline), backend/app/api/routes.py:283 (passe 2), backend/app/api/routes.py:281 (honest_gaps)
+- backend/app/api/routes.py:295 (_run_adapt_pipeline), backend/app/api/routes.py:279 (passe 2), backend/app/api/routes.py:321 (honest_gaps)

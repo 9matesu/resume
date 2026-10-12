@@ -1,6 +1,8 @@
-"""Canonical CV filenames + heuristic extraction fallback."""
+"""Canonical CV filenames + heuristic extraction fallback + PDF gate."""
 from app.services.latex.filenames import cv_filename, first_name, area_slug
 from app.services.ai.vision import heuristic_extract, merge_structured
+from app.services.latex.validation import validate_pdf, ValidationError
+import pytest
 
 
 def test_cv_filename_mateus_seguranca():
@@ -38,3 +40,17 @@ def test_merge_structured_prefers_jsonld_when_ai_empty():
     out = merge_structured(ai, {"title": "Analista SOC", "company": "Acme", "location": "Remoto"})
     assert out["title"] == "Analista SOC"
     assert out["company"] == "Acme"
+
+
+def test_validate_pdf_rejects_small_file(tmp_path):
+    p = tmp_path / "tiny.pdf"
+    p.write_bytes(b"%PDF-1.4 fake")
+    with pytest.raises(ValidationError):
+        validate_pdf(p, "tex", "Mateus")
+
+
+def test_validate_pdf_rejects_wrong_name(tmp_path):
+    p = tmp_path / "resume.pdf"
+    p.write_bytes(b"%PDF-1.4 " + b"x" * 3000)
+    with pytest.raises(ValidationError):
+        validate_pdf(p, "curriculo de outra pessoa", "Mateus")

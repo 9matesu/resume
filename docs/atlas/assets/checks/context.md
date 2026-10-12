@@ -26,9 +26,9 @@ Read the render at full width:
 
 | edge | source | sink hit | type hit |
 | ---- | ------ | -------- | -------- |
-| `job_text` | `extension/content.js:503` | yes | yes |
+| `job_text` | `extension/content.js:407` | yes | yes |
 | `prompt` | `backend/app/services/ai/gateway.py:336` | yes | yes |
-| `pdf_url` | `backend/app/api/routes.py:474` | yes | yes |
+| `pdf_url` | `backend/app/api/routes.py:490` | yes | yes |
 
 Grep hits: `fetch(BACKEND + "/api/adapt-text"` at content.js:503, `PROVIDER_CATALOG = [` at gateway.py:336, `@router.get("/resumes/{res_id}/pdf")` at routes.py:474. Types match `flux.json` entries `auto-post`, `chat-adapt`, `get-pdf`.
 

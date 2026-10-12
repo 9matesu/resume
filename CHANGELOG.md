@@ -2,6 +2,16 @@
 
 ## [unreleased]
 
+### Revisão de arquitetura
+
+- Gate de PDF ligado: `compile_pdf` valida todo PDF (tamanho, header,
+  páginas, nome do candidato). Vale para captura e Estúdio.
+- `postAdapt` único no content script; `_refine_keywords` e `_clamp_score`
+  extraídos no pipeline, sem mudar comportamento.
+- `conftest.py` com `init_db`: a suite passa em qualquer ordem.
+- `AGENTS.md` na raiz com mapa, regras e comandos.
+- `docs/arquitetura-revisao.md` mais `docs/revisao-arquitetura.pdf`.
+
 ### Added
 
 - **Captura automática da vaga**: o botão "Capturar Vaga" lê a página

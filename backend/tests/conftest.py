@@ -10,3 +10,10 @@ import tempfile
 
 _tmp = tempfile.mkdtemp(prefix="resume_test_")
 os.environ["RESUME_DATA_DIR"] = _tmp
+
+# Tables must exist before any test touches settings/jobs: the app creates
+# them in lifespan, which never runs under pytest. Without this, any test
+# file executed without test_api.py first fails with "no such table".
+from app import db as _db
+
+_db.init_db()

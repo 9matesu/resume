@@ -26,11 +26,11 @@ Read the render at full width:
 
 | edge | source | sink hit | type hit |
 | ---- | ------ | -------- | -------- |
-| `calls` | `backend/app/api/routes.py:372` | yes | yes |
-| `saves` | `backend/app/api/routes.py:322` | yes | yes |
+| `calls` | `backend/app/api/routes.py:386` | yes | yes |
+| `saves` | `backend/app/api/routes.py:336` | yes | yes |
 | `spawn` | `native-host/host_main.py:175` | yes | yes |
 
-Grep hits: `job_data = vision.extract_job_from_text(` at routes.py:372 into `def generate(` at engine.py:311, `res_rec = job_model.save_adapted_resume(` at routes.py:322 into `def save_adapted_resume` at job.py:42, `subprocess.Popen(` at host_main.py:175 into `backend/run.py:1`. Types match `flux.json`.
+Grep hits: `job_data = vision.extract_job_from_text(` at routes.py:386 into `def generate(` at engine.py:318, `res_rec = job_model.save_adapted_resume(` at routes.py:336 into `def save_adapted_resume` at job.py:42, `subprocess.Popen(` at host_main.py:175 into `backend/run.py:1`. Types match `flux.json`.
 
 ## Verdict
 

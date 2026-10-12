@@ -250,6 +250,48 @@ def _merge_tailored(master_profile: dict, adapted_json: dict) -> dict:
     }
 
 
+def _clamp_score(raw) -> float:
+    try:
+        return max(0.0, min(100.0, float(raw or 0.0)))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _refine_keywords(prov, master_profile: dict, job_data: dict,
+                     adapted_json: dict, lang: str) -> dict:
+    """Passe 2 (um só): caça keywords ATS que ficaram de fora, sem inventar.
+
+    Retorna o estado final da adaptação. Nunca falha: se o refine quebrar,
+    a primeira adaptação segue utilizável.
+    """
+    tailored = _merge_tailored(master_profile, adapted_json)
+    wanted = list(dict.fromkeys([str(k) for k in (job_data.get("keywords") or [])]
+                                + [str(x) for x in (job_data.get("requirements") or [])]))[:30]
+    missing = prompts.missing_keywords(wanted, tailored)
+    state = {
+        "adapted_json": adapted_json, "tailored": tailored,
+        "wanted": wanted, "missing": missing, "refined": False,
+        "match_score": _clamp_score(adapted_json.get("match_score")),
+    }
+    if not missing:
+        return state
+    try:
+        sys2, user2 = prompts.build_keyword_refine_request(
+            master_profile, job_data, missing, lang=lang)
+        refined = gateway.AIProvider._extract_json(prov.chat(sys2, user2, expect_json=True))
+        missing_after = set(prompts.missing_keywords(
+            wanted, _merge_tailored(master_profile, refined)))
+        if len(missing_after) < len(set(missing)):
+            state.update(adapted_json=refined,
+                         tailored=_merge_tailored(master_profile, refined),
+                         missing=sorted(missing_after), refined=True,
+                         match_score=max(state["match_score"],
+                                         _clamp_score(refined.get("match_score"))))
+    except Exception:
+        pass
+    return state
+
+
 def _run_adapt_pipeline(job_data: dict, captured_chars: int | None = None) -> dict:
     """Shared pipeline: adapt master profile against job, compile LaTeX, save history."""
     cand = profile_model.get_active()
@@ -271,40 +313,12 @@ def _run_adapt_pipeline(job_data: dict, captured_chars: int | None = None) -> di
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"A adaptação quebrou: {e}")
 
-    tailored_profile = _merge_tailored(master_profile, adapted_json)
-    try:
-        match_score = float(adapted_json.get("match_score") or 0.0)
-    except (TypeError, ValueError):
-        match_score = 0.0
-    match_score = max(0.0, min(100.0, match_score))
+    st = _refine_keywords(prov, master_profile, job_data, adapted_json, lang)
+    adapted_json, tailored_profile = st["adapted_json"], st["tailored"]
+    wanted, missing, ats_refined = st["wanted"], st["missing"], st["refined"]
+    match_score = st["match_score"]
     applied_keywords = [str(k) for k in (adapted_json.get("applied_keywords") or [])][:20]
     honest_gaps = [str(g) for g in (adapted_json.get("honest_gaps") or [])][:10]
-
-    # Passe 2 (uma so): cacar keywords ATS que ficaram de fora, sem inventar.
-    wanted = list(dict.fromkeys([str(k) for k in (job_data.get("keywords") or [])]
-                                + [str(x) for x in (job_data.get("requirements") or [])]))[:30]
-    missing = prompts.missing_keywords(wanted, tailored_profile)
-    ats_refined = False
-    if missing:
-        try:
-            sys2, user2 = prompts.build_keyword_refine_request(
-                master_profile, job_data, missing, lang=lang)
-            refined_raw = prov.chat(sys2, user2, expect_json=True)
-            refined_json = gateway.AIProvider._extract_json(refined_raw)
-            missing_after = set(prompts.missing_keywords(wanted, _merge_tailored(master_profile, refined_json)))
-            if len(missing_after) < len(set(missing)):
-                adapted_json = refined_json
-                tailored_profile = _merge_tailored(master_profile, refined_json)
-                try:
-                    match_score = max(match_score, min(100.0, float(refined_json.get("match_score") or 0.0)))
-                except (TypeError, ValueError):
-                    pass
-                applied_keywords = [str(k) for k in (refined_json.get("applied_keywords") or [])][:20]
-                honest_gaps = [str(g) for g in (refined_json.get("honest_gaps") or [])][:10]
-                ats_refined = True
-                missing = sorted(missing_after)
-        except Exception:
-            pass  # refine e bonus; a 1a adaptacao ja e utilizavel
     covered = [k for k in wanted if k not in missing] if wanted else applied_keywords
     coverage = round(100.0 * len(covered) / len(wanted), 1) if wanted else match_score
 
@@ -455,8 +469,10 @@ def update_resume(res_id: str, payload: ResumeUpdatePayload):
         tex = latex_engine.render_tex(s.default_template, payload.profile, job_rec, lang=s.default_lang)
     out_dir = (Path(res["pdf_path"]).parent if res["pdf_path"]
                else OUTPUT_DIR / "resumes" / res_id)
+    prof = payload.profile if payload.profile is not None else (res.get("tailored_profile") or {})
     try:
-        pdf_path = latex_engine.compile_pdf(tex, out_dir)
+        pdf_path = latex_engine.compile_pdf(
+            tex, out_dir, candidate_name=(prof.get("personal") or {}).get("name", ""))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"O LaTeX não compilou: {e}")
     cols: dict = {"tex_code": tex, "pdf_path": str(pdf_path)}

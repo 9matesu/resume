@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<title>resuMe — revisão de arquitetura</title>
+<style>
+  @page { size: A4; margin: 22mm 18mm; }
+  body { font-family: Georgia, 'Times New Roman', serif; color: #111; line-height: 1.55; font-size: 12pt; }
+  h1 { font-size: 22pt; margin: 0 0 4px; }
+  .meta { color: #555; font-size: 10pt; margin-bottom: 24px; }
+  h2 { font-size: 14pt; margin: 26px 0 8px; border-bottom: 2px solid #111; padding-bottom: 4px; }
+  p, li { margin: 6px 0; }
+  ul, ol { padding-left: 20px; }
+  code { font-family: Consolas, Menlo, monospace; font-size: 10pt; background: #f2f2f2; padding: 1px 4px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 10.5pt; }
+  th, td { border: 1px solid #999; padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { background: #111; color: #fff; }
+  .box { border: 2px solid #111; padding: 10px 14px; margin: 12px 0; }
+</style>
+</head>
+<body>
+<h1>resuMe — revisão de arquitetura</h1>
+<p class="meta">12 de outubro de 2026 · escopo: extensão, interface, motor local e testes · método: revisão estrutural, comportamento preservado</p>
+
+<h2>Resumo</h2>
+<p>A revisão encontrou cinco problemas estruturais e corrigiu todos sem mudar comportamento: um gate de PDF que existia mas ninguém chamava, o mesmo POST de captura escrito duas vezes, um pipeline longo demais, testes que só passavam em uma ordem e um reexport sem uso documentado. A suite agora passa inteira em qualquer ordem: 63 testes Python, 27 estáticos e 4 E2E.</p>
+
+<h2>O que mudou e por quê</h2>
+<table>
+<tr><th>Mudança</th><th>Por quê</th><th>Onde</th></tr>
+<tr><td>Gate de PDF ligado em todo <code>compile_pdf</code></td><td>PDF quebrado ou com nome trocado chegava ao usuário</td><td><code>engine.py</code>, <code>validation.py</code></td></tr>
+<tr><td>Função única <code>postAdapt</code></td><td>O mesmo POST com retry existia duas vezes no content script</td><td><code>content.js</code></td></tr>
+<tr><td><code>_refine_keywords</code> e <code>_clamp_score</code> extraídos</td><td>O pipeline misturava adaptação, segundo passe e score em dois pontos</td><td><code>routes.py</code></td></tr>
+<tr><td><code>init_db</code> no conftest</td><td>Testes falhavam fora de ordem com <code>no such table</code></td><td><code>tests/conftest.py</code></td></tr>
+<tr><td><code>AGENTS.md</code> na raiz</td><td>Agentes precisam das regras sem adivinhar</td><td>raiz do repo</td></tr>
+</table>
+
+<h2>Arquitetura antes e depois</h2>
+<p>Antes: captura com dois caminhos de envio, pipeline com o segundo passe inline, PDF sem checagem, testes dependentes de ordem. Depois: um caminho de envio por lado, refino isolado e infalível por desenho, todo PDF validado no mesmo ponto, suite independente de ordem.</p>
+<div class="box">Regra de ouro: um só caminho de envio (<code>postAdapt</code> no front, <code>_run_adapt_pipeline</code> no motor) e uma só validação (<code>compile_pdf</code>). O resto segue daí.</div>
+
+<h2>Regras para agentes</h2>
+<ol>
+<li>Não crie segundo caminho de captura nem segunda validação de PDF.</li>
+<li>O nome de CV existe em Python e TypeScript: mudou um, mude o outro e rode os dois testes.</li>
+<li>Heurística sem rede e sem invenção; erro de IA vira 400 com frase simples.</li>
+<li>Front fala HTTP só via <code>services/api.ts</code>.</li>
+<li>Nenhum arquivo passa de 1000 linhas sem decompor (<code>OnboardingWizard.tsx</code> está em 948).</li>
+<li>Código morto sai ou liga no pipeline.</li>
+</ol>
+
+<h2>Como verificar</h2>
+<ul>
+<li><code>cd backend</code>, pytest: 63 passed.</li>
+<li><code>node --test</code> nos quatro pacotes: 27 passed.</li>
+<li><code>cd ui</code>, <code>npx playwright test</code>: 4 passed, com screenshots.</li>
+<li>Gate do PDF: <code>test_validate_pdf_rejects_small_file</code> e <code>test_validate_pdf_rejects_wrong_name</code>.</li>
+</ul>
+<p>Documento completo em <code>docs/arquitetura-revisao.md</code>. Mapa do código em <code>docs/atlas/</code>.</p>
+</body>
+</html>

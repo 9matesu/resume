@@ -399,15 +399,8 @@
     } catch {}
   }
 
-  async function finish(el, text) {
-    const body = (text !== undefined ? text : textOf(el)).trim();
-    cleanup();
-    if (body.length < 80) {
-      report({ ok: false, error: "O texto selecionado é muito curto para extrair a vaga." });
-      return;
-    }
-    const structured = readStructured();
-    // 2 tentativas: queda transitória do motor não derruba a captura.
+  // Caminho único de envio: manual e automático usam o mesmo retry.
+  async function postAdapt(body, structured, mode) {
     let lastErr = "Não foi possível conectar ao resuMe. Recarregue a extensão.";
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
@@ -419,7 +412,7 @@
             page_title: document.title,
             page_url: location.href,
             structured,
-            mode: "manual",
+            mode,
           }),
         });
         if (!res.ok) {
@@ -440,6 +433,17 @@
       }
     }
     report({ ok: false, error: lastErr });
+  }
+
+  async function finish(el, text) {
+    const body = (text !== undefined ? text : textOf(el)).trim();
+    cleanup();
+    if (body.length < 80) {
+      report({ ok: false, error: "O texto selecionado é muito curto para extrair a vaga." });
+      return;
+    }
+    // 2 tentativas: queda transitória do motor não derruba a captura.
+    await postAdapt(body, readStructured(), "manual");
   }
 
   function startSelection(sendResponse) {
@@ -500,24 +504,7 @@
               return;
             }
             sendResponse({ ok: true, mode: "auto", confidence });
-            const res = await fetch(BACKEND + "/api/adapt-text", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                job_text: text.slice(0, 30000),
-                page_title: document.title,
-                page_url: location.href,
-                structured,
-                mode: "auto",
-              }),
-            });
-            if (!res.ok) {
-              let detail = String(res.status);
-              try { detail = (await res.json()).detail || detail; } catch {}
-              report({ ok: false, error: detail });
-              return;
-            }
-            report({ ok: true, result: await res.json() });
+            await postAdapt(text.trim(), structured, "auto");
           } catch {
             report({ ok: false, error: "Não foi possível conectar ao resuMe. Recarregue a extensão." });
           }

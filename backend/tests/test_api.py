@@ -300,7 +300,7 @@ def _make_resume(client):
     j = job_model.save_job({"title": "Eng", "company": "ACME"})
     fake_pdf = b"%PDF-1.4 fake\n"
 
-    def _fake_compile(tex, out_dir):
+    def _fake_compile(tex, out_dir, candidate_name=None):
         out_dir.mkdir(parents=True, exist_ok=True)
         p = out_dir / "resume.pdf"
         p.write_bytes(fake_pdf)
@@ -335,7 +335,11 @@ def test_resume_detail_roundtrip(client=None):
 def test_resume_update_persists(client=None):
     c = TestClient(app)
     rec = _make_resume(c)
-    new_tex = rec["tex_code"].replace("\documentclass", "% edited\n\documentclass", 1)
+    # Gate de validacao exige PDF realista (> 2048 bytes): o perfil vazio
+    # compila pequeno demais, entao o tex de teste ganha conteudo renderizado.
+    padding = "".join(f"Linha de conteudo {i}.\\\\\n" for i in range(60))
+    new_tex = rec["tex_code"].replace("\\end{document}", padding + "\\end{document}", 1)
+    new_tex = new_tex.replace("\\documentclass", "% edited\n\\documentclass", 1)
     resp = c.put(f"/api/resumes/{rec['id']}", json={"tex_code": new_tex})
     assert resp.status_code == 200, resp.text
     assert resp.json()["pdf_url"].startswith(f"/api/resumes/{rec['id']}/pdf")

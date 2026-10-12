@@ -27,10 +27,10 @@ Read the render at full width:
 | edge | source | sink hit | type hit |
 | ---- | ------ | -------- | -------- |
 | `fallback` | `backend/app/services/ai/vision.py:119` | yes | yes |
-| `tailored` | `backend/app/api/routes.py:265` | yes | yes |
-| `tex_src` | `backend/app/services/latex/engine.py:311` | yes | yes |
+| `tailored` | `backend/app/api/routes.py:307` | yes | yes |
+| `tex_src` | `backend/app/services/latex/engine.py:318` | yes | yes |
 
-Grep hits: `job = heuristic_extract(job_text` at vision.py:119 into `def heuristic_extract` at vision.py:31, pass 1 chat at routes.py:265 into pass 2 `build_keyword_refine_request` at routes.py:292, `render_tex` inside `def generate` at engine.py:311 into `def compile_pdf` at engine.py:245. Types match `flux.json` entries `heuristic-fallback`, `chat-adapt`, `latex-generate`.
+Grep hits: `job = heuristic_extract(job_text` at vision.py:119 into `def heuristic_extract` at vision.py:31, pass 1 chat at routes.py:307 into pass 2 `build_keyword_refine_request` at routes.py:279, `render_tex` inside `def generate` at engine.py:318 into `def compile_pdf` at engine.py:246. Types match `flux.json` entries `heuristic-fallback`, `chat-adapt`, `latex-generate`.
 
 ## Verdict
 

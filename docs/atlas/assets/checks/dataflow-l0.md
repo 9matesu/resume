@@ -26,11 +26,11 @@ Read the render at full width:
 
 | edge | source | sink hit | type hit |
 | ---- | ------ | -------- | -------- |
-| `job_text` | `extension/content.js:503` | yes | yes |
+| `job_text` | `extension/content.js:407` | yes | yes |
 | `tailored` | `backend/app/api/routes.py:265` | yes | yes |
 | `pdf_path` | `backend/app/services/latex/engine.py:311` | yes | yes |
 
-Grep hits: POST body at content.js:503 into `@router.post("/adapt-text")` at routes.py:363, `prov.chat(prompts.SYSTEM_RULES` at routes.py:265 into `def generate(` at engine.py:311, out dir plus rename at engine.py:311 into `def save_adapted_resume` at job.py:42. Types match `flux.json`.
+Grep hits: POST body at content.js:503 into `@router.post("/adapt-text")` at routes.py:377, `prov.chat(prompts.SYSTEM_RULES` at routes.py:265 into `def generate(` at engine.py:311, out dir plus rename at engine.py:311 into `def save_adapted_resume` at job.py:42. Types match `flux.json`.
 
 ## Verdict
 
