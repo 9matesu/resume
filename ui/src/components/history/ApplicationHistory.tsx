@@ -12,6 +12,7 @@ import {
   resumePdfUrl,
 } from '../../services/api';
 import { saveStudioPayload, openStudioTab } from '../../chrome';
+import { cvFilename } from '../../cvFilename';
 
 export const ApplicationHistory: React.FC = () => {
   const [history, setHistory] = useState<any[]>([]);
@@ -95,7 +96,7 @@ export const ApplicationHistory: React.FC = () => {
                   <div className="inline-flex items-center gap-2">
                     <a
                       href={resumePdfUrl(item.id)}
-                      download={`Curriculo_${item.company}_${item.title}.pdf`}
+                      download={item.pdf_filename || cvFilename('', item.title, item.company)}
                       className="brutal-btn flex items-center gap-1 px-3 py-1 text-[11px]"
                     >
                       <Download className="w-3 h-3" />

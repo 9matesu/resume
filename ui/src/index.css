@@ -2,9 +2,7 @@
 
 /* resuMe typography — TWO families only:
    - Instrument Serif (OFL): editorial headlines
-   - Schibsted Grotesk (OFL): everything functional. Variable woff2 = one file.
-   Switzer is visually near-identical but its ITF-FFL license forbids bundling
-   in a distributed zip; it is used on the website via Fontshare CDN only. */
+   - Schibsted Grotesk (OFL): everything functional. Variable woff2 = one file. */
 @font-face {
   font-family: 'Schibsted Grotesk';
   font-style: normal;
@@ -28,8 +26,16 @@
 }
 
 @theme {
-  --font-sans: 'Schibsted Grotesk', system-ui, sans-serif;
-  --font-mono: 'Schibsted Grotesk', system-ui, sans-serif; /* intentional: the product has only two families */
+  --font-sans: 'Schibsted Grotesk', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
+  --radius-soft: 14px;
+  --radius-pill: 999px;
+}
+
+:root {
+  --resume-font: 'Schibsted Grotesk', system-ui, -apple-system, sans-serif;
+  --resume-radius: 14px;
+  --resume-radius-pill: 999px;
 }
 
 @layer base {
@@ -52,6 +58,7 @@
   letter-spacing: -0.02em;
 }
 
+
 .bg-brutal-yellow {
   background-color: #ffff00;
 }
@@ -59,12 +66,14 @@
 .brutal-card {
   background-color: #ffffff;
   border: 2px solid #000000;
+  border-radius: var(--resume-radius);
   box-shadow: 4px 4px 0px 0px #000000;
 }
 
 .brutal-yellow-card {
   background-color: #ffff00;
   border: 2px solid #000000;
+  border-radius: calc(var(--resume-radius) + 4px);
   box-shadow: 8px 8px 0px 0px #000000;
 }
 
@@ -72,6 +81,7 @@
   background-color: #ffffff;
   color: #000000;
   border: 2px solid #000000;
+  border-radius: 10px;
   font-family: inherit;
   font-weight: 700;
   text-transform: uppercase;
@@ -94,6 +104,7 @@
   background-color: #ffff00;
   color: #000000;
   border: 2px solid #000000;
+  border-radius: 10px;
   font-family: inherit;
   font-weight: 700;
   text-transform: uppercase;
@@ -137,11 +148,11 @@
   background-color: #ffffff;
   color: #000000;
   border: 2px solid #000000;
+  border-radius: 10px;
   font-family: inherit;
   font-size: 12px;
   padding: 8px 10px;
   outline: none;
-  border-radius: 0;
 }
 
 .brutal-input:focus {
@@ -159,7 +170,7 @@
 
 select.brutal-input {
   cursor: pointer;
-  border-radius: 0;
+  border-radius: 10px;
   appearance: none;
   background-image: linear-gradient(45deg, transparent 50%, #000 50%), linear-gradient(135deg, #000 50%, transparent 50%);
   background-position: calc(100% - 16px) calc(50% + 1px), calc(100% - 11px) calc(50% + 1px);
@@ -177,9 +188,10 @@ textarea.brutal-input {
   align-items: center;
   gap: 6px;
   border: 1px solid #000000;
+  border-radius: var(--resume-radius-pill);
   background-color: #ffffff;
   color: #000000;
-  padding: 2px 8px;
+  padding: 2px 10px;
   font-family: inherit;
   font-size: 10px;
   font-weight: 700;

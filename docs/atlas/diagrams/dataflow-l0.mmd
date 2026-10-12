@@ -1,0 +1,26 @@
+flowchart LR
+direction LR
+subgraph FONTES["fontes"]
+PG["Pagina vaga<br/>content.js"]:::concrete
+PM["Perfil mestre<br/>profile.py"]:::concrete
+end
+subgraph MEIO["motor"]
+EX["Auto extract<br/>content.js"]:::concrete
+AP["Adapt pipeline<br/>routes.py"]:::concrete
+LT["Render compile<br/>engine.py"]:::concrete
+end
+subgraph SORV["sorvedouros"]
+PDF["PDF final<br/>filenames.py"]:::concrete
+SQL["SQLite<br/>job.py"]:::concrete
+UI["UI Studio<br/>StudioApp.tsx"]:::concrete
+end
+PG -->|job_html| EX
+EX -->|job_text| AP
+PM -->|profile| AP
+AP -->|tailored| LT
+LT -->|pdf_bytes| PDF
+LT -->|pdf_path| SQL
+AP -->|sql_row| SQL
+PDF -->|pdf_url| UI
+classDef abstract fill:#9AA0A6,stroke:#5F6368,color:#fff,fontStyle:italic
+classDef concrete fill:#ffffff,stroke:#8B1A1A,stroke-width:1px,color:#202124

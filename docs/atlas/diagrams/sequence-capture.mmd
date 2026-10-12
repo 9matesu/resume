@@ -1,0 +1,22 @@
+sequenceDiagram
+  participant U as User<br/>externo
+  participant SP as SidePanel<br/>SidePanel
+  participant CH as Chrome Tabs<br/>chrome.ts
+  participant CT as Content<br/>content.js
+  participant API as Motor API<br/>routes.py
+  participant VS as Vision<br/>vision.py
+  participant LT as LaTeX<br/>engine.py
+  SP ->> CH: auto_capture
+  CH ->> CT: send_msg
+  CT ->> CT: auto_extract
+  alt ok
+  CT ->> API: job_text
+  API ->> VS: extract_job
+  VS -->> API: job_data
+  API ->> LT: tex_compile
+  LT -->> API: pdf_bytes
+  API -->> SP: pdf_url
+  else falha
+  CT -->> SP: texto curto
+  API -->> SP: sem vaga
+  end

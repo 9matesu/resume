@@ -36,3 +36,15 @@ test('pending text tracks edits (getter or input listener)', () => {
 test('overlay fonts carry no Google-hosted family (offline-safe)', () => {
   assert.doesNotMatch(src, /Space Mono/);
 });
+
+test('auto-extract path exists (JSON-LD + site selectors + scoring)', () => {
+  assert.match(src, /readStructured/);
+  assert.match(src, /SITE_SELECTORS/);
+  assert.match(src, /resume-capture-auto/);
+  assert.match(src, /scoreCandidate/);
+});
+
+test('overlay uses single UI font + rounded corners (menos quadrado)', () => {
+  assert.match(src, /UI_FONT/);
+  assert.match(src, /border-radius:999px/);
+});

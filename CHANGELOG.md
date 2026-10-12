@@ -1,5 +1,35 @@
 # Changelog
 
+## [unreleased]
+
+### Added
+
+- **Captura automática da vaga**: o botão "Capturar Vaga" lê a página
+  sozinho (seletores por site — LinkedIn, Gupy, Indeed, Greenhouse…,
+  JSON-LD `JobPosting` + pontuação de blocos); se não achar com
+  confiança, cai para a seleção manual. `POST /api/adapt-text` aceita
+  `structured` + `mode`.
+- **Fallback heurístico sem IA**: sem chave ou com a IA fora do ar, a
+  extração usa regex determinístico (título/empresa/local/requisitos)
+  e ainda gera o CV em vez de falhar.
+- **Nome padrão de CV**: `CVMateus-Seguranca-da-Informacao.pdf`
+  (`CV<PrimeiroNome>-<Área>.pdf`, ASCII-safe) no disco, no header de
+  download e nos 3 botões de baixar (painel, Estúdio, Arquivo).
+- **Launcher leve**: `Abrir-resuMe.bat`/`.ps1` — sem pip/venv/build,
+  só garante o motor (exe do release ou Python embutido) e abre o
+  Chrome com a extensão.
+- **E2E Playwright com screenshots** (`ui/e2e/`, `npm run test:e2e`):
+  painel e Estúdio mockados — raio de borda, fonte uniforme, overflow
+  mobile e nome do CV. Já pegou e corrigiu 1 overflow de 58px no
+  Estúdio mobile.
+
+### Changed
+
+- **Design menos quadrado**: `--resume-radius` (14px cards/inputs,
+  10px botões, pill tags) e overlay da captura arredondado.
+- **Fontes uniformes**: Schibsted Grotesk em toda a UI e no overlay
+  da captura; `--font-mono` agora é mono real (só código LaTeX).
+
 ## [1.2.0] — 2026-09-16
 
 ### Added

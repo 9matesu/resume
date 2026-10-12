@@ -150,7 +150,7 @@ details p { margin: 0 0 14px; font-size: 14px; line-height: 1.7; color: #333; ma
 
 /* final CTA */
 .final { text-align: center; }
-.final h2 { font-size: clamp(32px, 5vw, 52px); margin-bottom: 24px; }
+.final h2 { font-size: clamp(28px, 4vw, 44px); margin-bottom: 24px; max-width: 20ch; margin-inline: auto; margin-bottom: 28px; }
 
 /* demo inline (section #como nao precisa — video grande no hero ja mostra;
    poster em secao propria para quem quer rever parado) */

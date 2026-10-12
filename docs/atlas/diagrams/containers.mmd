@@ -1,0 +1,39 @@
+classDiagram
+  direction TB
+  class Extension:::concrete {
+    +content.js
+  }
+  class SidePanel:::concrete {
+    +SidePanelApp
+  }
+  class Api:::concrete {
+    +routes.py
+  }
+  class Services:::concrete {
+    +engine.py
+  }
+  class Models:::concrete {
+    +job.py
+  }
+  class NativeHost:::concrete {
+    +host_main.py
+  }
+  class Scripts:::concrete {
+    +instalar.ps1
+  }
+  class AiGateway:::concrete {
+    +gateway.py
+  }
+  class HttpProvider:::concrete {
+    +gateway.py
+  }
+  Extension --> Api : job_text
+  SidePanel --> Api : http_json
+  Api --> Services : calls
+  Services --> Models : saves
+  NativeHost --> Api : spawn
+  Scripts --> NativeHost : installs
+  Api --> AiGateway : prompts
+  AiGateway <|-- HttpProvider : extends
+  classDef abstract fill:#9AA0A6,stroke:#5F6368,color:#fff,fontStyle:italic
+  classDef concrete fill:#ffffff,stroke:#8B1A1A,stroke-width:1px,color:#202124

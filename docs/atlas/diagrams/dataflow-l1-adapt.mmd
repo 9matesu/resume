@@ -1,0 +1,26 @@
+flowchart LR
+direction LR
+subgraph CAP["captura"]
+IN["Texto vaga<br/>content.js"]:::concrete
+EJ["Extract job<br/>vision.py"]:::concrete
+HE["Heuristica<br/>vision.py"]:::concrete
+end
+subgraph ADAPT["adaptacao"]
+CA["Chat adapt<br/>routes.py"]:::concrete
+KR["Keyword refine<br/>routes.py"]:::concrete
+end
+subgraph RENDER["latex"]
+RT["Render tex<br/>engine.py"]:::concrete
+CP["Compile pdf<br/>engine.py"]:::concrete
+SV["Save resume<br/>job.py"]:::concrete
+end
+IN -->|job_text| EJ
+EJ -->|fallback| HE
+EJ -->|job_data| CA
+HE -->|job_data| CA
+CA -->|tailored| KR
+KR -->|refined| RT
+RT -->|tex_src| CP
+CP -->|pdf_path| SV
+classDef abstract fill:#9AA0A6,stroke:#5F6368,color:#fff,fontStyle:italic
+classDef concrete fill:#ffffff,stroke:#8B1A1A,stroke-width:1px,color:#202124

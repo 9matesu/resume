@@ -36,6 +36,34 @@ export async function startCaptureSelection(): Promise<void> {
   if (!ack?.ok) throw new Error(ack?.error || 'Não deu para selecionar o painel.');
 }
 
+export async function startAutoCapture(): Promise<{ confidence?: number }> {
+  if (!isExtension) throw new Error('Captura só funciona dentro da extensão.');
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) throw new Error('Nenhuma aba ativa encontrada.');
+  let ack: { ok?: boolean; error?: string; confidence?: number; fallback?: string } | undefined;
+  try {
+    ack = (await chrome.tabs.sendMessage(tab.id, { type: 'resume-capture-auto' })) as typeof ack;
+  } catch {
+    throw new Error('Recarregue a página da vaga (F5) e tente de novo.');
+  }
+  if (!ack?.ok) {
+    const err: any = new Error(ack?.error || 'Não achei a vaga sozinho.');
+    err.fallback = (ack as any)?.fallback;
+    throw err;
+  }
+  return { confidence: ack?.confidence };
+}
+
+export async function cancelCaptureSelection(): Promise<void> {
+  if (!isExtension) return;
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab?.id) {
+      await chrome.tabs.sendMessage(tab.id, { type: 'resume-capture-cancel' }).catch(() => {});
+    }
+  } catch {}
+}
+
 export function onCaptureResult(
   onResult: (result: unknown) => void,
   onError: (message: string) => void,

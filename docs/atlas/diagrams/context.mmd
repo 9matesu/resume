@@ -1,0 +1,26 @@
+flowchart LR
+direction LR
+subgraph EXT["externos"]
+U["User<br/>externo"]:::abstract
+CH["Chrome<br/>chrome"]:::abstract
+VG["Vaga LinkedIn<br/>externo"]:::abstract
+AI["Provedor IA<br/>externo"]:::abstract
+TX["Tectonic<br/>externo"]:::abstract
+end
+subgraph REPO["repo"]
+E["Extension<br/>content.js"]:::concrete
+M["Motor API<br/>main.py"]:::concrete
+S["UI Studio<br/>StudioApp.tsx"]:::concrete
+end
+U -->|click_auto| E
+CH -->|tabs_msg| E
+VG -->|job_html| E
+E -->|job_text| M
+M -->|prompt| AI
+AI -->|json_out| M
+M -->|tex_src| TX
+TX -->|pdf_bytes| M
+M -->|pdf_url| S
+S -->|pdf_view| U
+classDef abstract fill:#9AA0A6,stroke:#5F6368,color:#fff,fontStyle:italic
+classDef concrete fill:#ffffff,stroke:#8B1A1A,stroke-width:1px,color:#202124

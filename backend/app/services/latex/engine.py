@@ -15,6 +15,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from ...config import BIN_DIR, OUTPUT_DIR, TEMPLATE_DIR
+from .filenames import cv_filename
 
 
 class LatexError(Exception):
@@ -307,7 +308,8 @@ def _extract_errors(stdout: str) -> str:
     return "\n".join(errs[:10])
 
 
-def generate(template: str, resume: dict, job: dict, batch_label: str) -> dict:
+def generate(template: str, resume: dict, job: dict, batch_label: str,
+             candidate_name: str = "") -> dict:
     """Full render+compile for one item. Returns paths + tex source + lang."""
     folder = slugify(job.get("company", "unknown"), job.get("title", "job"))
     out_dir = OUTPUT_DIR / "resumes" / batch_label / folder
@@ -316,5 +318,18 @@ def generate(template: str, resume: dict, job: dict, batch_label: str) -> dict:
     tex = render_tex(template, resume, job, lang=lang)
     (out_dir / "resume.tex").write_text(tex, encoding="utf-8")
     pdf = compile_pdf(tex, out_dir)
+    # Canonical per-resume filename: CVMateus-Seguranca-da-Informacao.pdf
+    try:
+        final_name = cv_filename(
+            candidate_name or (resume.get("personal") or {}).get("name", ""),
+            job.get("title", ""), job.get("company", ""))
+        final_pdf = out_dir / final_name
+        if final_pdf != pdf:
+            if final_pdf.exists():
+                final_pdf.unlink()
+            pdf.rename(final_pdf)
+            pdf = final_pdf
+    except Exception:
+        pass
     return {"output_dir": str(out_dir), "pdf_path": str(pdf), "tex": tex,
-            "lang": lang}
+            "lang": lang, "filename": pdf.name}

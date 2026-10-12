@@ -64,6 +64,7 @@ export interface AdaptedResult {
     tailored_profile: CandidateProfile;
     tex_code: string;
     pdf_url: string;
+    pdf_filename?: string;
     ats?: { coverage: number; wanted: number; covered: string[]; missing: string[]; refined: boolean };
     honest_gaps?: string[];
   };
@@ -235,11 +236,11 @@ export async function parseResumeFile(file: File): Promise<{ profile: CandidateP
   return res.json();
 }
 
-export async function adaptText(jobText: string, pageTitle = '', pageUrl = ''): Promise<AdaptedResult> {
+export async function adaptText(jobText: string, pageTitle = '', pageUrl = '', structured: Record<string, string> = {}, mode = 'manual'): Promise<AdaptedResult> {
   const res = await fetch(`${API_BASE}/adapt-text`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ job_text: jobText, page_title: pageTitle, page_url: pageUrl }),
+    body: JSON.stringify({ job_text: jobText, page_title: pageTitle, page_url: pageUrl, structured, mode }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

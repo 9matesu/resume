@@ -13,6 +13,7 @@ import {
   fetchHistory,
   resumePdfUrl,
 } from '../../services/api';
+import { cvFilename } from '../../cvFilename';
 import type {
   AdaptedResult,
   CandidateProfile,
@@ -127,7 +128,13 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
   const handleDownload = () => {
     const a = document.createElement('a');
     a.href = pdfUrl;
-    a.download = `Curriculo_${adaptedData.job.company.replace(/\s+/g, '_')}_${adaptedData.job.title.replace(/\s+/g, '_')}.pdf`;
+    a.download =
+      adaptedData.adaptation.pdf_filename ||
+      cvFilename(
+        adaptedData.adaptation.tailored_profile?.personal?.name || '',
+        adaptedData.job.title,
+        adaptedData.job.company,
+      );
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -145,10 +152,10 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
       {/* LEFT PANE: Editor (empilha no estreito) */}
       <div className="w-full h-1/2 lg:h-full lg:w-1/2 flex flex-col bg-white overflow-hidden border-b lg:border-b-0 border-[#1a1a1a]">
         {/* Top Job Context Bar */}
-        <div className="p-4 hairline-b bg-white flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="font-editorial text-lg normal-case leading-tight">{adaptedData.job.title}</h2>
+        <div className="p-4 hairline-b bg-white flex flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="font-editorial text-lg normal-case leading-tight break-words">{adaptedData.job.title}</h2>
               <span className="text-xs text-neutral-500 font-medium">na {adaptedData.job.company}</span>
             </div>
             {adaptedData.job.location && (
@@ -621,7 +628,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
         </div>
 
         {/* Bottom Action Footer */}
-        <div className="p-4 hairline-t bg-white flex items-center justify-between gap-3">
+        <div className="p-4 hairline-t bg-white flex flex-wrap items-center justify-between gap-3">
           {saveError ? (
             <span className="text-xs font-mono text-red-700">{saveError}</span>
           ) : (
@@ -643,7 +650,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
       {/* RIGHT PANE: Live PDF Viewer */}
       <div className="w-full h-1/2 lg:h-full lg:w-1/2 flex flex-col bg-neutral-100">
         {/* Viewer Toolbar */}
-        <div className="p-3 hairline-b bg-white flex items-center justify-between">
+        <div className="p-3 hairline-b bg-white flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-bold flex items-center gap-2">
             <span className="uppercase">Pré-visualização do PDF ATS</span>
           </span>

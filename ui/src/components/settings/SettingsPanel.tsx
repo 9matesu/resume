@@ -114,7 +114,7 @@ export const SettingsPanel: React.FC = () => {
               }
             />
 
-            {/* Test connection */}
+            {/* Testar conexão */}
             <div className="pt-1">
               <button
                 type="button"
@@ -123,24 +123,14 @@ export const SettingsPanel: React.FC = () => {
                 className="brutal-btn w-full py-2 flex items-center justify-center gap-1.5"
               >
                 {testing && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>{testing ? 'Testando conexão...' : 'Testar Conexão com a IA'}</span>
+                <span>{testing ? 'Testando…' : 'Testar Conexão com a IA'}</span>
               </button>
-
               {testResult && (
                 <div className={`mt-2 p-2.5 flex items-center gap-2 border-2 border-black ${testResult.ok ? 'bg-brutal-yellow' : 'bg-white'}`}>
                   <span className="brutal-tag brutal-tag-black shrink-0">{testResult.ok ? 'OK' : 'Falha'}</span>
                   <span>{testResult.message}</span>
                 </div>
               )}
-            </div>
-
-            {/* Compiler Information */}
-            <div className="border-2 border-black p-3 flex items-center justify-between">
-              <div>
-                <div className="font-bold uppercase">Motor LaTeX</div>
-                <div className="text-[10px] text-neutral-600 font-mono">{settings?.detected_compiler || 'Tectonic (Portátil)'}</div>
-              </div>
-              <span className="brutal-tag brutal-tag-yellow">Pronto</span>
             </div>
 
             {/* Currículo base */}

@@ -11,6 +11,7 @@ from .. import db
 from ..models import profile as profile_model, job as job_model
 from ..services.resume import importer
 from ..services.latex import engine as latex_engine
+from ..services.latex.filenames import cv_filename, content_disposition
 from ..services.ai import gateway, prompts, vision
 from ..services.ai.gateway import AIError
 
@@ -310,7 +311,9 @@ def _run_adapt_pipeline(job_data: dict, captured_chars: int | None = None) -> di
     job_rec = job_model.save_job({**job_data, "match_score": match_score})
     batch_label = db.new_id("ext")
     try:
-        gen_result = latex_engine.generate(s.default_template, tailored_profile, job_data, batch_label)
+        gen_result = latex_engine.generate(
+            s.default_template, tailored_profile, job_data, batch_label,
+            candidate_name=(cand.get("name") or ""))
     except HTTPException:
         raise
     except Exception as e:
@@ -336,6 +339,7 @@ def _run_adapt_pipeline(job_data: dict, captured_chars: int | None = None) -> di
             "tailored_profile": tailored_profile,
             "tex_code": gen_result["tex"],
             "pdf_url": f"/api/resumes/{res_rec['id']}/pdf",
+            "pdf_filename": Path(gen_result["pdf_path"]).name,
             "ats": {
                 "coverage": coverage,
                 "wanted": len(wanted),
@@ -352,6 +356,8 @@ class TextAdaptPayload(BaseModel):
     job_text: str
     page_title: str | None = ""
     page_url: str | None = ""
+    structured: dict | None = None
+    mode: str | None = "manual"
 
 
 @router.post("/adapt-text")
@@ -367,6 +373,7 @@ def adapt_from_text(payload: TextAdaptPayload):
             payload.job_text, s,
             page_title=payload.page_title or "",
             page_url=payload.page_url or "",
+            structured=payload.structured or {},
         )
     except HTTPException:
         raise
@@ -394,7 +401,13 @@ def polish_bullet_endpoint(payload: PolishBulletPayload):
 
 @router.get("/history")
 def get_history_endpoint():
-    return {"history": job_model.list_history(50)}
+    items = job_model.list_history(50)
+    for it in items:
+        try:
+            it["pdf_filename"] = Path(it.get("pdf_path") or "").name or ""
+        except Exception:
+            it["pdf_filename"] = ""
+    return {"history": items}
 
 @router.get("/resumes/{res_id}")
 def get_resume_detail(res_id: str):
@@ -418,6 +431,7 @@ def get_resume_detail(res_id: str):
             "tailored_profile": res["tailored_profile"],
             "tex_code": res["tex_code"],
             "pdf_url": f"/api/resumes/{res['id']}/pdf",
+            "pdf_filename": Path(res["pdf_path"]).name if res.get("pdf_path") else "",
         },
     }
 
@@ -466,8 +480,19 @@ def get_resume_pdf(res_id: str):
     if not p.exists():
         raise HTTPException(status_code=404, detail="O PDF não está mais no disco. Recompile do Estúdio.")
     pdf_bytes = p.read_bytes()
+    # Canonical download name; files already on disk keep their stored name.
+    dl_name = p.name if p.name.lower().endswith(".pdf") else "CV.pdf"
+    if dl_name.lower() in ("resume.pdf", "curriculo.pdf"):
+        try:
+            job_rec = job_model.get_job(res["job_id"]) or {}
+            tailored = res.get("tailored_profile") or {}
+            cand_name = (tailored.get("personal") or {}).get("name", "")
+            dl_name = cv_filename(cand_name, job_rec.get("title", ""),
+                                  job_rec.get("company", ""))
+        except Exception:
+            dl_name = "CV.pdf"
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f"inline; filename=resume.pdf"}
+        headers={"Content-Disposition": content_disposition(dl_name)}
     )

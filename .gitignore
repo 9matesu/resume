@@ -34,5 +34,10 @@ extension/logo.svg
 # Release staging
 /dist/
 
+# Playwright E2E artifacts (screenshots em ui/e2e/screenshots são intencionais)
+ui/test-results/
+ui/playwright-report/
+ui/blob-report/
+
 # Skills vendorizados para referencia (nao distribuidos)
 .hermes/vendor/

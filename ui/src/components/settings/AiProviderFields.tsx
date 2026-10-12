@@ -45,6 +45,8 @@ export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
     try {
       const { models: list, working } = await detectModels({
         ai_provider: pvId,
+        // Só envia a chave se o usuário digitou uma. Se vazia, omite —
+        // o backend usará api_key:<provider> já salvo no SQLite.
         ...(key ? { ai_api_key: key } : {}),
         ai_base_url: base || ent?.default_base_url || '',
       });
@@ -71,9 +73,12 @@ export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
   const handleProvider = (id: string) => {
     onProviderChange(id);
     onModelChange('');
+    onApiKeyChange(''); // limpa campo visual; chave salva no SQLite permanece
     setModels([]);
     autoDetectedFor.current = id;
-    void autoDetect(id, apiKey, baseUrl);
+    const ent = catalog.find((p) => p.id === id);
+    // Chave vazia → backend resolve api_key:<provider> do SQLite automaticamente
+    void autoDetect(id, '', ent?.default_base_url || '');
   };
 
   // Primeira detecção automática quando o provedor chega do backend

@@ -1,0 +1,61 @@
+path,language,role,entry,notes
+extension/content.js,javascript,logic,FALSE,autoExtract + POST adapt-text captura DOM
+extension/background.js,javascript,logic,FALSE,service worker ensure-backend via native host
+extension/manifest.json,json,config,FALSE,MV3 side_panel background content_scripts
+extension/sidepanel.html,html,entry,FALSE,carrega bundle sidepanel
+extension/studio.html,html,entry,FALSE,carrega bundle studio
+extension/test/chooser.test.mjs,javascript,test,FALSE,asserts estaticos do chooser
+extension/test/sw-contract.test.mjs,javascript,test,FALSE,contrato service worker
+extension/test/fixtures/linkedin_like.html,html,test,FALSE,fixture LinkedIn
+extension/test/fixtures/indeed_like.html,html,test,FALSE,fixture Indeed
+extension/test/fixtures/gupy_like.html,html,test,FALSE,fixture Gupy
+extension/fonts/schibsted-grotesk.woff2,binary,vendor,FALSE,fonte UI
+Abrir-resuMe.ps1,powershell,entry,TRUE,launcher leve sem pip nem build
+Abrir-resuMe.bat,batch,entry,FALSE,atalho duplo clique do launcher
+ui/e2e/sidepanel.spec.ts,typescript,test,FALSE,E2E painel com screenshots
+ui/e2e/studio.spec.ts,typescript,test,FALSE,E2E estudio e overflow mobile
+ui/playwright.config.ts,typescript,config,FALSE,workers serial webServer vite
+ui/src/chrome.ts,typescript,io,FALSE,startAutoCapture tabs.sendMessage ensureBackend
+ui/src/services/api.ts,typescript,io,FALSE,cliente HTTP FastAPI saveResumeEdit polishBullet
+ui/src/cvFilename.ts,typescript,logic,FALSE,nome canonico CV espelho filenames.py
+ui/src/SidePanelApp.tsx,tsx,entry,TRUE,handleAutoCapture painel lateral
+ui/src/StudioApp.tsx,tsx,entry,TRUE,root estudio reabre adaptacao
+ui/src/main-sidepanel.tsx,tsx,entry,TRUE,bootstrap sidepanel
+ui/src/main-studio.tsx,tsx,entry,TRUE,bootstrap studio
+ui/src/ErrorBoundary.tsx,tsx,logic,FALSE,erro UI
+ui/src/index.css,css,config,FALSE,tailwind base
+ui/src/components/studio/StudioWorkspace.tsx,tsx,logic,FALSE,handleRecompile handleDownload edicao
+ui/src/components/history/ApplicationHistory.tsx,tsx,logic,FALSE,historico pdf_url
+ui/src/components/onboarding/OnboardingWizard.tsx,tsx,logic,FALSE,perfil mestre
+ui/src/components/settings/SettingsPanel.tsx,tsx,logic,FALSE,provedor IA e template
+ui/src/components/settings/AiProviderFields.tsx,tsx,logic,FALSE,campos Gemini OpenAI
+ui/test/copy.test.mjs,javascript,test,FALSE,copy UI
+backend/app/main.py,python,entry,TRUE,FastAPI app router
+backend/app/config.py,python,config,FALSE,get_settings OUTPUT_DIR
+backend/app/db.py,python,io,FALSE,sqlite new_id
+backend/app/api/routes.py,python,logic,FALSE,adapt_from_text PUT resumes GET pdf
+backend/app/services/ai/gateway.py,python,logic,FALSE,chat providers Gemini OpenAI
+backend/app/services/ai/vision.py,python,logic,FALSE,extract_job_from_text heuristic_extract
+backend/app/services/ai/prompts.py,python,logic,FALSE,build_adapt_payload keyword refine
+backend/app/services/latex/engine.py,python,logic,FALSE,generate render_tex compile_pdf tectonic
+backend/app/services/latex/filenames.py,python,logic,FALSE,cv_filename content_disposition
+backend/app/services/latex/validation.py,python,logic,FALSE,valida PDF compilado
+backend/app/services/resume/importer.py,python,io,FALSE,importa perfil
+backend/app/models/job.py,python,io,FALSE,save_adapted_resume get_job
+backend/app/models/profile.py,python,io,FALSE,perfil mestre ativo
+backend/app/templates/devcelio/resume.tex.j2,jinja,config,FALSE,template curriculo padrao
+backend/app/templates/editorial/resume.tex.j2,jinja,config,FALSE,template alternativo ATS
+backend/run.py,python,entry,TRUE,sobe uvicorn porta 8322
+backend/tests/test_api.py,python,test,FALSE,adapt-text pdf PUT
+backend/tests/test_models.py,python,test,FALSE,models sqlite
+backend/tests/test_resume_template.py,python,test,FALSE,render template
+backend/tests/test_filenames_fallback.py,python,test,FALSE,fallback nome CV
+backend/tests/conftest.py,python,test,FALSE,fixtures pytest
+native-host/host_main.py,python,entry,TRUE,ensure_backend Popen run.py
+native-host/install-host.ps1,powershell,config,FALSE,instala host Windows
+site/index.html,html,entry,TRUE,landing resuMe
+site/landing.js,javascript,logic,FALSE,interacoes landing
+site/landing.css,css,config,FALSE,estilo landing
+site/test/landing.test.mjs,javascript,test,FALSE,teste landing
+scripts/instalar.ps1,powershell,config,FALSE,registra motor e host
+scripts/package-release.ps1,powershell,config,FALSE,empacota release

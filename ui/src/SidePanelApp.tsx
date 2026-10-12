@@ -12,12 +12,15 @@ import {
 import type { AppHealth, CandidateProfile, AdaptedResult } from './services/api';
 import {
   startCaptureSelection,
+  startAutoCapture,
+  cancelCaptureSelection,
   onCaptureResult,
   saveStudioPayload,
   openStudioTab,
   ensureBackend,
   isExtension,
 } from './chrome';
+import { cvFilename } from './cvFilename';
 import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
 import { ApplicationHistory } from './components/history/ApplicationHistory';
 import { SettingsPanel } from './components/settings/SettingsPanel';
@@ -40,7 +43,6 @@ export function SidePanelApp() {
   const [error, setError] = useState('');
   const [result, setResult] = useState<AdaptedResult | null>(null);
   const [starting, setStarting] = useState(false);
-  const [startError, setStartError] = useState('');
   const autoEnsured = useRef(false);
 
   const applyHealth = async (h: AppHealth) => {
@@ -68,10 +70,9 @@ export function SidePanelApp() {
 
   const startBackend = async () => {
     setStarting(true);
-    setStartError('');
     const res = await ensureBackend();
     const ok = await pollHealth(12000);
-    if (!ok) setStartError(res.error || 'O motor nao respondeu. Execute start-backend.ps1.');
+    if (!ok) console.warn('Backend não respondeu:', res.error);
     setStarting(false);
     return ok;
   };
@@ -127,15 +128,56 @@ export function SidePanelApp() {
     []
   );
 
+  // Esc no sidepanel cancela a captura ativa na aba
+  useEffect(() => {
+    if (!busy) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        void cancelCaptureSelection();
+        setBusy(false);
+        setStatusMsg('');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [busy]);
+
   const handleDomCapture = async () => {
     setBusy(true);
     setError('');
     setResult(null);
     try {
       await startCaptureSelection();
-      setStatusMsg('Clique no painel da vaga. Edite a prévia se quiser e confirme. Esc cancela.');
+      setStatusMsg('Clique no painel da vaga. Edite o texto se quiser e confirme. Esc cancela.');
     } catch (e: any) {
       setError(e.message || 'A captura não iniciou.');
+      setBusy(false);
+      setStatusMsg('');
+    }
+  };
+
+  const handleAutoCapture = async () => {
+    setBusy(true);
+    setError('');
+    setResult(null);
+    setStatusMsg('Lendo a vaga automaticamente…');
+    try {
+      await startAutoCapture();
+      setStatusMsg('Extraindo e adaptando… o resultado aparece aqui.');
+    } catch (e: any) {
+      // Fallback flexível: se o auto falhar, cai para seleção manual.
+      if ((e as any)?.fallback === 'manual') {
+        setStatusMsg('Auto não achou — clique no painel da vaga para selecionar.');
+        try {
+          await startCaptureSelection();
+          return;
+        } catch (e2: any) {
+          setError(e2.message || 'A captura não iniciou.');
+        }
+      } else {
+        setError(e.message || 'A captura automática falhou.');
+      }
       setBusy(false);
       setStatusMsg('');
     }
@@ -149,9 +191,9 @@ export function SidePanelApp() {
 
   if (loading) {
     return (
-      <div className="h-full flex items-center justify-center gap-3 font-mono text-xs uppercase tracking-wider">
+      <div className="h-full flex items-center justify-center gap-3 text-xs uppercase tracking-wider">
         <Loader2 className="w-5 h-5 animate-spin" />
-        Inicializando...
+        Iniciando…
       </div>
     );
   }
@@ -159,17 +201,17 @@ export function SidePanelApp() {
   if (!health) {
     if (starting) {
       return (
-        <div className="h-full flex flex-col items-center justify-center gap-3 font-mono text-xs uppercase tracking-wider">
+        <div className="h-full flex flex-col items-center justify-center gap-3 text-xs uppercase tracking-wider">
           <Loader2 className="w-6 h-6 animate-spin" />
-          Iniciando motor local...
+          Iniciando…
         </div>
       );
     }
     return (
       <div className="h-full flex flex-col items-center justify-center p-6 text-center gap-4">
-        <h1 className="font-editorial text-3xl">Motor offline</h1>
-        <p className="text-xs font-mono text-neutral-700 leading-relaxed">
-          O servidor local não respondeu.
+        <p className="text-sm font-bold">resuMe não está respondendo.</p>
+        <p className="text-xs text-neutral-600 leading-relaxed">
+          Verifique se a extensão está instalada corretamente.
         </p>
         <button
           onClick={() => (isExtension ? startBackend() : void init())}
@@ -177,12 +219,6 @@ export function SidePanelApp() {
         >
           Tentar novamente
         </button>
-        {startError && (
-          <details className="text-[10px] font-mono text-neutral-500">
-            <summary className="cursor-pointer">Para técnicos</summary>
-            <p className="mt-2 leading-relaxed">{startError} — ou rode start-backend.ps1 na pasta do projeto.</p>
-          </details>
-        )}
       </div>
     );
   }
@@ -201,7 +237,7 @@ export function SidePanelApp() {
     <div className="h-full flex flex-col bg-white text-black select-none">
       {/* Header */}
       <header className="hairline-b px-4 py-2.5 flex items-center justify-between shrink-0">
-        <span className="text-sm font-bold uppercase tracking-tight">resu<span className="font-editorial normal-case tracking-normal">Me</span></span>
+        <span className="text-sm font-bold tracking-tight">resuMe</span>
         <span className="brutal-tag">
           <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-emerald-500' : 'bg-red-600'}`} />
           {online ? 'Online' : 'Offline'}
@@ -227,24 +263,35 @@ export function SidePanelApp() {
       <main className="flex-1 overflow-y-auto p-4">
         {view === 'capture' && (
           <div className="space-y-4">
-            <button
-              onClick={handleDomCapture}
-              disabled={busy}
-              className="w-full bg-brutal-yellow border-2 border-black shadow-[6px_6px_0px_0px_#000000] p-6 text-left active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer disabled:opacity-60"
-            >
-              <div className="flex items-center gap-2">
-                {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
-                <span className="font-editorial text-2xl leading-none">Capturar Vaga</span>
-              </div>
-              <p className="text-[11px] font-mono mt-2 leading-relaxed">
-                {busy
-                  ? statusMsg || 'Processando…'
-                  : 'Destaca os painéis da página. Clique no painel da vaga para conferir o texto antes de capturar.'}
-              </p>
-            </button>
+            <div className="grid grid-cols-1 gap-2">
+              <button
+                onClick={handleAutoCapture}
+                disabled={busy}
+                data-testid="auto-capture"
+                className="w-full bg-brutal-yellow border-2 border-black rounded-2xl shadow-[6px_6px_0px_0px_#000000] p-6 text-left active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer disabled:opacity-60"
+              >
+                <div className="flex items-center gap-2">
+                  {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
+                  <span className="font-editorial text-2xl leading-none">Capturar Vaga</span>
+                </div>
+                <p className="text-[11px] mt-2 leading-relaxed">
+                  {busy
+                    ? statusMsg || 'Processando…'
+                    : 'Automático primeiro: lê a vaga sozinho. Se precisar, você ajusta na seleção manual.'}
+                </p>
+              </button>
+              <button
+                onClick={handleDomCapture}
+                disabled={busy}
+                data-testid="manual-capture"
+                className="w-full bg-white border-2 border-black rounded-2xl shadow-[4px_4px_0px_0px_#000000] px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer disabled:opacity-60"
+              >
+                Seleção manual do painel (flexível)
+              </button>
+            </div>
 
             {error && (
-              <div className="border-2 border-black p-3 text-xs font-mono flex items-start gap-2">
+              <div className="border-2 border-black p-3 text-xs flex items-start gap-2">
                 <span className="brutal-tag brutal-tag-black shrink-0">Erro</span>
                 <span>{error}</span>
               </div>
@@ -255,7 +302,7 @@ export function SidePanelApp() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h2 className="font-editorial text-lg normal-case leading-tight">{result.job.title}</h2>
-                    <p className="text-[11px] font-mono text-neutral-600 mt-0.5">
+                    <p className="text-[11px] text-neutral-600 mt-0.5">
                       {result.job.company}
                       {result.job.location ? ` — ${result.job.location}` : ''}
                     </p>
@@ -267,18 +314,9 @@ export function SidePanelApp() {
                   )}
                 </div>
 
-                {result.adaptation.ats && result.adaptation.ats.wanted > 0 && (
-                  <p className="text-[10px] font-mono text-neutral-500">
-                    cobertura ATS: {result.adaptation.ats.covered.length}/{result.adaptation.ats.wanted} keywords
-                    {result.adaptation.ats.refined ? ' · 2a passada de refino' : ''}
-                    {result.adaptation.ats.missing.length
-                      ? ` · fora: ${result.adaptation.ats.missing.slice(0, 4).join(', ')}`
-                      : ''}
-                  </p>
-                )}
                 {(result.adaptation.applied_keywords?.length ?? 0) > 0 && (
                   <div className="hairline-b pb-3">
-                    <div className="text-[10px] font-bold uppercase mb-1.5">Palavras-chave aplicadas</div>
+                    <div className="text-[10px] font-bold uppercase mb-1.5">Palavras-chave</div>
                     <div className="flex flex-wrap gap-1.5">
                       {result.adaptation.applied_keywords!.map((k) => (
                         <span key={k} className="brutal-tag">{k}</span>
@@ -287,14 +325,14 @@ export function SidePanelApp() {
                   </div>
                 )}
 
-                <p className="text-[10px] font-mono text-neutral-400">
-                  adaptação gerada por {health.ai_provider} · revise antes de enviar
+                <p className="text-[10px] text-neutral-400">
+                  revise o currículo antes de enviar
                 </p>
 
                 <div className="grid grid-cols-2 gap-2">
                   <a
                     href={result.adaptation.pdf_url}
-                    download={`Curriculo_${result.job.company.replace(/\s+/g, '_')}.pdf`}
+                    download={result.adaptation.pdf_filename || cvFilename(health.candidate_name || '', result.job.title, result.job.company)}
                     className="brutal-btn-yellow flex items-center justify-center gap-1.5 px-2 py-2 text-[11px]"
                   >
                     <Download className="w-3.5 h-3.5" />
@@ -315,8 +353,7 @@ export function SidePanelApp() {
       </main>
 
       {/* Footer */}
-      <footer className="hairline-t px-4 py-1.5 text-[10px] font-mono text-neutral-600 flex items-center justify-between shrink-0 uppercase">
-        <span>{health.ai_provider} / {health.ai_model}</span>
+      <footer className="hairline-t px-4 py-1.5 text-[10px] text-neutral-500 flex items-center justify-end shrink-0">
         <span>{health.candidate_name}</span>
       </footer>
     </div>
