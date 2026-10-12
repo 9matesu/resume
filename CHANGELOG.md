@@ -25,9 +25,10 @@
 - **Nome padrão de CV**: `CVMateus-Seguranca-da-Informacao.pdf`
   (`CV<PrimeiroNome>-<Área>.pdf`, ASCII-safe) no disco, no header de
   download e nos 3 botões de baixar (painel, Estúdio, Arquivo).
-- **Launcher leve**: `Abrir-resuMe.bat`/`.ps1` — sem pip/venv/build,
-  só garante o motor (exe do release ou Python embutido) e abre o
-  Chrome com a extensão.
+- **Launcher `dist\resuMe.exe`**: sem terminal, sem segunda instância,
+  sem auto-start. Sobe o motor escondido, mostra só o ícone na bandeja
+  (abrir, status, sair) e abre o Chrome com a extensão. Código em
+  `launcher/` só com stdlib; build por OS via `scripts/build-launcher.ps1`.
 - **E2E Playwright com screenshots** (`ui/e2e/`, `npm run test:e2e`):
   painel e Estúdio mockados — raio de borda, fonte uniforme, overflow
   mobile e nome do CV. Já pegou e corrigiu 1 overflow de 58px no

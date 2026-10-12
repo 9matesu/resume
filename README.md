@@ -23,7 +23,7 @@ Na primeira abertura, envie seu currículo uma vez (PDF, Word ou texto). O resuM
 3. Confira a prévia, edite se precisar e confirme. `Esc` cancela a qualquer momento.
 4. Baixe o PDF (`CVMateus-Seguranca-da-Informacao.pdf`) ou abra no Estúdio para refinar.
 
-O atalho `Alt+Shift+A` captura direto da aba ativa. Para o dia a dia, o duplo clique em `Abrir-resuMe.bat` sobe o motor e abre o Chrome com a extensão, sem instalar nada.
+O atalho `Alt+Shift+A` captura direto da aba ativa. Para o dia a dia, abra `dist\resuMe.exe` (ou compile com `.\scripts\build-launcher.ps1`): ele sobe o motor escondido, mostra só o ícone na bandeja e abre o Chrome com a extensão. Segunda execução não abre nada novo. Sair pelo menu da bandeja (ou `resuMe.exe --quit`) para tudo. Sem terminal, sem auto-start no Windows, sem dependências em runtime.
 
 ## O que o resuMe não faz
 

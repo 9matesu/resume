@@ -20,6 +20,7 @@ import socket
 import struct
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -144,6 +145,58 @@ def ensure_backend(cfg: dict) -> dict:
     if port_open(port):
         return {"running": True, "spawned": False}
 
+    # Single-flight: duas chamadas juntas (startup + wake do SW) viam a
+    # porta fechada e subiam dois motores. Quem pega o lock sobe o backend
+    # e o segura até a porta abrir; quem perde espera a porta, nunca sobe
+    # outro. Lock com validade para não travar após crash.
+    lock_path = Path(backend_lock_path(port))
+    if not _acquire_lock(lock_path):
+        if _wait_port(port, timeout=25.0):
+            return {"running": True, "spawned": False}
+        _drop_stale_lock(lock_path)
+        return ensure_backend(cfg)
+    try:
+        return _spawn_backend(cfg, port)
+    finally:
+        try:
+            lock_path.unlink()
+        except OSError:
+            pass
+
+
+def _acquire_lock(lock_path: Path) -> bool:
+    try:
+        fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.write(fd, str(os.getpid()).encode())
+        os.close(fd)
+        return True
+    except FileExistsError:
+        return False
+
+
+def _drop_stale_lock(lock_path: Path) -> None:
+    try:
+        if time.time() - lock_path.stat().st_mtime > 60:
+            lock_path.unlink()
+    except OSError:
+        pass
+
+
+def _wait_port(port: int, timeout: float) -> bool:
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if port_open(port):
+            return True
+        time.sleep(0.5)
+    return port_open(port)
+
+
+def backend_lock_path(port: int) -> str:
+    return str(Path(tempfile.gettempdir()) / f"resume-backend-{port}.lock")
+
+
+def _spawn_backend(cfg: dict, port: int) -> dict:
+
     python = cfg.get("python")
     backend_dir = cfg.get("backend_dir")
 
@@ -167,13 +220,22 @@ def ensure_backend(cfg: dict) -> dict:
     env = dict(os.environ)
     env["RESUME_PORT"] = str(port)
 
+    # Sem janela de console: o backend roda invisível. Prefere pythonw.exe
+    # (mesma pasta do python configurado) e cai para python.exe com a flag
+    # de criação sem janela.
+    exe = Path(python)
+    nowindow = exe.with_name("pythonw.exe")
+    if nowindow.exists():
+        exe = nowindow
     flags = 0
     if os.name == "nt":
-        flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+        flags = (subprocess.DETACHED_PROCESS
+                 | subprocess.CREATE_NEW_PROCESS_GROUP
+                 | getattr(subprocess, "CREATE_NO_WINDOW", 0))
 
     with open(log_path, "a", encoding="utf-8") as log:
         subprocess.Popen(
-            [python, "run.py"],
+            [str(exe), "run.py"],
             cwd=backend_dir,
             creationflags=flags,
             stdin=subprocess.DEVNULL,

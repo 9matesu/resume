@@ -12,6 +12,7 @@ Instruções permanentes para agentes que mexem neste repo. Leia antes de qualqu
 - `backend/app/services/latex/`: `engine.py` (`generate`, `compile_pdf` com gate de validação), `filenames.py` (nome canônico), `validation.py` (gate, sempre via `compile_pdf`).
 - `backend/app/models/`: `job.py`, `profile.py`. Banco em `backend/app/db.py` (SQLite WAL).
 - Docs vivas em `docs/`: `atlas/` (mapa verificado do código), `requisitos.md`, `casos-de-uso.md`, `adr/`, `design.md`.
+- `launcher/` (exe `dist\resuMe.exe`): só stdlib, sem console, instância única por porta, tray só no Windows.
 
 ## Regras de arquitetura
 

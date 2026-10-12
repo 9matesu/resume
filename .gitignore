@@ -34,6 +34,9 @@ extension/logo.svg
 # Release staging
 /dist/
 
+# PyInstaller work files (launcher + host)
+/build/
+
 # Playwright E2E artifacts (screenshots em ui/e2e/screenshots são intencionais)
 ui/test-results/
 ui/playwright-report/

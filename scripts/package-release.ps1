@@ -43,6 +43,14 @@ Get-ChildItem "$stage\backend" -Recurse -Directory -Filter __pycache__ | Remove-
 Copy-Item "$root\native-host" "$stage\native-host" -Recurse
 Remove-Item "$stage\native-host\build" -Recurse -Force -ErrorAction SilentlyContinue
 
+# launcher de bandeja: compila aqui para sair junto no zip
+Write-Host "[4b/7] Launcher resuMe.exe" -ForegroundColor Yellow
+& "$root\backend\.venv\Scripts\python.exe" -m PyInstaller --noconsole --onefile --name resuMe-stage `
+  --icon "$root\scripts\resume-setup.ico" `
+  --distpath "$stage" --workpath "$root\build\launcher" --specpath "$root\build\launcher" `
+  -y "$root\launcher\resume_launcher.py"
+Rename-Item "$stage\resuMe-stage.exe" "resuMe.exe"
+
 Write-Host "[5/7] Tectonic ($tectVer)" -ForegroundColor Yellow
 $tectUrl = "https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic@$tectVer/tectonic-$tectVer-$pySt.zip"
 $tectZip = "$env:TEMP\tectonic.zip"
