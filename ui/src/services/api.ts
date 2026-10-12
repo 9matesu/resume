@@ -1,5 +1,5 @@
 /**
- * resuMe API Client — talks to the local FastAPI sidecar.
+ * resuMe API Client: talks to the local FastAPI sidecar.
  */
 import { BACKEND } from '../chrome';
 
@@ -260,7 +260,7 @@ export async function saveResumeEdit(
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || 'Salvei, mas o PDF não compilou.');
+    throw new Error(err.detail || 'Salvei o texto, mas o PDF falhou. Tente de novo.');
   }
   const data = await res.json();
   return { ...data, pdf_url: absUrl(data.pdf_url) };

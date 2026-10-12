@@ -56,4 +56,4 @@ Testes: `pytest` no `backend/`, `node --test` nos pacotes `extension/test`, `ui/
 
 ## Identidade visual
 
-Títulos em Instrument Serif, interface em Schibsted Grotesk, ambas OFL e embutidas (`ui/public/fonts/`), nada de CDN na extensão. Logo: monograma Me sobre preto, traço amarelo. No site, a sans é Switzer via Fontshare (a licença não permite redistribuir o arquivo no zip).
+Títulos em Instrument Serif, interface em Inter, ambas OFL e embutidas (`ui/public/fonts/`), nada de CDN na extensão nem no site. Logo: monograma Me sobre preto, traço amarelo.

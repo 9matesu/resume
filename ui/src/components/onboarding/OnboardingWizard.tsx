@@ -25,7 +25,7 @@ interface OnboardingWizardProps {
 const STEPS = [
   { n: 1, label: '1. Enviar Currículo Base' },
   { n: 2, label: '2. Verificar Perfil Mestre' },
-  { n: 3, label: '3. Configurar IA & LaTeX' },
+  { n: 3, label: '3. IA e PDF' },
 ];
 
 const SectionLabel = ({ index, title }: { index: string; title: string }) => (
@@ -261,7 +261,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             <div className="mb-4 font-mono text-[11px] text-neutral-700 leading-relaxed">
               Importe seu currículo original uma única vez. O resuMe o usará como{' '}
               <strong className="text-black underline underline-offset-2">fonte absoluta de verdade</strong>{' '}
-              para sintetizar currículos em LaTeX sob medida para qualquer vaga que você navegar.
+              para montar currículos sob medida para qualquer vaga que você navegar.
             </div>
             <div
               onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
@@ -481,7 +481,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                       </label>
                       {exp.description.map((bullet, bIdx) => (
                         <div key={bIdx} className="flex items-center gap-2">
-                          <span className="font-bold">—</span>
+                          <span className="font-bold">•</span>
                           <input
                             type="text"
                             value={bullet}
@@ -609,7 +609,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                       </label>
                       {lead.description.map((bullet, bIdx) => (
                         <div key={bIdx} className="flex items-center gap-2">
-                          <span className="font-bold">—</span>
+                          <span className="font-bold">•</span>
                           <input
                             type="text"
                             value={bullet}
@@ -971,7 +971,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             </section>
 
             <div className="hairline-b py-3 flex items-center justify-between text-xs font-mono">
-              <span className="text-neutral-500">Compilador LaTeX:</span>
+              <span className="text-neutral-500">Gerador de PDF:</span>
               <strong>{health.compiler_type || 'Tectonic'} (local)</strong>
             </div>
 

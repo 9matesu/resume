@@ -168,7 +168,7 @@ export function SidePanelApp() {
     } catch (e: any) {
       // Fallback flexível: se o auto falhar, cai para seleção manual.
       if ((e as any)?.fallback === 'manual') {
-        setStatusMsg('Auto não achou — clique no painel da vaga para selecionar.');
+        setStatusMsg('Auto não achou. Clique no painel da vaga para selecionar.');
         try {
           await startCaptureSelection();
           return;
@@ -304,7 +304,7 @@ export function SidePanelApp() {
                     <h2 className="font-editorial text-lg normal-case leading-tight">{result.job.title}</h2>
                     <p className="text-[11px] text-neutral-600 mt-0.5">
                       {result.job.company}
-                      {result.job.location ? ` — ${result.job.location}` : ''}
+                      {result.job.location ? ` · ${result.job.location}` : ''}
                     </p>
                   </div>
                   {result.adaptation.match_score != null && result.adaptation.match_score > 0 && (

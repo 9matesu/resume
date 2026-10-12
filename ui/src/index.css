@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
-/* resuMe typography — TWO families only:
+/* resuMe typography: TWO families only,
    - Instrument Serif (OFL): editorial headlines
-   - Schibsted Grotesk (OFL): everything functional. Variable woff2 = one file. */
+   - Inter (OFL): everything functional. Variable woff2 = one file. */
 @font-face {
-  font-family: 'Schibsted Grotesk';
+  font-family: 'Inter';
   font-style: normal;
-  font-weight: 400 800;
+  font-weight: 100 900;
   font-display: swap;
-  src: url('/fonts/schibsted-grotesk.woff2') format('woff2');
+  src: url('/fonts/inter-wght.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Instrument Serif';
@@ -26,14 +26,14 @@
 }
 
 @theme {
-  --font-sans: 'Schibsted Grotesk', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
   --radius-soft: 14px;
   --radius-pill: 999px;
 }
 
 :root {
-  --resume-font: 'Schibsted Grotesk', system-ui, -apple-system, sans-serif;
+  --resume-font: 'Inter', system-ui, -apple-system, sans-serif;
   --resume-radius: 14px;
   --resume-radius-pill: 999px;
 }
@@ -44,7 +44,7 @@
   }
 
   body {
-    font-family: 'Schibsted Grotesk', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
     @apply bg-white text-black antialiased selection:bg-black selection:text-white;
   }
 

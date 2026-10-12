@@ -45,8 +45,8 @@ export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
     try {
       const { models: list, working } = await detectModels({
         ai_provider: pvId,
-        // Só envia a chave se o usuário digitou uma. Se vazia, omite —
-        // o backend usará api_key:<provider> já salvo no SQLite.
+        // Só envia a chave se o usuário digitou uma. Se vazia, omite e
+        // o backend usa a chave já salva para esse provedor.
         ...(key ? { ai_api_key: key } : {}),
         ai_base_url: base || ent?.default_base_url || '',
       });
@@ -56,11 +56,11 @@ export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
         onModelChange(chosen);
         setDetectMsg(
           working
-            ? `${list.length} modelo(s) — selecionado (responde de verdade): ${working}`
-            : `${list.length} modelo(s) detectado(s) — primeiro selecionado: ${list[0]}`,
+            ? `${list.length} modelos. Escolhi este, que responde: ${working}`
+            : `${list.length} modelos. Escolhi o primeiro: ${list[0]}`,
         );
       } else {
-        setDetectMsg('O provedor não listou modelos — digite o nome manualmente.');
+        setDetectMsg('Não achei modelos. Digite o nome manualmente.');
       }
     } catch (err: any) {
       setModels([]);

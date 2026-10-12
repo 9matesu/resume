@@ -43,7 +43,7 @@ export const ApplicationHistory: React.FC = () => {
             Arquivo de candidaturas
           </h1>
           <p className="text-xs text-neutral-600 mt-1 font-mono">
-            Cada linha é um currículo adaptado — edite no Estúdio ou baixe o PDF.
+            Cada linha é um currículo adaptado. Edite no Estúdio ou baixe o PDF.
           </p>
         </div>
       </div>
@@ -67,7 +67,7 @@ export const ApplicationHistory: React.FC = () => {
             <tr className="border-b-2 border-black text-[10px] uppercase tracking-wider text-neutral-600">
               <td className="py-2 font-bold">Vaga / Empresa</td>
               <td className="py-2 font-bold">Data</td>
-              <td className="py-2 font-bold text-right">ATS</td>
+              <td className="py-2 font-bold text-right">Nota</td>
               <td className="py-2 font-bold text-right">Ações</td>
             </tr>
           </thead>
@@ -77,7 +77,7 @@ export const ApplicationHistory: React.FC = () => {
                 <td className="py-3 pr-4">
                   <div className="font-bold text-sm uppercase">{item.title}</div>
                   <div className="text-xs text-neutral-600">
-                    na {item.company}{item.location ? ` — ${item.location}` : ''}
+                    na {item.company}{item.location ? ` · ${item.location}` : ''}
                   </div>
                 </td>
                 <td className="py-3 text-xs text-neutral-600 whitespace-nowrap">
@@ -89,7 +89,7 @@ export const ApplicationHistory: React.FC = () => {
                       {item.match_score.toFixed(0)}%
                     </span>
                   ) : (
-                    <span className="text-neutral-400">—</span>
+                    <span className="text-neutral-400">·</span>
                   )}
                 </td>
                 <td className="py-3 text-right whitespace-nowrap">

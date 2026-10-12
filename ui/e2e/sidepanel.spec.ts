@@ -43,9 +43,9 @@ test.describe('sidepanel UI/UX', () => {
     });
     for (const group of Object.values(radii)) for (const r of group) expect(r).not.toBe('0px');
 
-    // Fontes uniformes: corpo usa Schibsted Grotesk, sem Segoe/system-ui no content overlay.
+    // Fontes uniformes: corpo usa Inter, sem Segoe/system-ui no content overlay.
     const bodyFont = await page.evaluate(() => getComputedStyle(document.body).fontFamily);
-    expect(bodyFont).toMatch(/Schibsted Grotesk/);
+    expect(bodyFont).toMatch(/Inter/);
 
     // Sem overflow horizontal no painel estreito (erro comum de UX).
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

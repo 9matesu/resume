@@ -1,6 +1,6 @@
 (() => {
   const BACKEND = "http://127.0.0.1:8322";
-  const UI_FONT = "'Schibsted Grotesk',system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif";
+  const UI_FONT = "'Inter',system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif";
 
   // ---------- structured hints (JSON-LD JobPosting + meta) ----------
   function readStructured() {
@@ -350,7 +350,7 @@
   function onKey(e) {
     if (!state) return;
     if (e.key === "Escape") {
-      // Esc sempre cancela — em qualquer modo, instantaneamente
+      // Esc sempre cancela, em qualquer modo, instantaneamente
       e.preventDefault();
       e.stopPropagation();
       cancel(null);
@@ -500,7 +500,7 @@
           try {
             const { text, structured, confidence } = autoExtract();
             if (!text || text.trim().length < 80) {
-              sendResponse({ ok: false, error: "Não achei a vaga sozinho — use a seleção manual.", fallback: "manual" });
+              sendResponse({ ok: false, error: "Não achei a vaga sozinho. Use a seleção manual.", fallback: "manual" });
               return;
             }
             sendResponse({ ok: true, mode: "auto", confidence });

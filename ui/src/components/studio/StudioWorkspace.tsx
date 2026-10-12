@@ -184,7 +184,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
                 className={`flex items-center gap-1 px-3 py-1.5 cursor-pointer transition-colors border-l-2 border-black ${activeTab === 'latex' ? 'bg-black text-white' : 'bg-white text-black hover:bg-neutral-100'}`}
               >
                 <FileCode className="w-3.5 h-3.5" />
-                LaTeX
+                Código
               </button>
             </div>
           </div>
@@ -227,7 +227,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
                     <div className="space-y-2">
                       {exp.description.map((bullet, bIdx) => (
                         <div key={bIdx} className="flex items-start gap-2 group">
-                          <span className="mt-2.5 text-xs font-bold">—</span>
+                          <span className="mt-2.5 text-xs font-bold">•</span>
                           <textarea
                             rows={2}
                             value={bullet}
@@ -384,7 +384,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
                     <div className="space-y-2">
                       {(lead.description || []).map((bullet, bIdx) => (
                         <div key={bIdx} className="flex items-start gap-2 group">
-                          <span className="mt-2.5 text-xs font-bold">—</span>
+                          <span className="mt-2.5 text-xs font-bold">•</span>
                           <textarea
                             rows={2}
                             value={bullet}
@@ -615,7 +615,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
             /* Raw LaTeX Source Tab */
             <div className="h-full flex flex-col">
               <label className="text-[10px] font-bold uppercase tracking-wider mb-2 block">
-                Código-Fonte LaTeX (Jinja2 / Tectonic)
+                Código do currículo
               </label>
               <textarea
                 value={rawTex}
@@ -633,7 +633,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
             <span className="text-xs font-mono text-red-700">{saveError}</span>
           ) : (
             <span className="text-xs text-neutral-600 font-mono">
-              {compiling ? 'Compilando LaTeX…' : savedFlash ? 'Salvo no histórico' : 'Não salvou ainda.'}
+              {compiling ? 'Gerando PDF…' : savedFlash ? 'Salvo no histórico' : 'Não salvou ainda.'}
             </span>
           )}
           <button
@@ -642,7 +642,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
             className="brutal-btn-yellow flex items-center gap-2 px-5 py-2.5 text-xs tracking-wider shrink-0"
           >
             {compiling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-            <span>{compiling ? 'Compilando PDF…' : 'Salvar e Atualizar PDF'}</span>
+            <span>{compiling ? 'Gerando PDF…' : 'Salvar e Atualizar PDF'}</span>
           </button>
         </div>
       </div>
@@ -652,7 +652,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
         {/* Viewer Toolbar */}
         <div className="p-3 hairline-b bg-white flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-bold flex items-center gap-2">
-            <span className="uppercase">Pré-visualização do PDF ATS</span>
+            <span className="uppercase">Prévia do PDF</span>
           </span>
 
           <div className="flex items-center gap-2">

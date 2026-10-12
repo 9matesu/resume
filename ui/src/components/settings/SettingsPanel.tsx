@@ -85,7 +85,7 @@ export const SettingsPanel: React.FC = () => {
     <div className="max-w-xl mx-auto w-full space-y-5 select-none">
       <div className="brutal-card p-5 space-y-5">
         <div className="hairline-b pb-3">
-          <h2 className="text-sm font-bold uppercase tracking-tight">Configurações de IA & LaTeX</h2>
+          <h2 className="text-sm font-bold uppercase tracking-tight">Ajustes de IA e PDF</h2>
         </div>
 
         {loading ? (

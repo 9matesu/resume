@@ -2,6 +2,14 @@
 
 ## [unreleased]
 
+### Fontes e comunicação
+
+- Só duas famílias: Instrument Serif nos títulos, Inter em todo o resto.
+  Schibsted e Switzer saíram, Fontshare saiu, tudo é OFL local.
+- Zero travessão em texto visível. Termos técnicos viraram palavras
+  simples na UI (LaTeX virou Código, ATS virou Nota, compilando virou
+  gerando PDF).
+
 ### Revisão de arquitetura
 
 - Gate de PDF ligado: `compile_pdf` valida todo PDF (tamanho, header,
