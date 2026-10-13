@@ -6,9 +6,12 @@
 
 - Só duas famílias: Instrument Serif nos títulos, Inter em todo o resto.
   Schibsted e Switzer saíram, Fontshare saiu, tudo é OFL local.
-- Zero travessão em texto visível. Termos técnicos viraram palavras
-  simples na UI (LaTeX virou Código, ATS virou Nota, compilando virou
-  gerando PDF).
+- Duas famílias, nada mais. Onde o design pedia "mono", agora é Inter.
+  Regra global `* { font-family: inherit }` trava a uniformidade; só o
+  editor de código usa `--font-code` (pilha do sistema).
+- E2E novo: todo texto visível renderiza em Inter ou Instrument Serif
+  (`ui/e2e/sidepanel.spec.ts`), falha se qualquer terceira família entrar.
+- Playwright na porta 5179 (a 5173 é do goongrid nesta máquina).
 
 ### Revisão de arquitetura
 

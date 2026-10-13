@@ -27,7 +27,11 @@
 
 @theme {
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono: ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
+  /* Duas famílias, nada mais. Onde o design pedia "mono", agora é Inter.
+     Só o editor de código do Estúdio usa a pilha do sistema (ui-monospace),
+     com --font-code explícito. */
+  --font-mono: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-code: ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
   --radius-soft: 14px;
   --radius-pill: 999px;
 }
@@ -48,14 +52,24 @@
     @apply bg-white text-black antialiased selection:bg-black selection:text-white;
   }
 
+  /* Trava global: nenhuma página da extensão renderiza texto em outra
+     família além de Inter e Instrument Serif. Só o código usa --font-code. */
+  *, *::before, *::after {
+    font-family: inherit;
+  }
+
   button, input, textarea, select {
     font-family: inherit;
   }
 }
 
-.font-editorial {
+.font-editorial, .font-editorial * {
   font-family: 'Instrument Serif', serif;
   letter-spacing: -0.02em;
+}
+
+.font-code, .font-code * {
+  font-family: var(--font-code);
 }
 
 

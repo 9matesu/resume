@@ -620,7 +620,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
               <textarea
                 value={rawTex}
                 onChange={(e) => setRawTex(e.target.value)}
-                className="flex-1 min-h-[500px] w-full p-4 bg-black font-mono text-xs text-white border-2 border-black focus:outline-none leading-relaxed selection:bg-[#ffff00] selection:text-black"
+                className="font-code flex-1 min-h-[500px] w-full p-4 bg-black text-xs text-white border-2 border-black focus:outline-none leading-relaxed selection:bg-[#ffff00] selection:text-black"
                 spellCheck={false}
               />
             </div>

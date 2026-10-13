@@ -9,14 +9,14 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:5179',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     viewport: { width: 400, height: 800 }, // sidepanel real size
   },
   webServer: {
-    command: 'npx vite --port 5173 --strictPort',
-    url: 'http://localhost:5173/sidepanel.html',
+    command: 'npx vite --port 5179 --strictPort',
+    url: 'http://localhost:5179/sidepanel.html',
     reuseExistingServer: true,
     timeout: 120_000,
   },

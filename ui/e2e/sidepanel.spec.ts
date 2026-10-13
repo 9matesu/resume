@@ -68,4 +68,26 @@ test.describe('sidepanel UI/UX', () => {
     await expect(page.getByTestId('auto-capture')).toBeVisible();
     await page.screenshot({ path: 'e2e/screenshots/sidepanel-before-error.png' });
   });
+
+  // Trava de marca: TODO texto visível renderiza em Inter ou Instrument Serif.
+  // Qualquer terceira família que entrar no CSS quebra este teste.
+  test('todo texto visível usa só Inter ou Instrument Serif', async ({ page }) => {
+    await mockBase(page);
+    await page.goto('/sidepanel.html');
+    await expect(page.getByTestId('auto-capture')).toBeVisible();
+    const offenders = await page.evaluate(() => {
+      const allowed = /Inter|Instrument Serif/;
+      const bad: string[] = [];
+      document.querySelectorAll<HTMLElement>('body *').forEach((el) => {
+        const text = (el.childElementCount === 0 ? el.textContent : '').trim();
+        if (!text) return;
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) return;
+        const fam = getComputedStyle(el).fontFamily;
+        if (!allowed.test(fam)) bad.push(`${el.tagName}.${el.className}: ${fam}`);
+      });
+      return bad;
+    });
+    expect(offenders).toEqual([]);
+  });
 });
