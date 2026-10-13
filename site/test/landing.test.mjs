@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const css = readFileSync(new URL('../landing.css', import.meta.url), 'utf8');
+const css = readFileSync(new URL('../landing.css', import.meta.url), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
 const js = readFileSync(new URL('../landing.js', import.meta.url), 'utf8');
 
 test('pt-BR + meta viewport + title resuMe', () => {
@@ -39,14 +39,20 @@ test('V3: hero full-bleed (largura total da pagina)', () => {
   assert.match(css, /\.hero\s*\{[^}]*width:\s*100vw/);
   assert.doesNotMatch(css, /\.hero-bg\s*\{[^}]*max-width/);
 });
-test('V3: paginas de scroll-snap em secoes .page', () => {
+test('V3: paginas de scroll-snap em secoes .page, sem travar o gesto', () => {
   assert.match(css, /scroll-snap-type:\s*y\s+(start|proximity)/);
   assert.match(css, /\.page\s*\{[^}]*scroll-snap-align:\s*start/);
+  assert.doesNotMatch(css, /scroll-snap-stop:\s*always/, 'always trava o scroll');
   const pages = (html.match(/class="[^"]*\bpage\b/g) || []).length;
   assert.ok(pages >= 5, `esperava >=5 secoes .page, achei ${pages}`);
 });
-test('V3: animacao snap-in (overshoot) no reveal', () => {
-  assert.match(css, /cubic-bezier\([^)]*1\.[1-9]/, 'easing com overshoot');
+test('V3: reveal sem scale e com curva que nao volta (nao serrilha)', () => {
+  assert.doesNotMatch(css, /\.reveal\s*\{[^}]*scale\(/, 'scale em texto deixa serrilhado');
+  assert.doesNotMatch(css, /cubic-bezier\([^)]*,\s*1\.[1-9]/, 'curva com overshoot lê como tranco');
+  assert.match(css, /\.reveal\s*\{[^}]*cubic-bezier\(0\.22,\s*1,\s*0\.36,\s*1\)/);
+});
+test('V3: botao e card nao animam "all" (forca layout a cada frame)', () => {
+  assert.doesNotMatch(css, /transition:\s*all/);
 });
 test('V3: sem glow, sem pulse, sem marquee (nada caforma)', () => {
   assert.doesNotMatch(css, /@keyframes\s+pulse|animation:\s*pulse/i);

@@ -13,6 +13,7 @@ Instruções permanentes para agentes que mexem neste repo. Leia antes de qualqu
 - `backend/app/models/`: `job.py`, `profile.py`. Banco em `backend/app/db.py` (SQLite WAL).
 - Docs vivas em `docs/`: `atlas/` (mapa verificado do código), `requisitos.md`, `casos-de-uso.md`, `adr/`, `design.md`.
 - `launcher/` (exe `dist\resuMe.exe`): só stdlib, sem console, instância única por porta, tray só no Windows.
+- `ui/src/components/ActionButton.tsx` e `ui/src/components/Toast.tsx`: feedback padrão. Nenhum componente novo inventa spinner, toast ou sombra animada.
 
 ## Regras de arquitetura
 
@@ -24,6 +25,12 @@ Instruções permanentes para agentes que mexem neste repo. Leia antes de qualqu
 6. Overlay da captura usa `UI_FONT` única e cantos arredondados. Tokens visuais moram em `ui/src/index.css`.
 7. Nenhum arquivo passa de 1000 linhas sem decompor antes. `OnboardingWizard.tsx` está em 948: mexer ali exige extrair antes.
 8. Código morto não fica: ou liga no pipeline ou apaga.
+9. Movimento só por transform e opacity, com os tokens `--ease`,
+   `--dur-fast`, `--dur`, `--dur-slow`. Nada de `scale` em texto, nada de
+   curva com overshoot, nada de `transition: all`.
+10. Um botão por ação. Se duas ações separem produzem o mesmo resultado,
+    juntam em uma com dirty tracking. Feedback vai por `ActionButton`,
+    `Toast` ou `Stage`, nunca spinner solto.
 
 ## Comandos
 

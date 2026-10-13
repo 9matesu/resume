@@ -13,11 +13,21 @@ import {
 } from '../../services/api';
 import { saveStudioPayload, openStudioTab } from '../../chrome';
 import { cvFilename } from '../../cvFilename';
+import { ActionButton } from '../ActionButton';
+import { ToastStack, useToasts } from '../Toast';
 
 export const ApplicationHistory: React.FC = () => {
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [opening, setOpening] = useState<string | null>(null);
+  const { items: toasts, push: toast, dismiss } = useToasts();
+  // O botão de apagar vira "tem certeza?" por 3 segundos e volta sozinho.
+  useEffect(() => {
+    if (!confirmDelete) return;
+    const h = setTimeout(() => setConfirmDelete(null), 3000);
+    return () => clearTimeout(h);
+  }, [confirmDelete]);
 
   const loadHistory = async () => {
     try {
@@ -102,32 +112,36 @@ export const ApplicationHistory: React.FC = () => {
                       <Download className="w-3 h-3" />
                       <span>PDF</span>
                     </a>
-                    <button
+                    <ActionButton
+                      label="Estúdio"
+                      pendingLabel="Abrindo…"
+                      pending={opening === item.id}
+                      icon={<Maximize2 className="w-3 h-3" />}
                       onClick={async () => {
+                        setOpening(item.id);
                         try {
                           const detail = await fetchResumeDetail(item.id);
                           await saveStudioPayload(detail);
                           openStudioTab();
-                        } catch (err) {
-                          console.error('Falha ao abrir no estúdio:', err);
+                        } catch (err: any) {
+                          toast(err.message || 'Não consegui abrir no Estúdio.', 'error');
+                        } finally {
+                          setOpening(null);
                         }
                       }}
-                      className="brutal-btn-yellow flex items-center gap-1 px-3 py-1 text-[11px]"
-                    >
-                      <Maximize2 className="w-3 h-3" />
-                      <span>Estúdio</span>
-                    </button>
+                    />
                     {confirmDelete === item.id ? (
                       <button
                         onClick={async () => {
                           await deleteResume(item.id);
                           setHistory(history.filter((h) => h.id !== item.id));
                           setConfirmDelete(null);
+                          toast('Currículo removido.', 'ok');
                         }}
                         className="brutal-btn flex items-center gap-1 px-3 py-1 text-[11px]"
                       >
                         <Trash2 className="w-3 h-3" />
-                        <span>Confirmar</span>
+                        <span>Tem certeza?</span>
                       </button>
                     ) : (
                       <button
@@ -146,6 +160,8 @@ export const ApplicationHistory: React.FC = () => {
         </table>
         </div>
       )}
+
+      <ToastStack items={toasts} onDismiss={dismiss} />
     </div>
   );
 };

@@ -2,6 +2,21 @@
 
 ## [unreleased]
 
+### Movimento e feedback
+
+- Nada mais de `scale` em texto, nem curva com overshoot: uma curva só
+  (`--ease`), durações por token, transição só de transform/opacity.
+- Sombra dura dos botões virou pseudo-elemento, então o `:active` não
+  força repaint. `transition: all` saiu.
+- `prefers-reduced-motion` na extensão (antes só no site) e preload das
+  fontes nas duas páginas, sem troca no primeiro paint.
+- Primitivas novas: `ActionButton` (4 estados com texto real), `Toast`
+  (pilha in place com `role="status"`), `Stage` e `Skeleton`.
+- Um botão por ação: captura automática com escape manual sob demanda,
+  Estúdio com "Salvar e baixar PDF" que decide sozinho se precisa
+  compilar, apagar no histórico vira "Tem certeza?" com 3s de timeout.
+- Site sem `scroll-snap-stop: always` e com transição explícita no botão.
+
 ### Fontes e comunicação
 
 - Só duas famílias: Instrument Serif nos títulos, Inter em todo o resto.

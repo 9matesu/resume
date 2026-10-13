@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Download,
   FileCode,
@@ -6,6 +6,7 @@ import {
   Trash2,
   Loader2,
   Wand2,
+  Save,
 } from 'lucide-react';
 import {
   saveResumeEdit,
@@ -14,6 +15,8 @@ import {
   resumePdfUrl,
 } from '../../services/api';
 import { cvFilename } from '../../cvFilename';
+import { ActionButton, Stage } from '../ActionButton';
+import { ToastStack, useToasts } from '../Toast';
 import type {
   AdaptedResult,
   CandidateProfile,
@@ -57,7 +60,13 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
   const [pdfKey, setPdfKey] = useState(0);
   const [expired, setExpired] = useState(false);
   const [saveError, setSaveError] = useState('');
-  const [savedFlash, setSavedFlash] = useState(false);
+  const { items: toasts, push: toast, dismiss } = useToasts();
+  // Último estado salvo: define se o botão principal salva ou só baixa.
+  const savedSnapshot = useRef<{ tex: string; profile: CandidateProfile } | null>(null);
+  // Snapshot inicial = o que veio do histórico, ou seja, estado salvo.
+  if (savedSnapshot.current === null) {
+    savedSnapshot.current = { tex: adaptedData.adaptation.tex_code, profile };
+  }
 
   // Revalida o snapshot do chrome.storage contra o histórico: o registro
   // pode ter sumido (limpeza) ou o backend pode ter reiniciado.
@@ -82,23 +91,48 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Salvar edicao: persiste no registro do historico e recompila o PDF dele.
-  const handleRecompile = async () => {
+  // Uma ação só: compila e baixa. O botão diz o que está fazendo enquanto roda
+  // e confirma quando termina. Dirty tracking decide o rótulo: com alteração
+  // ele salva; sem alteração ele só baixa o PDF que já existe.
+  const dirty =
+    savedSnapshot.current == null ||
+    savedSnapshot.current.tex !== rawTex ||
+    JSON.stringify(savedSnapshot.current.profile) !== JSON.stringify(profile);
+
+  const compileAndDownload = async () => {
     setCompiling(true);
     setPdfStatus('loading');
     setSaveError('');
     try {
-      const res =
-        activeTab === 'latex'
-          ? await saveResumeEdit(adaptedData.adaptation.id, { tex_code: rawTex })
-          : await saveResumeEdit(adaptedData.adaptation.id, { profile });
-      setRawTex(res.tex);
-      setPdfUrl(`${res.pdf_url}?t=${Date.now()}`);
-      setSavedFlash(true);
-      setTimeout(() => setSavedFlash(false), 2000);
+      let url = pdfUrl;
+      if (dirty) {
+        const res =
+          activeTab === 'latex'
+            ? await saveResumeEdit(adaptedData.adaptation.id, { tex_code: rawTex })
+            : await saveResumeEdit(adaptedData.adaptation.id, { profile });
+        setRawTex(res.tex);
+        url = `${res.pdf_url}?t=${Date.now()}`;
+        setPdfUrl(url);
+        savedSnapshot.current = { tex: res.tex, profile };
+        toast('PDF atualizado.', 'ok');
+      }
+      const a = document.createElement('a');
+      a.href = url;
+      a.download =
+        adaptedData.adaptation.pdf_filename ||
+        cvFilename(
+          adaptedData.adaptation.tailored_profile?.personal?.name || '',
+          adaptedData.job.title,
+          adaptedData.job.company,
+        );
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast('PDF baixado.', 'ok');
     } catch (err: any) {
       setSaveError(err.message || 'Não salvou.');
       setPdfStatus('error');
+      toast(err.message || 'Não consegui gerar o PDF.', 'error');
     } finally {
       setCompiling(false);
     }
@@ -123,21 +157,6 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
     } finally {
       setPolishingIndex(null);
     }
-  };
-
-  const handleDownload = () => {
-    const a = document.createElement('a');
-    a.href = pdfUrl;
-    a.download =
-      adaptedData.adaptation.pdf_filename ||
-      cvFilename(
-        adaptedData.adaptation.tailored_profile?.personal?.name || '',
-        adaptedData.job.title,
-        adaptedData.job.company,
-      );
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
   };
 
   const handleAddSkill = (e: React.KeyboardEvent) => {
@@ -627,23 +646,26 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
           )}
         </div>
 
-        {/* Bottom Action Footer */}
+        {/* Bottom Action Footer: uma ação só */}
         <div className="p-4 hairline-t bg-white flex flex-wrap items-center justify-between gap-3">
           {saveError ? (
-            <span className="text-xs font-mono text-red-700">{saveError}</span>
+            <span className="text-xs text-red-700">{saveError}</span>
+          ) : compiling ? (
+            <Stage label="Gerando seu PDF" detail="Pode levar alguns segundos" />
           ) : (
-            <span className="text-xs text-neutral-600 font-mono">
-              {compiling ? 'Gerando PDF…' : savedFlash ? 'Salvo no histórico' : 'Não salvou ainda.'}
+            <span className="text-xs text-neutral-600">
+              {dirty ? 'Você tem alterações não salvas' : 'Tudo salvo'}
             </span>
           )}
-          <button
-            onClick={handleRecompile}
-            disabled={compiling}
-            className="brutal-btn-yellow flex items-center gap-2 px-5 py-2.5 text-xs tracking-wider shrink-0"
-          >
-            {compiling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-            <span>{compiling ? 'Gerando PDF…' : 'Salvar e Atualizar PDF'}</span>
-          </button>
+          <ActionButton
+            label={dirty ? 'Salvar e baixar PDF' : 'Baixar PDF'}
+            pendingLabel="Gerando PDF…"
+            pending={compiling}
+            onClick={compileAndDownload}
+            icon={dirty ? <Save className="w-3.5 h-3.5" /> : <Download className="w-3.5 h-3.5" />}
+            className="px-5 py-2.5 text-xs tracking-wider shrink-0"
+            testId="save-download"
+          />
         </div>
       </div>
 
@@ -655,15 +677,9 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
             <span className="uppercase">Prévia do PDF</span>
           </span>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleDownload}
-              className="brutal-btn-yellow flex items-center gap-1.5 px-4 py-1.5 text-[11px]"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Baixar PDF</span>
-            </button>
-          </div>
+          <span className="text-[10px] text-neutral-500">
+            {compiling ? 'Atualizando…' : 'O PDF baixa pelo botão ao lado'}
+          </span>
         </div>
 
         {/* Embedded PDF iframe */}
@@ -694,18 +710,19 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
                       Não foi possível abrir a pré-visualização. Confira se o motor está rodando.
                     </p>
                     <div className="flex items-center gap-2">
-                      <button
+                      <ActionButton
+                        label="Tentar de novo"
                         onClick={() => {
                           setPdfStatus('loading');
                           setPdfKey((k) => k + 1);
                         }}
-                        className="brutal-btn px-4 py-2 text-[11px]"
-                      >
-                        Tentar novamente
-                      </button>
-                      <button onClick={handleDownload} className="brutal-btn-yellow px-4 py-2 text-[11px]">
-                        Baixar PDF
-                      </button>
+                        variant="solid"
+                      />
+                      <ActionButton
+                        label="Baixar PDF"
+                        icon={<Download className="w-3.5 h-3.5" />}
+                        onClick={compileAndDownload}
+                      />
                     </div>
                   </div>
                 )}
@@ -722,6 +739,8 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
           </div>
         </div>
       </div>
+
+      <ToastStack items={toasts} onDismiss={dismiss} />
     </div>
   );
 };

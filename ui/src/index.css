@@ -40,6 +40,14 @@
   --resume-font: 'Inter', system-ui, -apple-system, sans-serif;
   --resume-radius: 14px;
   --resume-radius-pill: 999px;
+
+  /* Movimento: uma curva só, sem overshoot. Curva com volta (valor acima de 1)
+     ou escala em texto deixam o rasterizador em subpixel e a leitura fica
+     serrilhada. Aqui só animamos transform e opacity. */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur: 180ms;
+  --dur-slow: 280ms;
 }
 
 @layer base {
@@ -72,6 +80,78 @@
   font-family: var(--font-code);
 }
 
+/* ---- primitivas de movimento ----
+   Só transform e opacity. Nada de scale em texto. */
+.reveal {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+
+.reveal.in {
+  opacity: 1;
+  transform: none;
+}
+
+.toast-in {
+  animation: toast-in var(--dur-slow) var(--ease) both;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.toast-bar {
+  animation: toast-bar 4s linear forwards;
+  transform-origin: left center;
+}
+
+@keyframes toast-bar {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f1f1f1 25%, #e5e5e5 37%, #f1f1f1 63%);
+  background-size: 400% 100%;
+  animation: skeleton 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton {
+  from { background-position: 100% 50%; }
+  to { background-position: 0 50%; }
+}
+
+.spin {
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Quem pediu menos movimento não vê animação nenhuma, e sim estado final. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  .skeleton {
+    background: #f1f1f1;
+  }
+}
+
 
 .bg-brutal-yellow {
   background-color: #ffff00;
@@ -91,50 +171,67 @@
   box-shadow: 8px 8px 0px 0px #000000;
 }
 
-.brutal-btn {
-  background-color: #ffffff;
-  color: #000000;
-  border: 2px solid #000000;
-  border-radius: 10px;
+/* A sombra dura vive num ::after para poder andar com o botão via transform.
+   Animar box-shadow força repaint a cada frame; mover um pseudo-elemento não. */
+.brutal-btn,
+.brutal-btn-yellow {
+  position: relative;
   font-family: inherit;
   font-weight: 700;
   text-transform: uppercase;
-  box-shadow: 3px 3px 0px 0px #000000;
-  transition: all 0.1s ease;
+  border: 2px solid #000000;
+  border-radius: 10px;
   cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease);
 }
 
-.brutal-btn:hover {
+.brutal-btn::after,
+.brutal-btn-yellow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
   background-color: #000000;
-  color: #ffffff;
+  transform: translate(3px, 3px);
+  transition: transform var(--dur-fast) var(--ease);
 }
 
-.brutal-btn:active {
-  transform: translate(2px, 2px);
-  box-shadow: 0px 0px 0px 0px #000000;
+.brutal-btn {
+  background-color: #ffffff;
+  color: #000000;
 }
 
 .brutal-btn-yellow {
   background-color: #ffff00;
   color: #000000;
-  border: 2px solid #000000;
-  border-radius: 10px;
-  font-family: inherit;
-  font-weight: 700;
-  text-transform: uppercase;
-  box-shadow: 3px 3px 0px 0px #000000;
-  transition: all 0.1s ease;
-  cursor: pointer;
+}
+
+.brutal-btn:hover,
+.brutal-btn-yellow:hover {
+  background-color: #000000;
+  color: #ffffff;
 }
 
 .brutal-btn-yellow:hover {
-  background-color: #000000;
   color: #ffff00;
 }
 
-.brutal-btn-yellow:active {
+.brutal-btn:active::after,
+.brutal-btn-yellow:active::after {
   transform: translate(2px, 2px);
-  box-shadow: 0px 0px 0px 0px #000000;
+}
+
+.brutal-btn:disabled,
+.brutal-btn-yellow:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.brutal-btn:disabled::after,
+.brutal-btn-yellow:disabled::after {
+  transform: translate(3px, 3px);
 }
 
 .hairline-b {

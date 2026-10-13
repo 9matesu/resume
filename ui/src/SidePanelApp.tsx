@@ -24,6 +24,8 @@ import { cvFilename } from './cvFilename';
 import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
 import { ApplicationHistory } from './components/history/ApplicationHistory';
 import { SettingsPanel } from './components/settings/SettingsPanel';
+import { ActionButton, TextButton, Stage, Skeleton } from './components/ActionButton';
+import { ToastStack, useToasts } from './components/Toast';
 
 type View = 'capture' | 'history' | 'settings';
 
@@ -39,11 +41,12 @@ export function SidePanelApp() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<View>('capture');
   const [busy, setBusy] = useState(false);
-  const [statusMsg, setStatusMsg] = useState('');
-  const [error, setError] = useState('');
   const [result, setResult] = useState<AdaptedResult | null>(null);
   const [starting, setStarting] = useState(false);
   const autoEnsured = useRef(false);
+  const [stage, setStage] = useState<string | null>(null);
+  const [showManual, setShowManual] = useState(false);
+  const { items: toasts, push: toast, dismiss } = useToasts();
 
   const applyHealth = async (h: AppHealth) => {
     setHealth(h);
@@ -112,17 +115,17 @@ export function SidePanelApp() {
         (r) => {
           setResult(r as AdaptedResult);
           setBusy(false);
-          setStatusMsg('');
-          setError('');
+          setStage(null);
+          toast('Currículo pronto.', 'ok');
         },
         (m) => {
-          setError(m);
+          toast(m, 'error');
           setBusy(false);
-          setStatusMsg('');
+          setStage(null);
         },
         () => {
           setBusy(false);
-          setStatusMsg('');
+          setStage(null);
         }
       ),
     []
@@ -136,57 +139,66 @@ export function SidePanelApp() {
         e.preventDefault();
         void cancelCaptureSelection();
         setBusy(false);
-        setStatusMsg('');
+        setStage(null);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [busy]);
 
-  const handleDomCapture = async () => {
+  // Um botão só. O auto tenta primeiro; se não achar a vaga, ele cai sozinho
+  // para a seleção manual. O link aparece só nesse caso, como escape.
+  const handleCapture = async () => {
     setBusy(true);
-    setError('');
     setResult(null);
+    setStage('read');
+    setShowManual(false);
     try {
-      await startCaptureSelection();
-      setStatusMsg('Clique no painel da vaga. Edite o texto se quiser e confirme. Esc cancela.');
+      await startAutoCapture();
+      setStage('adapt');
     } catch (e: any) {
-      setError(e.message || 'A captura não iniciou.');
+      if ((e as any)?.fallback === 'manual') {
+        setShowManual(true);
+        toast('Não achei a vaga sozinho. Selecione o painel.', 'info');
+        setBusy(false);
+        setStage(null);
+        return;
+      }
+      toast(e.message || 'A captura falhou.', 'error');
       setBusy(false);
-      setStatusMsg('');
+      setStage(null);
     }
   };
 
-  const handleAutoCapture = async () => {
+  const handleDomCapture = async () => {
     setBusy(true);
-    setError('');
-    setResult(null);
-    setStatusMsg('Lendo a vaga automaticamente…');
+    setStage('select');
     try {
-      await startAutoCapture();
-      setStatusMsg('Extraindo e adaptando… o resultado aparece aqui.');
+      await startCaptureSelection();
+      setStage('select');
     } catch (e: any) {
-      // Fallback flexível: se o auto falhar, cai para seleção manual.
-      if ((e as any)?.fallback === 'manual') {
-        setStatusMsg('Auto não achou. Clique no painel da vaga para selecionar.');
-        try {
-          await startCaptureSelection();
-          return;
-        } catch (e2: any) {
-          setError(e2.message || 'A captura não iniciou.');
-        }
-      } else {
-        setError(e.message || 'A captura automática falhou.');
-      }
+      toast(e.message || 'A captura não iniciou.', 'error');
       setBusy(false);
-      setStatusMsg('');
+      setStage(null);
     }
+  };
+
+  const STAGE_TEXT: Record<string, { label: string; detail: string }> = {
+    read: { label: 'Lendo a vaga na página', detail: 'Leva um instante' },
+    adapt: { label: 'Adaptando seu currículo', detail: `Usando ${health?.ai_model || health?.ai_provider || 'a sua IA'}` },
+    select: { label: 'Clique no painel da vaga', detail: 'Esc cancela' },
   };
 
   const openStudio = async () => {
     if (!result) return;
     await saveStudioPayload(result);
     openStudioTab();
+    toast('Estúdio aberto.', 'ok');
+  };
+
+  const handleDownload = () => {
+    if (!result) return;
+    toast('PDF baixado.', 'ok');
   };
 
   if (loading) {
@@ -263,39 +275,35 @@ export function SidePanelApp() {
       <main className="flex-1 overflow-y-auto p-4">
         {view === 'capture' && (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 gap-2">
-              <button
-                onClick={handleAutoCapture}
-                disabled={busy}
-                data-testid="auto-capture"
-                className="w-full bg-brutal-yellow border-2 border-black rounded-2xl shadow-[6px_6px_0px_0px_#000000] p-6 text-left active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer disabled:opacity-60"
-              >
-                <div className="flex items-center gap-2">
-                  {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <Camera className="w-5 h-5" />}
-                  <span className="font-editorial text-2xl leading-none">Capturar Vaga</span>
-                </div>
-                <p className="text-[11px] mt-2 leading-relaxed">
-                  {busy
-                    ? statusMsg || 'Processando…'
-                    : 'Automático primeiro: lê a vaga sozinho. Se precisar, você ajusta na seleção manual.'}
-                </p>
-              </button>
-              <button
-                onClick={handleDomCapture}
-                disabled={busy}
-                data-testid="manual-capture"
-                className="w-full bg-white border-2 border-black rounded-2xl shadow-[4px_4px_0px_0px_#000000] px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer disabled:opacity-60"
-              >
-                Seleção manual do painel (flexível)
-              </button>
-            </div>
+            <button
+              onClick={handleCapture}
+              disabled={busy}
+              data-testid="auto-capture"
+              className="w-full bg-brutal-yellow border-2 border-black rounded-2xl p-6 text-left active:translate-x-[2px] active:translate-y-[2px] transition-transform cursor-pointer disabled:opacity-60"
+            >
+              <div className="flex items-center gap-2">
+                {busy ? (
+                  <Loader2 className="spin w-5 h-5" />
+                ) : (
+                  <Camera className="w-5 h-5" />
+                )}
+                <span className="font-editorial text-2xl leading-none">Capturar Vaga</span>
+              </div>
+            </button>
 
-            {error && (
-              <div className="border-2 border-black p-3 text-xs flex items-start gap-2">
-                <span className="brutal-tag brutal-tag-black shrink-0">Erro</span>
-                <span>{error}</span>
+            {stage && STAGE_TEXT[stage] && (
+              <Stage label={STAGE_TEXT[stage].label} detail={STAGE_TEXT[stage].detail} />
+            )}
+
+            {showManual && (
+              <div className="flex items-center gap-2">
+                <TextButton onClick={handleDomCapture} testId="manual-capture">
+                  Não achou? Selecione o painel
+                </TextButton>
               </div>
             )}
+
+            {busy && !stage && <Skeleton rows={2} />}
 
             {result && (
               <div className="brutal-card p-4 space-y-3">
@@ -330,19 +338,29 @@ export function SidePanelApp() {
                 </p>
 
                 <div className="grid grid-cols-2 gap-2">
-                  <a
-                    href={result.adaptation.pdf_url}
-                    download={result.adaptation.pdf_filename || cvFilename(health.candidate_name || '', result.job.title, result.job.company)}
+                  <button
+                    data-testid="download-pdf"
+                    onClick={handleDownload}
                     className="brutal-btn-yellow flex items-center justify-center gap-1.5 px-2 py-2 text-[11px]"
                   >
                     <Download className="w-3.5 h-3.5" />
                     Baixar PDF
-                  </a>
-                  <button onClick={openStudio} className="brutal-btn flex items-center justify-center gap-1.5 px-2 py-2 text-[11px]">
-                    <Maximize2 className="w-3.5 h-3.5" />
-                    Abrir Estúdio
                   </button>
+                  <ActionButton
+                    label="Abrir Estúdio"
+                    icon={<Maximize2 className="w-3.5 h-3.5" />}
+                    variant="solid"
+                    onClick={openStudio}
+                  />
                 </div>
+                <a
+                  className="sr-only"
+                  data-testid="download-anchor"
+                  href={result.adaptation.pdf_url}
+                  download={result.adaptation.pdf_filename || cvFilename(health.candidate_name || '', result.job.title, result.job.company)}
+                >
+                  {result.adaptation.pdf_filename || 'curriculo.pdf'}
+                </a>
               </div>
             )}
           </div>
@@ -356,6 +374,8 @@ export function SidePanelApp() {
       <footer className="hairline-t px-4 py-1.5 text-[10px] text-neutral-500 flex items-center justify-end shrink-0">
         <span>{health.candidate_name}</span>
       </footer>
+
+      <ToastStack items={toasts} onDismiss={dismiss} />
     </div>
   );
 }
