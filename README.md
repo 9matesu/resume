@@ -1,6 +1,6 @@
 # resuMe
 
-Um currículo para cada vaga. O resuMe lê a vaga aberta no seu navegador, reescreve seu currículo para ela e entrega o PDF. Você revisa cada linha antes de enviar.
+Um currículo para cada vaga. O resuMe lê a vaga aberta no seu navegador, reescreve seu currículo para ela e entrega o PDF. Você também pode revisar cada linha antes de enviar.
 
 Funciona com LinkedIn, Gupy, Indeed, Greenhouse e qualquer página com texto. O motor roda no seu PC. Sem conta, sem servidor nosso.
 
@@ -8,7 +8,7 @@ Página com download: [matesu.me/resume](https://matesu.me/resume).
 
 ## Instalar
 
-Leva uns 5 minutos. Sem terminal, sem permissão de administrador.
+Leva uns 5 minutos. Não é no terminal e não precisa de permissão de administrador.
 
 1. Baixe o `resuMe-1.2.0-setup.exe` na [página de releases](https://github.com/9matesu/resume/releases) e abra. Se preferir, use o zip portátil da mesma página.
 2. O instalador registra o motor e abre o Chrome na página de extensões, com o caminho copiado.
@@ -21,7 +21,7 @@ Na primeira abertura, envie seu currículo uma vez (PDF, Word ou texto). O resuM
 1. Abra uma vaga no navegador e clique no ícone do resuMe.
 2. Clique em Capturar Vaga. O programa lê a página sozinho; se não achar o texto, você aponta com o mouse.
 3. Confira a prévia, edite se precisar e confirme. `Esc` cancela a qualquer momento.
-4. Baixe o PDF (`CVMateus-Seguranca-da-Informacao.pdf`) ou abra no Estúdio para refinar.
+4. Baixe o PDF (`xxxxx.pdf`) ou abra no Estúdio para refinar.
 
 O atalho `Alt+Shift+A` captura direto da aba ativa. Para o dia a dia, abra `dist\resuMe.exe` (ou compile com `.\scripts\build-launcher.ps1`): ele sobe o motor escondido, mostra só o ícone na bandeja e abre o Chrome com a extensão. Segunda execução não abre nada novo. Sair pelo menu da bandeja (ou `resuMe.exe --quit`) para tudo. Sem terminal, sem auto-start no Windows, sem dependências em runtime.
 
