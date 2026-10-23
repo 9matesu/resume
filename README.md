@@ -54,6 +54,3 @@ npm run build
 
 Testes: `pytest` no `backend/`, `node --test` nos pacotes `extension/test`, `ui/test` e `site/test`, E2E com screenshots em `cd ui; npm run test:e2e`. Empacotar release: `powershell -ExecutionPolicy Bypass -File .\scripts\package-release.ps1`.
 
-## Identidade visual
-
-Títulos em Instrument Serif, interface em Inter, ambas OFL e embutidas (`ui/public/fonts/`), nada de CDN na extensão nem no site. Logo: monograma Me sobre preto, traço amarelo.
