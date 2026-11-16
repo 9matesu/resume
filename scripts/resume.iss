@@ -19,6 +19,10 @@ SetupIconFile={#SourcePath}resume-setup.ico
 [Files]
 Source: "{#StageDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
+[Icons]
+Name: "{group}\resuMe"; Filename: "{app}\resuMe.exe"
+Name: "{userdesktop}\resuMe"; Filename: "{app}\resuMe.exe"
+
 [Run]
 ; 1. registra o native host (auto-start do motor)  -  silencioso, espera acabar
 Filename: "powershell.exe"; \

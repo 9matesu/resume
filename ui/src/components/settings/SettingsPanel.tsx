@@ -151,6 +151,7 @@ export const SettingsPanel: React.FC = () => {
                 <button
                   type="button"
                   onClick={async () => {
+                    if (!window.confirm('Isso remove o currículo base e o histórico ligado a ele. Quer continuar?')) return;
                     setSwapping(true);
                     try {
                       await deleteMasterProfile();
@@ -163,7 +164,7 @@ export const SettingsPanel: React.FC = () => {
                   disabled={swapping}
                   className="brutal-btn w-full py-2 text-[11px]"
                 >
-                  {swapping ? 'Removendo...' : 'Trocar currículo base'}
+                  {swapping ? 'Removendo...' : 'Remover currículo base'}
                 </button>
               )}
             </div>

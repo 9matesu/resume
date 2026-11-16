@@ -49,8 +49,8 @@ def get_settings() -> Settings:
     db_map = {r["key"]: r["value"] for r in rows}
     if "ai_provider" in db_map: s.ai_provider = db_map["ai_provider"]
     if "ai_model" in db_map: s.ai_model = db_map["ai_model"]
-    if "ai_api_key" in db_map: s.ai_api_key = db_map["ai_api_key"]
-    # chave por provedor vence a global quando existe para o provedor ativo
+    # Chave e por provedor. Nao existe fallback global: uma chave salva para
+    # um provedor nunca pode vazar para outro endpoint.
     per_provider = db_map.get(f"api_key:{s.ai_provider}")
     if per_provider:
         s.ai_api_key = per_provider

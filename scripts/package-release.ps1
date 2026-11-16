@@ -45,7 +45,10 @@ Remove-Item "$stage\native-host\build" -Recurse -Force -ErrorAction SilentlyCont
 
 # launcher de bandeja: compila aqui para sair junto no zip
 Write-Host "[4b/7] Launcher resuMe.exe" -ForegroundColor Yellow
-& "$root\backend\.venv\Scripts\python.exe" -m PyInstaller --noconsole --onefile --name resuMe-stage `
+$buildVenv = "$env:TEMP\resume-build-venv"
+& "$stage\python-embedded\python.exe" -m venv $buildVenv
+& "$buildVenv\Scripts\python.exe" -m pip install -q pyinstaller
+& "$buildVenv\Scripts\python.exe" -m PyInstaller --noconsole --onefile --name resuMe-stage `
   --icon "$root\scripts\resume-setup.ico" `
   --distpath "$stage" --workpath "$root\build\launcher" --specpath "$root\build\launcher" `
   -y "$root\launcher\resume_launcher.py"

@@ -44,6 +44,7 @@ export function SidePanelApp() {
   const [result, setResult] = useState<AdaptedResult | null>(null);
   const [starting, setStarting] = useState(false);
   const autoEnsured = useRef(false);
+  const downloadRef = useRef<HTMLAnchorElement>(null);
   const [stage, setStage] = useState<string | null>(null);
   const [showManual, setShowManual] = useState(false);
   const { items: toasts, push: toast, dismiss } = useToasts();
@@ -92,12 +93,35 @@ export function SidePanelApp() {
     }
   };
 
+  const consumePendingCapture = async () => {
+    if (!isExtension) return;
+    try {
+      const stored = await chrome.storage.local.get('resume_capture_result');
+      const pending = stored?.resume_capture_result as
+        | { ok?: boolean; result?: unknown; error?: string; cancelled?: boolean }
+        | undefined;
+      if (!pending) return;
+      await chrome.storage.local.remove('resume_capture_result');
+      setBusy(false);
+      setStage(null);
+      if (pending.ok) {
+        setResult(pending.result as AdaptedResult);
+        toast('Currículo pronto.', 'ok');
+      } else if (!pending.cancelled) {
+        toast(String(pending.error || 'Falha na captura'), 'error');
+      }
+    } catch {
+      // Se o storage estiver indisponível, o fluxo ao vivo continua funcionando.
+    }
+  };
+
   useEffect(() => {
     init().then((ok) => {
       if (!ok && isExtension && !autoEnsured.current) {
         autoEnsured.current = true;
         void startBackend();
       }
+      void consumePendingCapture();
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -109,21 +133,31 @@ export function SidePanelApp() {
     return () => clearInterval(t);
   }, [busy, starting]);
 
+  const clearPendingCapture = () => {
+    if (!isExtension) return;
+    try {
+      void chrome.storage.local.remove('resume_capture_result');
+    } catch {}
+  };
+
   useEffect(
     () =>
       onCaptureResult(
         (r) => {
+          clearPendingCapture();
           setResult(r as AdaptedResult);
           setBusy(false);
           setStage(null);
           toast('Currículo pronto.', 'ok');
         },
         (m) => {
+          clearPendingCapture();
           toast(m, 'error');
           setBusy(false);
           setStage(null);
         },
         () => {
+          clearPendingCapture();
           setBusy(false);
           setStage(null);
         }
@@ -197,8 +231,7 @@ export function SidePanelApp() {
   };
 
   const handleDownload = () => {
-    if (!result) return;
-    toast('PDF baixado.', 'ok');
+    downloadRef.current?.click();
   };
 
   if (loading) {
@@ -354,6 +387,7 @@ export function SidePanelApp() {
                   />
                 </div>
                 <a
+                  ref={downloadRef}
                   className="sr-only"
                   data-testid="download-anchor"
                   href={result.adaptation.pdf_url}

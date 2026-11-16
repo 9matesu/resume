@@ -57,10 +57,14 @@ def health_check():
     }
 
 def _resolve_key_for(s) -> str:
-    """Chave do provedor salvo em `s.ai_provider`, com fallback global."""
+    """Chave salva para o provedor ativo. Sem fallback global.
+
+    Uma chave global e uma armadilha: trocar de provedor mandaria a chave
+    antiga para um endpoint diferente. Preferimos exigir a chave do provedor.
+    """
     row = db.query_one("SELECT value FROM settings WHERE key=?",
                        (f"api_key:{s.ai_provider}",))
-    return row["value"] if row else (s.ai_api_key or "")
+    return row["value"] if row else ""
 
 
 @router.get("/settings")
@@ -92,11 +96,11 @@ def save_settings_endpoint(payload: SettingsPayload):
     if payload.ai_provider is not None: update_setting("ai_provider", payload.ai_provider)
     if payload.ai_model is not None: update_setting("ai_model", payload.ai_model)
     if payload.ai_api_key is not None:
-        update_setting("ai_api_key", payload.ai_api_key)
         target = payload.provider_for_key or payload.ai_provider
         if target:
             update_setting(f"api_key:{target}", payload.ai_api_key)
-        gateway.set_runtime_api_key(payload.ai_api_key)
+        # Legado: a chave global nunca e lida nem reescrita.
+        db.execute("DELETE FROM settings WHERE key='ai_api_key'")
     if payload.ai_base_url is not None: update_setting("ai_base_url", payload.ai_base_url)
     if payload.default_template is not None: update_setting("default_template", payload.default_template)
     if payload.default_lang is not None: update_setting("default_lang", payload.default_lang)
@@ -211,25 +215,10 @@ def save_master_profile_endpoint(payload: ProfilePayload):
 @router.post("/parse-resume")
 async def parse_resume_file(file: UploadFile = File(...)):
     raw = await file.read()
+    if len(raw) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Esse arquivo é muito grande. Use um currículo de até 10 MB.")
     try:
         text = importer.extract_text(file.filename, raw)
-        parsed = importer.parse_resume_text(text)
-        return {"status": "success", "profile": parsed, "raw_preview": text[:500]}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Não consegui ler esse currículo: {e}")
-
-class ParsePathPayload(BaseModel):
-    file_path: str
-
-@router.post("/parse-resume-path")
-def parse_resume_from_path(payload: ParsePathPayload):
-    from pathlib import Path
-    p = Path(payload.file_path)
-    if not p.exists() or not p.is_file():
-        raise HTTPException(status_code=400, detail="Esse caminho de arquivo não existe.")
-    try:
-        raw = p.read_bytes()
-        text = importer.extract_text(p.name, raw)
         parsed = importer.parse_resume_text(text)
         return {"status": "success", "profile": parsed, "raw_preview": text[:500]}
     except Exception as e:
@@ -303,8 +292,10 @@ def _run_adapt_pipeline(job_data: dict, captured_chars: int | None = None) -> di
     try:
         prov = gateway.get_provider(s)
         lang = latex_engine.detect_language(job_data)
-        user_prompt = prompts.build_adapt_payload(master_profile, job_data, lang=lang)
-        adapted_raw = prov.chat(prompts.SYSTEM_RULES, user_prompt, expect_json=True)
+        system_prompt, user_prompt = prompts.build_adapt_request(
+            master_profile, job_data, lang=lang
+        )
+        adapted_raw = prov.chat(system_prompt, user_prompt, expect_json=True)
         adapted_json = gateway.AIProvider._extract_json(adapted_raw)
     except HTTPException:
         raise

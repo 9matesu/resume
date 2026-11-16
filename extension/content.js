@@ -1,5 +1,4 @@
 (() => {
-  const BACKEND = "http://127.0.0.1:8322";
   const UI_FONT = "'Inter',system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif";
 
   // ---------- structured hints (JSON-LD JobPosting + meta) ----------
@@ -394,39 +393,46 @@
   }
 
   function report(payload) {
+    // Guarda uma copia para o painel que possa estar fechado. O painel aberto
+    // consome e limpa a chave; sem isso, o atalho Alt+Shift+A perdia o result.
+    try {
+      chrome.storage.local.set({
+        resume_capture_result: { ...payload, at: Date.now() },
+      });
+    } catch {}
     try {
       chrome.runtime.sendMessage({ type: "resume-capture-result", payload }).catch(() => {});
     } catch {}
   }
 
   // Caminho único de envio: manual e automático usam o mesmo retry.
+  // O fetch acontece no service worker (origem chrome-extension), não na
+  // origem da pagina da vaga. Isso permite CORS restrito no backend.
   async function postAdapt(body, structured, mode) {
     let lastErr = "Não foi possível conectar ao resuMe. Recarregue a extensão.";
+    const payload = {
+      job_text: body.slice(0, 30000),
+      page_title: document.title,
+      page_url: location.href,
+      structured,
+      mode,
+    };
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
-        const res = await fetch(BACKEND + "/api/adapt-text", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            job_text: body.slice(0, 30000),
-            page_title: document.title,
-            page_url: location.href,
-            structured,
-            mode,
-          }),
-        });
-        if (!res.ok) {
-          let detail = String(res.status);
-          try {
-            detail = (await res.json()).detail || detail;
-          } catch {}
+        const res = await chrome.runtime.sendMessage({ type: "resume-adapt", body: payload });
+        if (!res || !res.ok) {
+          const status = Number(res?.status || 0);
+          let detail = res?.data?.detail || res?.error || String(status || "Falha na captura");
           // heurística do backend salva sem chave; só tenta de novo em 5xx/rede
-          if (res.status < 500) { report({ ok: false, error: detail }); return; }
+          if (status > 0 && status < 500) {
+            report({ ok: false, error: detail });
+            return;
+          }
           lastErr = detail;
           await new Promise((r) => setTimeout(r, 800));
           continue;
         }
-        report({ ok: true, result: await res.json() });
+        report({ ok: true, result: res.data });
         return;
       } catch {
         await new Promise((r) => setTimeout(r, 800));

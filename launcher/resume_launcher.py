@@ -115,7 +115,9 @@ def ensure_backend(timeout: float = 15.0) -> tuple[bool, subprocess.Popen | None
 def chrome_cmd(extension_dir: Path) -> list[str] | None:
     profile = _chrome_profile()
     profile.mkdir(parents=True, exist_ok=True)
+    # Chrome 137+ ignora --load-extension sem este opt-in explicito.
     ext = f"--load-extension={extension_dir}"
+    unsafe = "--enable-unsafe-extension-debugging"
     if os.name == "nt":
         for p in (
             Path(os.environ.get("ProgramFiles", "")) / "Google/Chrome/Application/chrome.exe",
@@ -123,15 +125,15 @@ def chrome_cmd(extension_dir: Path) -> list[str] | None:
             Path(os.environ.get("LocalAppData", "")) / "Google/Chrome/Application/chrome.exe",
         ):
             if p.exists():
-                return [str(p), f"--user-data-dir={profile}", ext]
+                return [str(p), f"--user-data-dir={profile}", unsafe, ext]
         return None
     for name in ("google-chrome", "chromium", "chromium-browser"):
         exe = shutil.which(name)
         if exe:
             if sys.platform == "darwin":
                 return ["open", "-a", "Google Chrome", "--args",
-                        f"--user-data-dir={profile}", ext]
-            return [exe, f"--user-data-dir={profile}", ext]
+                        f"--user-data-dir={profile}", unsafe, ext]
+            return [exe, f"--user-data-dir={profile}", unsafe, ext]
     return None
 
 

@@ -146,10 +146,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
       experience: [
         ...profile.experience,
         {
-          title: 'Engenheiro de Software',
-          company: 'Empresa Tech',
-          period: '2022 - Atual',
-          description: ['Desenvolveu funcionalidades essenciais e otimizou a infraestrutura.'],
+          title: '',
+          company: '',
+          period: '',
+          description: [''],
         },
       ],
     });
@@ -264,10 +264,19 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
               para montar currículos sob medida para qualquer vaga que você navegar.
             </div>
             <div
+              role="button"
+              tabIndex={0}
+              aria-label="Selecionar currículo"
               onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
               onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); }}
               onDrop={handleFileDrop}
               onClick={() => fileInputRef.current?.click()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
               className="w-full bg-brutal-yellow border-2 border-black p-8 sm:p-12 text-center shadow-[10px_10px_0px_0px_#000000] cursor-pointer"
             >
               <h1 className="font-editorial text-4xl sm:text-5xl text-black font-normal leading-[1.05] tracking-tight mb-4">

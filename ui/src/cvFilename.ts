@@ -6,7 +6,7 @@ function ascii(s: string): string {
 }
 
 export function cvFilename(candidateName: string, jobTitle: string, company = ''): string {
-  const first = (ascii(candidateName).trim().split(/\s+/)[0] || '').replace(/[^A-Za-z0-9]/g, '');
+  const first = (ascii(candidateName).trim().split(/\s+/)[0] || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 30);
   const base = (jobTitle || '').trim() || (company || '').trim() || 'Vaga';
   const slug = ascii(base)
     .split(/\s+/)

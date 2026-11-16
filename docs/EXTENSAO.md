@@ -54,7 +54,7 @@ O entregável é sempre o currículo customizado.
    bullets, com junção de quebras de linha do PDF). Você revisa e confirma
    cada seção no passo 2 e configura a IA no passo 3. O perfil mestre fica
    no SQLite local e é a **única fonte de fatos** para todas as adaptações.
-   Para trocar o currículo: Ajustes → "Trocar currículo base".
+   Para trocar o currículo: Ajustes → "Remover currículo base".
 2. **Captura (modo inspetor)** — na página da vaga, clique em "Capturar Vaga"
    no painel ou `Alt+Shift+A`. O content script entra em **modo de seleção**:
    o mouse destaca exatamente o elemento sob o cursor (outline amarelo), o
@@ -148,8 +148,8 @@ Detalhes completos em [PRIVACIDADE.md](PRIVACIDADE.md). Resumo:
 | Seleção não inicia | página exige rolagem prévia ou a vaga está em iframe cross-origin (limitação conhecida) |
 | Elemento errado destacado | o outline mira o elemento exato sob o cursor; use ↑/↓ para ajustar pai/filho |
 | Texto com assunto estranho (ex.: curso aleatório) | você clicou no elemento errado — o toast mostra exatamente o que será enviado; cancele e clique no painel certo |
-| Dados parecem falsos (nome/empresa que não são seus) | confira em Config → "Currículo base" qual perfil está ativo; se for resto de teste, use "Trocar currículo base" e refaça o onboarding com seu currículo real |
-| Onboarding não aparece | ele só aparece sem perfil ativo; para refazer, Config → "Trocar currículo base" |
+| Dados parecem falsos (nome/empresa que não são seus) | confira em Config → "Currículo base" qual perfil está ativo; se for resto de teste, use "Remover currículo base" e refaça o onboarding com seu currículo real |
+| Onboarding não aparece | ele só aparece sem perfil ativo; para refazer, Config → "Remover currículo base" |
 | Estúdio mostra "Resultado expirado" | o registro sumiu do histórico (limpeza) — capture a vaga novamente no painel |
 | Pré-visualização do PDF falha | confira se o motor está rodando; use "Tentar novamente" ou "Baixar PDF" na própria tela |
 | "Motor Offline" persistente | rode `.\start-backend.ps1`; confira `backend/data/resume-backend.log`; reinstale o host se o auto-start falhar |

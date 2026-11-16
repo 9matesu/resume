@@ -2,6 +2,28 @@
 
 ## [unreleased]
 
+### Produção
+
+- Chave de API nunca vaza entre provedores: sem fallback global, a chave e
+  salva e lida por `api_key:<provedor>`. A chave global legada e apagada.
+- Backend com CORS restrito a `chrome-extension://`; a captura passou a
+  chamar o backend pelo service worker, sem abrir a API para toda pagina.
+- `/api/parse-resume-path` removido e upload limitado a 10 MB.
+- `Baixar PDF` do painel agora clica no anchor real; antes so mostrava toast.
+- Captura por `Alt+Shift+A` com o painel fechado salva o resultado no
+  `storage.local` e o painel consome ao abrir.
+- Onboarding nao cria mais experiencia fake; o formulario comeca vazio.
+- Nome do CV com a mesma regra no backend e na UI (caixa preservada,
+  primeiro nome truncado em 30).
+- Regra de idioma voltou ao prompt de adaptacao.
+- Chrome 137+ recebe `--enable-unsafe-extension-debugging` junto do
+  `--load-extension`; `install-host.ps1` nao recompila no cliente.
+- Build de release usa venv temporario para o launcher; instalador cria
+  atalhos; bundles antigos nao viajam mais no pacote; `logo-ai.png` e o
+  preload do video sairam.
+- Remover o curriculo base pede confirmacao e o rotulo passou a ser
+  "Remover curriculo base".
+
 ### Movimento e feedback
 
 - Nada mais de `scale` em texto, nem curva com overshoot: uma curva só

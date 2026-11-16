@@ -33,15 +33,7 @@ if (-not (Test-Path $pythonExe)) {
 
 # ── [2/5] ResumeHost.exe ──────────────────────────────────────────────────
 $hostSrc    = Join-Path $nativeDir "host_main.py"
-$needBuild  = $false
-if (-not (Test-Path $hostExe)) {
-    $needBuild = $true
-} else {
-    # Reconstroi se o fonte for mais novo que o exe
-    $exeTime = (Get-Item $hostExe).LastWriteTime
-    $srcTime = (Get-Item $hostSrc).LastWriteTime
-    if ($srcTime -gt $exeTime) { $needBuild = $true }
-}
+$needBuild  = -not (Test-Path $hostExe)
 
 if ($needBuild) {
     Write-Host "[2/5] Buildando ResumeHost.exe (pyinstaller)..." -ForegroundColor Yellow

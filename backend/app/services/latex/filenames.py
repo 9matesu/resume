@@ -31,14 +31,17 @@ def first_name(candidate_name: str) -> str:
     if not clean:
         return ""
     tok = re.sub(r"[^A-Za-z0-9]", "", clean[0])
-    return tok[:30].capitalize() if tok else ""
+    if not tok:
+        return ""
+    tok = tok[:30]
+    return tok[:1].upper() + tok[1:]
 
 
 def area_slug(title: str, company: str = "") -> str:
     base = (title or "").strip() or (company or "").strip() or "Vaga"
     words = re.split(r"\s+", _ascii(base).strip())
-    toks = [_clean_token(w).capitalize() for w in words]
-    toks = [t for t in toks if t]
+    toks = [_clean_token(w) for w in words]
+    toks = [t[:1].upper() + t[1:] for t in toks if t]
     slug = "-".join(toks)
     slug = re.sub(r"-{2,}", "-", slug).strip("-")
     return slug[:60] or "Vaga"

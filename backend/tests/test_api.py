@@ -61,7 +61,8 @@ def test_parse_resume_path(tmp_path):
     client = TestClient(app)
     test_file = tmp_path / "sample_resume.txt"
     test_file.write_text("John Doe\njohn@example.com\nExperience\nSoftware Developer at BigTech\nBuilt scalable web services\nSkills\nPython, Docker, TypeScript", encoding="utf-8")
-    resp = client.post("/api/parse-resume-path", json={"file_path": str(test_file)})
+    with open(test_file, "rb") as fh:
+        resp = client.post("/api/parse-resume", files={"file": (test_file.name, fh, "text/plain")})
     assert resp.status_code == 200
     data = resp.json()
     assert data["status"] == "success"
@@ -242,7 +243,8 @@ Go, Python, Docker, Kubernetes, AWS, PostgreSQL, Redis, Kafka
     resume_file = tmp_path / "cv_carlos.txt"
     resume_file.write_text(content, encoding="utf-8")
 
-    resp = client.post("/api/parse-resume-path", json={"file_path": str(resume_file)})
+    with open(resume_file, "rb") as fh:
+        resp = client.post("/api/parse-resume", files={"file": (resume_file.name, fh, "text/plain")})
     assert resp.status_code == 200
     profile = resp.json()["profile"]
 
@@ -364,8 +366,8 @@ def test_resume_delete_removes_row_and_pdf(client=None):
 
 def test_per_provider_api_keys_are_saved_and_resolved(monkeypatch):
     """Chaves por provedor: salva gemini + openai, ativa openai -> resolve a
-    chave do openai; volta gemini -> resolve a do gemini. Legado: uma chave
-    salva sem provider vira fallback global."""
+    chave do openai; volta gemini -> resolve a do gemini. Sem chave propria,
+    o provedor fica sem chave: nunca cai no global de outro provedor."""
     client = TestClient(app)
     client.post("/api/settings", json={"ai_provider": "gemini",
                                        "ai_api_key": "gk-gemini-key",
@@ -381,10 +383,10 @@ def test_per_provider_api_keys_are_saved_and_resolved(monkeypatch):
     s2.ai_provider = "gemini"
     from app.api.routes import _resolve_key_for
     assert _resolve_key_for(s2) == "gk-gemini-key"
-    # o global ainda existe como fallback para um provider sem chave propria
+    # sem chave propria, o provedor nao herda a chave de outro
     s3 = get_settings()
     s3.ai_provider = "groq"
-    assert _resolve_key_for(s3) in ("sk-openai-key",)  # ultimo global salvo
+    assert _resolve_key_for(s3) == ""
     # /api/settings lista os provedores que tem chave salva (sem valores)
     kp = client.get("/api/settings").json()["key_providers"]
     assert set(kp) == {"gemini", "openai"}
