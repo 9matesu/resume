@@ -47,7 +47,7 @@ export function ActionButton({
       aria-busy={pending || undefined}
       onClick={onClick}
       disabled={busy}
-      className={`${VARIANT[variant]} inline-flex items-center justify-center gap-1.5 px-3 py-2 text-[11px] ${className}`}
+      className={`${VARIANT[variant]} inline-flex items-center justify-center gap-1.5 px-3 py-2 text-11 ${className}`}
     >
       {pending ? (
         <Loader2 className="spin w-3.5 h-3.5 shrink-0" />
@@ -76,7 +76,7 @@ export function TextButton({
       type="button"
       data-testid={testId}
       onClick={onClick}
-      className={`text-[11px] font-bold underline underline-offset-4 hover:bg-black hover:text-white px-1 py-0.5 transition-colors cursor-pointer ${className}`}
+      className={`text-11 font-bold underline underline-offset-4 hover:bg-black hover:text-white px-1 py-0.5 transition-colors cursor-pointer ${className}`}
     >
       {children}
     </button>
@@ -92,9 +92,9 @@ export function Stage({ label, next, detail }: { label: string; next?: string; d
     <div data-testid="stage" role="status" aria-live="polite" className="flex items-center gap-2">
       <Loader2 className="spin w-4 h-4 shrink-0" />
       <div className="min-w-0">
-        <p className="text-[11px] font-bold">{label}</p>
+        <p className="text-11 font-bold">{label}</p>
         {(next || detail) && (
-          <p className="text-[10px] text-neutral-500">{detail ?? next}</p>
+          <p className="text-2xs text-muted">{detail ?? next}</p>
         )}
       </div>
     </div>

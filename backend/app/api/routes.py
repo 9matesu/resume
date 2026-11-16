@@ -157,11 +157,11 @@ def list_models(payload: SettingsPayload):
         if payload.probe and models:
             # Probe dinâmico: testa cada candidato com um chat mínimo até
             # achar um que realmente responda (modelos bloqueados/TTS
-            # falham aqui). Custa alguns tokens; roda só ao trocar provedor.
+            # falham aqui). Custa alguns tokens; roda só no clique explícito.
             orig_max = s.ai_max_tokens
             s.ai_max_tokens = 8
             try:
-                for cand in models[:15]:
+                for cand in models[:5]:
                     s.ai_model = cand
                     try:
                         prov.chat("Responda apenas: ok", "teste", expect_json=False)
@@ -281,6 +281,22 @@ def _refine_keywords(prov, master_profile: dict, job_data: dict,
     return state
 
 
+def _fallback_state(master_profile: dict, job_data: dict) -> dict:
+    """Estado sem IA: compila o perfil mestre como está, sem inventar nada."""
+    wanted = list(dict.fromkeys([str(k) for k in (job_data.get("keywords") or [])]
+                                + [str(x) for x in (job_data.get("requirements") or [])]))[:30]
+    missing = prompts.missing_keywords(wanted, master_profile)
+    gap = ("A IA não está configurada ou não respondeu. O currículo foi "
+           "compilado sem adaptação; configure a IA em Ajustes para adaptar.")
+    adapted = {**master_profile, "match_score": 0, "applied_keywords": [],
+               "honest_gaps": [gap]}
+    return {
+        "adapted_json": adapted, "tailored": master_profile,
+        "wanted": wanted, "missing": missing, "refined": False,
+        "match_score": 0,
+    }
+
+
 def _run_adapt_pipeline(job_data: dict, captured_chars: int | None = None) -> dict:
     """Shared pipeline: adapt master profile against job, compile LaTeX, save history."""
     cand = profile_model.get_active()
@@ -288,10 +304,11 @@ def _run_adapt_pipeline(job_data: dict, captured_chars: int | None = None) -> di
         raise HTTPException(status_code=400, detail="Perfil mestre não encontrado. Complete o onboarding primeiro.")
     master_profile = cand["profile"]
     s = get_settings()
+    lang = latex_engine.detect_language(job_data)
+    adapted_json = None
 
     try:
         prov = gateway.get_provider(s)
-        lang = latex_engine.detect_language(job_data)
         system_prompt, user_prompt = prompts.build_adapt_request(
             master_profile, job_data, lang=lang
         )
@@ -299,12 +316,17 @@ def _run_adapt_pipeline(job_data: dict, captured_chars: int | None = None) -> di
         adapted_json = gateway.AIProvider._extract_json(adapted_raw)
     except HTTPException:
         raise
-    except AIError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except AIError:
+        # Sem chave ou provedor fora: o pipeline ainda compila o perfil mestre.
+        adapted_json = None
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"A adaptação quebrou: {e}")
 
-    st = _refine_keywords(prov, master_profile, job_data, adapted_json, lang)
+    if adapted_json is not None:
+        st = _refine_keywords(prov, master_profile, job_data, adapted_json, lang)
+    else:
+        st = _fallback_state(master_profile, job_data)
+
     adapted_json, tailored_profile = st["adapted_json"], st["tailored"]
     wanted, missing, ats_refined = st["wanted"], st["missing"], st["refined"]
     match_score = st["match_score"]

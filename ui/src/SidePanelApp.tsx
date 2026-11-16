@@ -255,7 +255,7 @@ export function SidePanelApp() {
     return (
       <div className="h-full flex flex-col items-center justify-center p-6 text-center gap-4">
         <p className="text-sm font-bold">resuMe não está respondendo.</p>
-        <p className="text-xs text-neutral-600 leading-relaxed">
+        <p className="text-xs text-muted-strong leading-relaxed">
           Verifique se a extensão está instalada corretamente.
         </p>
         <button
@@ -284,19 +284,19 @@ export function SidePanelApp() {
       <header className="hairline-b px-4 py-2.5 flex items-center justify-between shrink-0">
         <span className="text-sm font-bold tracking-tight">resuMe</span>
         <span className="brutal-tag">
-          <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-emerald-500' : 'bg-red-600'}`} />
+          <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-ok' : 'bg-danger'}`} />
           {online ? 'Online' : 'Offline'}
         </span>
       </header>
 
       {/* Nav */}
-      <nav className="hairline-b grid grid-cols-3 text-[11px] uppercase font-bold shrink-0 divide-x divide-black">
+      <nav className="hairline-b grid grid-cols-3 text-11 uppercase font-bold shrink-0 divide-x divide-black">
         {NAV.map((n) => (
           <button
             key={n.id}
             onClick={() => setView(n.id)}
             className={`py-2 cursor-pointer transition-colors ${
-              view === n.id ? 'bg-black text-white' : 'bg-white hover:bg-neutral-100'
+              view === n.id ? 'bg-black text-white' : 'bg-white hover:bg-wash'
             }`}
           >
             {n.label}
@@ -312,7 +312,7 @@ export function SidePanelApp() {
               onClick={handleCapture}
               disabled={busy}
               data-testid="auto-capture"
-              className="w-full bg-brutal-yellow border-2 border-black rounded-2xl p-6 text-left active:translate-x-[2px] active:translate-y-[2px] transition-transform cursor-pointer disabled:opacity-60"
+              className="w-full bg-brutal-yellow border-2 border-black rounded-2xl p-6 text-left active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer disabled:opacity-60"
             >
               <div className="flex items-center gap-2">
                 {busy ? (
@@ -343,7 +343,7 @@ export function SidePanelApp() {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h2 className="font-editorial text-lg normal-case leading-tight">{result.job.title}</h2>
-                    <p className="text-[11px] text-neutral-600 mt-0.5">
+                    <p className="text-11 text-muted-strong mt-0.5">
                       {result.job.company}
                       {result.job.location ? ` · ${result.job.location}` : ''}
                     </p>
@@ -355,9 +355,29 @@ export function SidePanelApp() {
                   )}
                 </div>
 
+                {result.adaptation.ats && (
+                  <div className="hairline-b pb-3">
+                    <div className="flex items-center justify-between text-2xs font-bold uppercase mb-1">
+                      <span>Cobertura ATS</span>
+                      <span>{result.adaptation.ats.coverage.toFixed(0)}%</span>
+                    </div>
+                    {result.adaptation.ats.missing.length > 0 && (
+                      <p className="text-2xs text-muted">
+                        Faltou: {result.adaptation.ats.missing.slice(0, 5).join(', ')}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {result.adaptation.honest_gaps && result.adaptation.honest_gaps.length > 0 && (
+                  <p className="text-2xs text-muted-strong leading-relaxed">
+                    <strong>Lacunas:</strong> {result.adaptation.honest_gaps.slice(0, 2).join(' ')}
+                  </p>
+                )}
+
                 {(result.adaptation.applied_keywords?.length ?? 0) > 0 && (
                   <div className="hairline-b pb-3">
-                    <div className="text-[10px] font-bold uppercase mb-1.5">Palavras-chave</div>
+                    <div className="text-2xs font-bold uppercase mb-1.5">Palavras-chave</div>
                     <div className="flex flex-wrap gap-1.5">
                       {result.adaptation.applied_keywords!.map((k) => (
                         <span key={k} className="brutal-tag">{k}</span>
@@ -366,7 +386,7 @@ export function SidePanelApp() {
                   </div>
                 )}
 
-                <p className="text-[10px] text-neutral-400">
+                <p className="text-2xs text-subtle">
                   revise o currículo antes de enviar
                 </p>
 
@@ -374,7 +394,7 @@ export function SidePanelApp() {
                   <button
                     data-testid="download-pdf"
                     onClick={handleDownload}
-                    className="brutal-btn-yellow flex items-center justify-center gap-1.5 px-2 py-2 text-[11px]"
+                    className="brutal-btn-yellow flex items-center justify-center gap-1.5 px-2 py-2 text-11"
                   >
                     <Download className="w-3.5 h-3.5" />
                     Baixar PDF
@@ -405,7 +425,7 @@ export function SidePanelApp() {
       </main>
 
       {/* Footer */}
-      <footer className="hairline-t px-4 py-1.5 text-[10px] text-neutral-500 flex items-center justify-end shrink-0">
+      <footer className="hairline-t px-4 py-1.5 text-2xs text-muted flex items-center justify-end shrink-0">
         <span>{health.candidate_name}</span>
       </footer>
 

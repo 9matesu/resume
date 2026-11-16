@@ -49,24 +49,24 @@ export const ApplicationHistory: React.FC = () => {
     <div className="max-w-5xl mx-auto p-6 select-none overflow-y-auto h-full">
       <div className="flex items-end justify-between mb-6 hairline-b pb-4">
         <div>
-          <h1 className="font-editorial text-2xl text-black leading-[1.05] tracking-tight">
+          <h1 className="font-editorial text-2xl text-black leading-105 tracking-tight">
             Arquivo de candidaturas
           </h1>
-          <p className="text-xs text-neutral-600 mt-1 font-mono">
+          <p className="text-xs text-muted-strong mt-1 font-mono">
             Cada linha é um currículo adaptado. Edite no Estúdio ou baixe o PDF.
           </p>
         </div>
       </div>
 
       {loading ? (
-        <div className="py-20 flex flex-col items-center justify-center gap-3 text-neutral-600">
+        <div className="py-20 flex flex-col items-center justify-center gap-3 text-muted-strong">
           <Loader2 className="w-8 h-8 animate-spin" />
           <span className="text-xs font-mono uppercase">Carregando histórico...</span>
         </div>
       ) : history.length === 0 ? (
         <div className="py-20 text-center brutal-card p-8">
           <h3 className="font-editorial text-xl normal-case">Nenhuma vaga adaptada ainda</h3>
-          <p className="text-xs text-neutral-600 mt-2 max-w-sm mx-auto font-mono">
+          <p className="text-xs text-muted-strong mt-2 max-w-sm mx-auto font-mono">
             Abra uma vaga no navegador e use Captura.
           </p>
         </div>
@@ -74,7 +74,7 @@ export const ApplicationHistory: React.FC = () => {
         <div className="overflow-x-auto">
         <table className="ledger-table w-full">
           <thead>
-            <tr className="border-b-2 border-black text-[10px] uppercase tracking-wider text-neutral-600">
+            <tr className="border-b-2 border-black text-2xs uppercase tracking-wider text-muted-strong">
               <td className="py-2 font-bold">Vaga / Empresa</td>
               <td className="py-2 font-bold">Data</td>
               <td className="py-2 font-bold text-right">Nota</td>
@@ -83,14 +83,14 @@ export const ApplicationHistory: React.FC = () => {
           </thead>
           <tbody>
             {history.map((item) => (
-              <tr key={item.id} className="hover:bg-neutral-50 transition-colors">
+              <tr key={item.id} className="hover:bg-wash transition-colors">
                 <td className="py-3 pr-4">
                   <div className="font-bold text-sm uppercase">{item.title}</div>
-                  <div className="text-xs text-neutral-600">
+                  <div className="text-xs text-muted-strong">
                     na {item.company}{item.location ? ` · ${item.location}` : ''}
                   </div>
                 </td>
-                <td className="py-3 text-xs text-neutral-600 whitespace-nowrap">
+                <td className="py-3 text-xs text-muted-strong whitespace-nowrap">
                   {new Date(item.created_at).toLocaleDateString('pt-BR')}
                 </td>
                 <td className="py-3 text-right whitespace-nowrap">
@@ -99,7 +99,7 @@ export const ApplicationHistory: React.FC = () => {
                       {item.match_score.toFixed(0)}%
                     </span>
                   ) : (
-                    <span className="text-neutral-400">·</span>
+                    <span className="text-subtle">·</span>
                   )}
                 </td>
                 <td className="py-3 text-right whitespace-nowrap">
@@ -107,7 +107,7 @@ export const ApplicationHistory: React.FC = () => {
                     <a
                       href={resumePdfUrl(item.id)}
                       download={item.pdf_filename || cvFilename('', item.title, item.company)}
-                      className="brutal-btn flex items-center gap-1 px-3 py-1 text-[11px]"
+                      className="brutal-btn flex items-center gap-1 px-3 py-1 text-11"
                     >
                       <Download className="w-3 h-3" />
                       <span>PDF</span>
@@ -138,7 +138,7 @@ export const ApplicationHistory: React.FC = () => {
                           setConfirmDelete(null);
                           toast('Currículo removido.', 'ok');
                         }}
-                        className="brutal-btn flex items-center gap-1 px-3 py-1 text-[11px]"
+                        className="brutal-btn flex items-center gap-1 px-3 py-1 text-11"
                       >
                         <Trash2 className="w-3 h-3" />
                         <span>Tem certeza?</span>

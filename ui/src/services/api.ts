@@ -172,11 +172,11 @@ export async function fetchProviders(): Promise<ProviderInfo[]> {
   }
 }
 
-export async function detectModels(payload: { ai_provider: string; ai_api_key?: string; ai_base_url?: string }): Promise<{ models: string[]; working: string }> {
+export async function detectModels(payload: { ai_provider: string; ai_api_key?: string; ai_base_url?: string; probe?: boolean }): Promise<{ models: string[]; working: string }> {
   const res = await fetch(`${API_BASE}/models`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...payload, probe: true }),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

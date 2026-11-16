@@ -116,17 +116,25 @@ Requirements:
 Benefits: flexible hours, health plan, stock options.
 """
 
-def test_adapt_text_without_key_fails_loudly(monkeypatch):
+def test_adapt_text_without_key_falls_back_to_master_profile(monkeypatch):
     _patch_settings(monkeypatch, _keyless_settings())
     client = TestClient(app)
     test_save_and_get_profile()
+    import app.api.routes as routes
+    monkeypatch.setattr(
+        routes.latex_engine, "generate",
+        lambda *a, **k: {"tex": "x", "pdf_path": "none.pdf", "lang": "en"},
+    )
     resp = client.post("/api/adapt-text", json={
         "job_text": SAMPLE_JOB_TEXT,
         "page_title": "Senior Software Engineer - Nubank",
         "page_url": "https://example.com/job/123",
     })
-    assert resp.status_code == 400
-    assert "chave" in resp.json()["detail"].lower()
+    assert resp.status_code == 200, resp.text
+    adaptation = resp.json()["adaptation"]
+    assert adaptation["match_score"] == 0
+    assert adaptation["honest_gaps"]
+    assert "IA" in adaptation["honest_gaps"][0]
 
 def test_delete_profile_deactivates_and_gates_onboarding():
     client = TestClient(app)
@@ -270,8 +278,8 @@ Go, Python, Docker, Kubernetes, AWS, PostgreSQL, Redis, Kafka
 
 
 def test_adapt_text_misconfig_never_500(monkeypatch):
-    """resuMe 1.0 guard: missing key / missing profile must be a clean 4xx,
-    never a 500 — the side panel surfaces `detail` verbatim to the user."""
+    """Sem perfil, 4xx limpo. Sem chave, o pipeline compila o perfil mestre
+    com honest_gaps em vez de devolver 500."""
     _patch_settings(monkeypatch, _keyless_settings())
     client = TestClient(app)
     client.delete("/api/profile")
@@ -283,12 +291,18 @@ def test_adapt_text_misconfig_never_500(monkeypatch):
     assert resp.status_code in (400, 409)
     assert resp.json()["detail"]
     test_save_and_get_profile()
+    import app.api.routes as routes
+    monkeypatch.setattr(
+        routes.latex_engine, "generate",
+        lambda *a, **k: {"tex": "x", "pdf_path": "none.pdf", "lang": "en"},
+    )
     resp2 = client.post("/api/adapt-text", json={
         "job_text": SAMPLE_JOB_TEXT,
         "page_title": "Anything",
         "page_url": "https://example.com/job/2",
     })
-    assert resp2.status_code in (400, 409)
+    assert resp2.status_code == 200, resp2.text
+    assert resp2.json()["adaptation"]["honest_gaps"]
 
 
 def _make_resume(client):

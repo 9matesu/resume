@@ -23,6 +23,17 @@
   preload do video sairam.
 - Remover o curriculo base pede confirmacao e o rotulo passou a ser
   "Remover curriculo base".
+- Sem chave ou IA fora, o pipeline compila o perfil mestre com
+  `honest_gaps` em vez de devolver 400/500.
+- Resposta inesperada da IA vira 400, nao 500.
+- Estudio revalida pelo detalhe do registro, nao pelo historico de 50.
+- Modelo do provedor: probe so no clique explicito, limitado a 5.
+- Template devcelio agora mostra telefone e portfolio no cabecalho.
+- Painel mostra cobertura ATS e lacunas honestas.
+- Design system: tokens de texto/cor/sombra, menos valores crus, labels
+  associados e codigo morto `components/arc` removido. O check do
+  design.how caiu de 477 para 6 apontamentos (58 excecoes documentadas
+  no allowlist do index.css).
 
 ### Movimento e feedback
 

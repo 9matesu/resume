@@ -17,9 +17,9 @@ export function StudioApp() {
 
   if (missing) {
     return (
-      <div className="h-screen flex flex-col items-center justify-center gap-3 bg-white text-black font-mono text-center p-6">
+      <div className="h-dvh flex flex-col items-center justify-center gap-3 bg-white text-black font-mono text-center p-6">
         <h1 className="font-editorial text-3xl">Nenhum resultado carregado</h1>
-        <p className="text-xs text-neutral-600">
+        <p className="text-xs text-muted-strong">
           Abra o painel lateral do resuMe, capture uma vaga e clique em "Abrir Estúdio".
         </p>
       </div>
@@ -28,7 +28,7 @@ export function StudioApp() {
 
   if (!data) {
     return (
-      <div className="h-screen flex items-center justify-center gap-3 bg-white text-black font-mono text-xs uppercase">
+      <div className="h-dvh flex items-center justify-center gap-3 bg-white text-black font-mono text-xs uppercase">
         <Loader2 className="w-5 h-5 animate-spin" />
         Carregando estúdio...
       </div>

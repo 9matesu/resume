@@ -11,7 +11,7 @@ import {
 import {
   saveResumeEdit,
   polishBullet,
-  fetchHistory,
+  fetchResumeDetail,
   resumePdfUrl,
 } from '../../services/api';
 import { cvFilename } from '../../cvFilename';
@@ -68,22 +68,21 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
     savedSnapshot.current = { tex: adaptedData.adaptation.tex_code, profile };
   }
 
-  // Revalida o snapshot do chrome.storage contra o histórico: o registro
-  // pode ter sumido (limpeza) ou o backend pode ter reiniciado.
+  // Revalida o snapshot do chrome.storage contra o backend. Usamos o detalhe
+  // do proprio registro: o historico e limitado a 50 e um registro antigo
+  // pareceria expirado sem motivo.
   useEffect(() => {
     let alive = true;
-    fetchHistory()
-      .then((items) => {
+    fetchResumeDetail(adaptedData.adaptation.id)
+      .then((detail) => {
         if (!alive) return;
-        const found = items.some((it) => it.id === adaptedData.adaptation.id);
-        if (!found) {
-          setExpired(true);
-        } else {
-          setPdfUrl(resumePdfUrl(adaptedData.adaptation.id));
-        }
+        setPdfUrl(detail.adaptation.pdf_url || resumePdfUrl(adaptedData.adaptation.id));
       })
-      .catch(() => {
-        // Sem histórico acessível, tenta a URL guardada mesmo assim.
+      .catch((err) => {
+        if (String((err as Error)?.message || '').includes('não existe')) {
+          setExpired(true);
+        }
+        // Falha de rede: mantem a URL guardada.
       });
     return () => {
       alive = false;
@@ -167,18 +166,18 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen w-screen bg-white text-black overflow-hidden select-none">
+    <div className="flex flex-col lg:flex-row h-dvh w-screen bg-white text-black overflow-hidden select-none">
       {/* LEFT PANE: Editor (empilha no estreito) */}
-      <div className="w-full h-1/2 lg:h-full lg:w-1/2 flex flex-col bg-white overflow-hidden border-b lg:border-b-0 border-[#1a1a1a]">
+      <div className="w-full h-1/2 lg:h-full lg:w-1/2 flex flex-col bg-white overflow-hidden border-b lg:border-b-0 border-line-strong">
         {/* Top Job Context Bar */}
         <div className="p-4 hairline-b bg-white flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="font-editorial text-lg normal-case leading-tight break-words">{adaptedData.job.title}</h2>
-              <span className="text-xs text-neutral-500 font-medium">na {adaptedData.job.company}</span>
+              <span className="text-xs text-muted font-medium">na {adaptedData.job.company}</span>
             </div>
             {adaptedData.job.location && (
-              <span className="text-[11px] text-neutral-400 mt-0.5 block font-mono">{adaptedData.job.location}</span>
+              <span className="text-11 text-subtle mt-0.5 block font-mono">{adaptedData.job.location}</span>
             )}
           </div>
 
@@ -193,14 +192,14 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
             <div className="flex border-2 border-black text-xs font-bold uppercase">
               <button
                 onClick={() => setActiveTab('visual')}
-                className={`flex items-center gap-1 px-3 py-1.5 cursor-pointer transition-colors ${activeTab === 'visual' ? 'bg-black text-white' : 'bg-white text-black hover:bg-neutral-100'}`}
+                className={`flex items-center gap-1 px-3 py-1.5 cursor-pointer transition-colors ${activeTab === 'visual' ? 'bg-black text-white' : 'bg-white text-black hover:bg-wash'}`}
               >
                 <Sliders className="w-3.5 h-3.5" />
                 Visual
               </button>
               <button
                 onClick={() => setActiveTab('latex')}
-                className={`flex items-center gap-1 px-3 py-1.5 cursor-pointer transition-colors border-l-2 border-black ${activeTab === 'latex' ? 'bg-black text-white' : 'bg-white text-black hover:bg-neutral-100'}`}
+                className={`flex items-center gap-1 px-3 py-1.5 cursor-pointer transition-colors border-l-2 border-black ${activeTab === 'latex' ? 'bg-black text-white' : 'bg-white text-black hover:bg-wash'}`}
               >
                 <FileCode className="w-3.5 h-3.5" />
                 Código
@@ -215,10 +214,10 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
             <>
               {/* Summary Section */}
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-wider block">
+                <label htmlFor="field-1" className="text-2xs font-bold uppercase tracking-wider block">
                   Resumo Profissional Adaptado
                 </label>
-                <textarea
+                <textarea id="field-1"
                   rows={3}
                   value={profile.summary}
                   onChange={(e) => setProfile({ ...profile, summary: e.target.value })}
@@ -228,18 +227,18 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
 
               {/* Experience Section */}
               <div className="space-y-4">
-                <label className="text-[10px] font-bold uppercase tracking-wider block">
+                <div className="text-2xs font-bold uppercase tracking-wider block">
                   Experiências e Conquistas Adaptadas
-                </label>
+                </div>
 
                 {profile.experience.map((exp, expIdx) => (
                   <div key={expIdx} className="brutal-card p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div>
                         <span className="font-bold text-xs uppercase">{exp.title}</span>
-                        <span className="text-xs text-neutral-500 ml-2 font-medium">na {exp.company}</span>
+                        <span className="text-xs text-muted ml-2 font-medium">na {exp.company}</span>
                       </div>
-                      <span className="text-[11px] text-neutral-400 font-mono">{exp.period}</span>
+                      <span className="text-11 text-subtle font-mono">{exp.period}</span>
                     </div>
 
                     {/* Bullets */}
@@ -293,7 +292,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
                           updated.experience[expIdx].description.push('Nova conquista sob medida com métrica...');
                           setProfile(updated);
                         }}
-                        className="text-[11px] font-bold underline underline-offset-4 inline-flex items-center gap-1 cursor-pointer hover:bg-black hover:text-white px-1 py-0.5 transition-colors"
+                        className="text-11 font-bold underline underline-offset-4 inline-flex items-center gap-1 cursor-pointer hover:bg-black hover:text-white px-1 py-0.5 transition-colors"
                       >
                         + Adicionar item de realização
                       </button>
@@ -305,9 +304,9 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
               {/* Leadership Section (espelha o template) */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-bold uppercase tracking-wider block">
+                  <div className="text-2xs font-bold uppercase tracking-wider block">
                     Atividades de Liderança
-                  </label>
+                  </div>
                   <button
                     type="button"
                     onClick={() => {
@@ -319,7 +318,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
                         ],
                       });
                     }}
-                    className="text-[11px] font-bold underline underline-offset-4 inline-flex items-center gap-1 cursor-pointer hover:bg-black hover:text-white px-1 py-0.5 transition-colors"
+                    className="text-11 font-bold underline underline-offset-4 inline-flex items-center gap-1 cursor-pointer hover:bg-black hover:text-white px-1 py-0.5 transition-colors"
                   >
                     + Adicionar atividade
                   </button>
@@ -331,11 +330,11 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
                       <div>
                         <span className="font-bold text-xs uppercase">{lead.title || 'Nova atividade'}</span>
                         {lead.company && (
-                          <span className="text-xs text-neutral-500 ml-2 font-medium">na {lead.company}</span>
+                          <span className="text-xs text-muted ml-2 font-medium">na {lead.company}</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-neutral-400 font-mono">{lead.period}</span>
+                        <span className="text-11 text-subtle font-mono">{lead.period}</span>
                         <button
                           type="button"
                           onClick={() => {
@@ -450,7 +449,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
                           updated[leadIdx].description.push('Novo item de impacto...');
                           setProfile({ ...profile, leadership: updated });
                         }}
-                        className="text-[11px] font-bold underline underline-offset-4 inline-flex items-center gap-1 cursor-pointer hover:bg-black hover:text-white px-1 py-0.5 transition-colors"
+                        className="text-11 font-bold underline underline-offset-4 inline-flex items-center gap-1 cursor-pointer hover:bg-black hover:text-white px-1 py-0.5 transition-colors"
                       >
                         + Adicionar item de impacto
                       </button>
@@ -461,9 +460,9 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
 
               {/* Highlighted Skills */}
               <div className="space-y-2">
-                <label className="text-[10px] font-bold uppercase tracking-wider block">
+                <div className="text-2xs font-bold uppercase tracking-wider block">
                   Habilidades em Destaque
-                </label>
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   {profile.skills.map((skill) => (
                     <span key={skill} className="brutal-tag">
@@ -490,9 +489,9 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
               {/* Education Section (espelha o template) */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <label className="text-[10px] font-bold uppercase tracking-wider block">
+                  <div className="text-2xs font-bold uppercase tracking-wider block">
                     Formação Acadêmica
-                  </label>
+                  </div>
                   <button
                     type="button"
                     onClick={() => {
@@ -504,7 +503,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
                         ],
                       });
                     }}
-                    className="text-[11px] font-bold underline underline-offset-4 inline-flex items-center gap-1 cursor-pointer hover:bg-black hover:text-white px-1 py-0.5 transition-colors"
+                    className="text-11 font-bold underline underline-offset-4 inline-flex items-center gap-1 cursor-pointer hover:bg-black hover:text-white px-1 py-0.5 transition-colors"
                   >
                     + Adicionar formação
                   </button>
@@ -580,9 +579,9 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
 
               {(profile.projects || []).length > 0 && (
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-wider block">
+                  <div className="text-2xs font-bold uppercase tracking-wider block">
                     Projetos
-                  </label>
+                  </div>
                   {(profile.projects || []).map((p, pIdx) => (
                     <div key={pIdx} className="brutal-card p-3 flex items-center justify-between gap-2">
                       <span className="text-xs font-bold">{p.name}</span>
@@ -606,9 +605,9 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
 
               {(profile.certifications || []).length > 0 && (
                 <div className="space-y-2">
-                  <label className="text-[10px] font-bold uppercase tracking-wider block">
+                  <div className="text-2xs font-bold uppercase tracking-wider block">
                     Certificações
-                  </label>
+                  </div>
                   {(profile.certifications || []).map((c, cIdx) => (
                     <div key={cIdx} className="brutal-card p-3 flex items-center justify-between gap-2">
                       <span className="text-xs font-bold">{typeof c === 'string' ? c : c.name}</span>
@@ -633,13 +632,13 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
           ) : (
             /* Raw LaTeX Source Tab */
             <div className="h-full flex flex-col">
-              <label className="text-[10px] font-bold uppercase tracking-wider mb-2 block">
+              <label htmlFor="field-2" className="text-2xs font-bold uppercase tracking-wider mb-2 block">
                 Código do currículo
               </label>
-              <textarea
+              <textarea id="field-2"
                 value={rawTex}
                 onChange={(e) => setRawTex(e.target.value)}
-                className="font-code flex-1 min-h-[500px] w-full p-4 bg-black text-xs text-white border-2 border-black focus:outline-none leading-relaxed selection:bg-[#ffff00] selection:text-black"
+                className="font-code flex-1 min-h-lg w-full p-4 bg-black text-xs text-white border-2 border-black focus:outline-none leading-relaxed selection:bg-brand selection:text-black"
                 spellCheck={false}
               />
             </div>
@@ -649,11 +648,11 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
         {/* Bottom Action Footer: uma ação só */}
         <div className="p-4 hairline-t bg-white flex flex-wrap items-center justify-between gap-3">
           {saveError ? (
-            <span className="text-xs text-red-700">{saveError}</span>
+            <span className="text-xs text-danger">{saveError}</span>
           ) : compiling ? (
             <Stage label="Gerando seu PDF" detail="Pode levar alguns segundos" />
           ) : (
-            <span className="text-xs text-neutral-600">
+            <span className="text-xs text-muted-strong">
               {dirty ? 'Você tem alterações não salvas' : 'Tudo salvo'}
             </span>
           )}
@@ -670,28 +669,28 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
       </div>
 
       {/* RIGHT PANE: Live PDF Viewer */}
-      <div className="w-full h-1/2 lg:h-full lg:w-1/2 flex flex-col bg-neutral-100">
+      <div className="w-full h-1/2 lg:h-full lg:w-1/2 flex flex-col bg-wash">
         {/* Viewer Toolbar */}
         <div className="p-3 hairline-b bg-white flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-bold flex items-center gap-2">
             <span className="uppercase">Prévia do PDF</span>
           </span>
 
-          <span className="text-[10px] text-neutral-500">
+          <span className="text-2xs text-muted">
             {compiling ? 'Atualizando…' : 'O PDF baixa pelo botão ao lado'}
           </span>
         </div>
 
         {/* Embedded PDF iframe */}
-        <div className="flex-1 w-full h-full bg-neutral-200 p-4">
-          <div className="w-full h-full overflow-hidden border-2 border-black bg-white shadow-[8px_8px_0px_0px_#000000] relative">
+        <div className="flex-1 w-full h-full bg-wash-strong p-4">
+          <div className="w-full h-full overflow-hidden border-2 border-black bg-white shadow-brutal-md relative">
             {expired ? (
               <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-6 text-center">
                 <span className="brutal-tag brutal-tag-black">Resultado expirado</span>
-                <p className="text-xs font-mono text-neutral-600 max-w-xs">
+                <p className="text-xs font-mono text-muted-strong max-w-xs">
                   Este registro não existe mais no motor.
                 </p>
-                <button onClick={() => window.close()} className="brutal-btn px-4 py-2 text-[11px]">
+                <button onClick={() => window.close()} className="brutal-btn px-4 py-2 text-11">
                   Fechar aba
                 </button>
               </div>
@@ -700,13 +699,13 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
                 {pdfStatus === 'loading' && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white">
                     <Loader2 className="w-8 h-8 animate-spin" />
-                    <span className="text-[11px] font-mono uppercase">Carregando PDF...</span>
+                    <span className="text-11 font-mono uppercase">Carregando PDF...</span>
                   </div>
                 )}
                 {pdfStatus === 'error' && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center bg-white">
                     <span className="brutal-tag brutal-tag-black">Não abriu</span>
-                    <p className="text-xs font-mono text-neutral-600 max-w-xs">
+                    <p className="text-xs font-mono text-muted-strong max-w-xs">
                       Não foi possível abrir a pré-visualização. Confira se o motor está rodando.
                     </p>
                     <div className="flex items-center gap-2">

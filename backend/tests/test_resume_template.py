@@ -142,10 +142,10 @@ def test_devcelio_template_section_order_en():
     assert idx == sorted(idx)
 
 
-def test_devcelio_header_has_no_phone():
+def test_devcelio_header_has_contact_and_links():
     tex = engine.render_tex("devcelio", _sample_profile(), {"title": "Dev"}, lang="pt")
-    assert "+55 11 99999-9999" not in tex
-    assert "ana.dev" not in tex
+    assert "+55 11 99999-9999" in tex
+    assert "ana.dev" in tex
     assert "São Paulo, SP" in tex
     assert "linkedin.com/in/anasilva" in tex
 

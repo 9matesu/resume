@@ -116,6 +116,14 @@ class AIProvider(abc.ABC):
                 return json.loads(t[start:end + 1])
             raise AIError(f"A IA respondeu em um formato que não entendi: {t[:200]}", transient=True) from None
 
+    @staticmethod
+    def _content(data: dict) -> str:
+        """Tira o texto da resposta OpenAI-compatible sem virar KeyError/500."""
+        try:
+            return data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError) as e:
+            raise AIError("A IA respondeu em um formato inesperado.", transient=True) from e
+
 
 class OpenAICompatible(AIProvider):
     """Any /v1/chat/completions endpoint (OpenAI, LM Studio, vLLM, ...)."""
@@ -135,7 +143,7 @@ class OpenAICompatible(AIProvider):
             payload["response_format"] = {"type": "json_object"}
         headers = {"Authorization": f"Bearer {self.s.ai_api_key}"}
         data = self._post(f"{base}/chat/completions", payload, headers)
-        return data["choices"][0]["message"]["content"]
+        return self._content(data)
 
     def chat_messages(self, messages: list[dict], *, expect_json: bool = False) -> str:
         base = (self.s.ai_base_url or "https://api.openai.com/v1").rstrip("/")
@@ -149,7 +157,7 @@ class OpenAICompatible(AIProvider):
             payload["response_format"] = {"type": "json_object"}
         headers = {"Authorization": f"Bearer {self.s.ai_api_key}"}
         data = self._post(f"{base}/chat/completions", payload, headers)
-        return data["choices"][0]["message"]["content"]
+        return self._content(data)
 
     def vision(self, system: str, prompt: str, image_bytes: bytes, mime_type: str = "image/png") -> str:
         base = (self.s.ai_base_url or "https://api.openai.com/v1").rstrip("/")
@@ -171,7 +179,7 @@ class OpenAICompatible(AIProvider):
             "response_format": {"type": "json_object"}
         }
         data = self._post(f"{base}/chat/completions", payload, headers)
-        return data["choices"][0]["message"]["content"]
+        return self._content(data)
 
     def models(self) -> list[str]:
         base = (self.s.ai_base_url or "https://api.openai.com/v1").rstrip("/")

@@ -1,0 +1,11 @@
+{
+  "include": [
+    "src"
+  ],
+  "tokenSources": [
+    "src/index.css"
+  ],
+  "registry": "registry.json",
+  "driftList": "scripts/ui-drift.tsv",
+  "allowlist": "scripts/check-allowlist.json"
+}

@@ -24,7 +24,7 @@ export class ErrorBoundary extends React.Component<{ children: React.ReactNode }
           <p className="text-xs font-mono leading-relaxed break-words">
             {String(this.state.error.message || this.state.error)}
           </p>
-          <p className="text-[11px] font-mono text-neutral-600">
+          <p className="text-11 font-mono text-muted-strong">
             Se o motor foi atualizado recentemente, reinicie-o (feche o processo na porta 8322 e reabra o painel).
           </p>
           <button onClick={() => location.reload()} className="brutal-btn-yellow px-4 py-2 text-xs tracking-wider">

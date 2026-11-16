@@ -59,12 +59,12 @@ export function ToastStack({
           <div
             key={t.id}
             data-testid="toast"
-            className="toast-in pointer-events-auto relative overflow-hidden flex items-start gap-2 border-2 border-black bg-white rounded-xl py-2 pl-2.5 pr-7 text-[11px] leading-snug shadow-[3px_3px_0px_0px_#000]"
+            className="toast-in pointer-events-auto relative overflow-hidden flex items-start gap-2 border-2 border-black bg-white rounded-xl py-2 pl-2.5 pr-7 text-11 leading-snug shadow-brutal-sm"
           >
             <span
               className={
                 'mt-px shrink-0 ' +
-                (t.kind === 'ok' ? 'text-emerald-600' : t.kind === 'error' ? 'text-red-600' : 'text-neutral-500')
+                (t.kind === 'ok' ? 'text-ok' : t.kind === 'error' ? 'text-danger' : 'text-muted')
               }
             >
               <Icon className="w-3.5 h-3.5" />
@@ -73,11 +73,11 @@ export function ToastStack({
             <button
               onClick={() => onDismiss(t.id)}
               aria-label="Fechar aviso"
-              className="absolute top-1 right-1 p-0.5 text-neutral-400 hover:text-black"
+              className="absolute top-1 right-1 p-0.5 text-subtle hover:text-black"
             >
               <X className="w-3 h-3" />
             </button>
-            <span className="toast-bar absolute bottom-0 left-0 h-[3px] bg-black w-full" />
+            <span className="toast-bar absolute bottom-0 left-0 h-1 bg-black w-full" />
           </div>
         );
       })}

@@ -37,7 +37,7 @@ export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
   const entry = catalog.find((p) => p.id === provider);
   const listId = React.useId();
 
-  const autoDetect = async (pvId: string, key: string, base: string) => {
+  const autoDetect = async (pvId: string, key: string, base: string, probe = false) => {
     if (!pvId) return;
     const ent = catalog.find((p) => p.id === pvId);
     setDetecting(true);
@@ -49,6 +49,7 @@ export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
         // o backend usa a chave já salva para esse provedor.
         ...(key ? { ai_api_key: key } : {}),
         ai_base_url: base || ent?.default_base_url || '',
+        ...(probe ? { probe: true } : {}),
       });
       setModels(list);
       const chosen = working || list[0] || '';
@@ -94,8 +95,8 @@ export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
   return (
     <>
       <div>
-        <label className="text-[10px] font-bold uppercase tracking-wider block mb-1">Provedor de IA</label>
-        <select value={provider} onChange={(e) => handleProvider(e.target.value)} className="brutal-input cursor-pointer">
+        <label htmlFor="ai-provider" className="text-2xs font-bold uppercase tracking-wider block mb-1">Provedor de IA</label>
+        <select id="ai-provider" value={provider} onChange={(e) => handleProvider(e.target.value)} className="brutal-input cursor-pointer">
           {catalog.map((p) => (
             <option key={p.id} value={p.id}>
               {p.label}{keyProviders.includes(p.id) ? ' · chave salva' : ''}
@@ -106,10 +107,11 @@ export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
 
       {entry?.needs_key && (
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-wider block mb-1">
+          <label htmlFor="ai-api-key" className="text-2xs font-bold uppercase tracking-wider block mb-1">
             Chave de API {keyHint}
           </label>
           <input
+            id="ai-api-key"
             type="password"
             value={apiKey}
             onChange={(e) => onApiKeyChange(e.target.value)}
@@ -121,8 +123,9 @@ export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
 
       {entry?.custom_base && (
         <div>
-          <label className="text-[10px] font-bold uppercase tracking-wider block mb-1">URL base (opcional)</label>
+          <label htmlFor="ai-base-url" className="text-2xs font-bold uppercase tracking-wider block mb-1">URL base (opcional)</label>
           <input
+            id="ai-base-url"
             type="text"
             value={baseUrl}
             onChange={(e) => onBaseUrlChange(e.target.value)}
@@ -133,9 +136,10 @@ export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
       )}
 
       <div>
-        <label className="text-[10px] font-bold uppercase tracking-wider block mb-1">Modelo</label>
+        <label htmlFor="ai-model" className="text-2xs font-bold uppercase tracking-wider block mb-1">Modelo</label>
         <div className="flex items-center gap-2">
           <input
+            id="ai-model"
             type="text"
             value={model}
             onChange={(e) => onModelChange(e.target.value)}
@@ -150,16 +154,16 @@ export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
           </datalist>
           <button
             type="button"
-            onClick={() => void autoDetect(provider, apiKey, baseUrl)}
+            onClick={() => void autoDetect(provider, apiKey, baseUrl, true)}
             disabled={detecting}
-            className="brutal-btn px-3 py-2 text-[11px] shrink-0 flex items-center gap-1.5"
+            className="brutal-btn px-3 py-2 text-11 shrink-0 flex items-center gap-1.5"
             title="Detectar modelos"
           >
             {detecting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
             <span>{detecting ? 'Lendo...' : 'Detectar'}</span>
           </button>
         </div>
-        {detectMsg && <p className="text-[11px] text-neutral-500 mt-1 font-mono">{detectMsg}</p>}
+        {detectMsg && <p className="text-11 text-muted mt-1 font-mono">{detectMsg}</p>}
       </div>
     </>
   );

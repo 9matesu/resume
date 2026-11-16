@@ -84,8 +84,10 @@
     <%- set hdr = [] %>
     <%- if personal.get('location') %><%- set _ = hdr.append(personal.get('location') | esc) %><%- endif %>
     <%- if personal.get('email') %><%- set _ = hdr.append('\\href{mailto:' + (personal.get('email') | esc_url) + '}{' + (personal.get('email') | esc) + '}') %><%- endif %>
+    <%- if personal.get('phone') %><%- set _ = hdr.append(personal.get('phone') | esc) %><%- endif %>
     <%- if personal.get('linkedin') %><%- set _ = hdr.append('\\href{' + (personal.get('linkedin') | esc_url) + '}{' + (personal.get('linkedin') | short_url | esc) + '}') %><%- endif %>
     <%- if personal.get('github') %><%- set _ = hdr.append('\\href{' + (personal.get('github') | esc_url) + '}{' + (personal.get('github') | short_url | esc) + '}') %><%- endif %>
+    <%- if personal.get('portfolio') %><%- set _ = hdr.append('\\href{' + (personal.get('portfolio') | esc_url) + '}{' + (personal.get('portfolio') | short_url | esc) + '}') %><%- endif %>
     << hdr | join(' \\textbullet{} ') >>
 \end{center}
 

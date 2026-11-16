@@ -237,12 +237,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
               <div
                 key={s.n}
                 className={`p-3 md:px-6 md:py-3 flex items-center gap-2 font-bold ${
-                  active ? 'bg-neutral-100 text-black' : done ? 'bg-white text-black' : 'bg-white text-neutral-400'
+                  active ? 'bg-wash text-black' : done ? 'bg-white text-black' : 'bg-white text-subtle'
                 }`}
               >
                 <span
-                  className={`inline-block w-4 h-4 rounded-full text-[10px] text-center leading-4 font-mono shrink-0 ${
-                    active || done ? 'bg-black text-white' : 'border border-neutral-400 text-neutral-400'
+                  className={`inline-block w-4 h-4 rounded-full text-2xs text-center leading-4 font-mono shrink-0 ${
+                    active || done ? 'bg-black text-white' : 'border border-line-strong text-subtle'
                   }`}
                 >
                   {done ? '✓' : s.n}
@@ -258,7 +258,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
       {step === 1 && (
         <main className="flex-grow overflow-y-auto flex items-center justify-center p-4 md:p-8">
           <div className="w-full max-w-xl">
-            <div className="mb-4 font-mono text-[11px] text-neutral-700 leading-relaxed">
+            <div className="mb-4 font-mono text-11 text-ink leading-relaxed">
               Importe seu currículo original uma única vez. O resuMe o usará como{' '}
               <strong className="text-black underline underline-offset-2">fonte absoluta de verdade</strong>{' '}
               para montar currículos sob medida para qualquer vaga que você navegar.
@@ -277,12 +277,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                   fileInputRef.current?.click();
                 }
               }}
-              className="w-full bg-brutal-yellow border-2 border-black p-8 sm:p-12 text-center shadow-[10px_10px_0px_0px_#000000] cursor-pointer"
+              className="w-full bg-brutal-yellow border-2 border-black p-8 sm:p-12 text-center shadow-brutal-lg cursor-pointer"
             >
-              <h1 className="font-editorial text-4xl sm:text-5xl text-black font-normal leading-[1.05] tracking-tight mb-4">
+              <h1 className="font-editorial text-4xl sm:text-5xl text-black font-normal leading-105 tracking-tight mb-4">
                 {uploading ? 'Lendo o currículo…' : 'Arraste seu currículo para cá'}
               </h1>
-              <p className="font-mono text-xs sm:text-sm text-neutral-900 mb-6 max-w-lg mx-auto font-medium">
+              <p className="font-mono text-xs sm:text-sm text-ink mb-6 max-w-lg mx-auto font-medium">
                 Compativel com{' '}
                 {['PDF', 'DOCX', 'TXT', 'Markdown', 'LaTeX (.tex)'].map((f, i) => (
                   <React.Fragment key={f}>
@@ -313,7 +313,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); setStep(2); }}
-                  className="text-neutral-900 hover:underline font-bold hover:bg-black hover:text-white px-1 py-0.5 transition-colors cursor-pointer"
+                  className="text-ink hover:underline font-bold hover:bg-black hover:text-white px-1 py-0.5 transition-colors cursor-pointer"
                 >
                   Preencher à mão
                 </button>
@@ -331,8 +331,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
               <SectionLabel index="01" title="Informacoes Pessoais & Contato" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider block mb-1">Nome Completo</label>
-                  <input
+                  <label htmlFor="field-1" className="text-2xs font-bold uppercase tracking-wider block mb-1">Nome Completo</label>
+                  <input id="field-1"
                     type="text"
                     value={profile.personal.name}
                     onChange={(e) => setProfile({ ...profile, personal: { ...profile.personal, name: e.target.value } })}
@@ -341,8 +341,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider block mb-1">E-mail</label>
-                  <input
+                  <label htmlFor="field-2" className="text-2xs font-bold uppercase tracking-wider block mb-1">E-mail</label>
+                  <input id="field-2"
                     type="email"
                     value={profile.personal.email}
                     onChange={(e) => setProfile({ ...profile, personal: { ...profile.personal, email: e.target.value } })}
@@ -351,8 +351,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider block mb-1">Telefone / WhatsApp</label>
-                  <input
+                  <label htmlFor="field-3" className="text-2xs font-bold uppercase tracking-wider block mb-1">Telefone / WhatsApp</label>
+                  <input id="field-3"
                     type="text"
                     value={profile.personal.phone}
                     onChange={(e) => setProfile({ ...profile, personal: { ...profile.personal, phone: e.target.value } })}
@@ -361,8 +361,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider block mb-1">Localizacao</label>
-                  <input
+                  <label htmlFor="field-4" className="text-2xs font-bold uppercase tracking-wider block mb-1">Localizacao</label>
+                  <input id="field-4"
                     type="text"
                     value={profile.personal.location}
                     onChange={(e) => setProfile({ ...profile, personal: { ...profile.personal, location: e.target.value } })}
@@ -371,8 +371,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider block mb-1">Perfil do LinkedIn</label>
-                  <input
+                  <label htmlFor="field-5" className="text-2xs font-bold uppercase tracking-wider block mb-1">Perfil do LinkedIn</label>
+                  <input id="field-5"
                     type="text"
                     value={profile.personal.linkedin}
                     onChange={(e) => setProfile({ ...profile, personal: { ...profile.personal, linkedin: e.target.value } })}
@@ -381,8 +381,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider block mb-1">GitHub ou Portfolio</label>
-                  <input
+                  <label htmlFor="field-6" className="text-2xs font-bold uppercase tracking-wider block mb-1">GitHub ou Portfolio</label>
+                  <input id="field-6"
                     type="text"
                     value={profile.personal.github}
                     onChange={(e) => setProfile({ ...profile, personal: { ...profile.personal, github: e.target.value } })}
@@ -407,7 +407,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             <section>
               <div className="flex items-center justify-between mb-3">
                 <SectionLabel index="03" title={`Experiência Profissional (${profile.experience.length})`} />
-                <button type="button" onClick={handleAddExperience} className="brutal-btn flex items-center gap-1.5 px-3 py-1.5 text-[10px]">
+                <button type="button" onClick={handleAddExperience} className="brutal-btn flex items-center gap-1.5 px-3 py-1.5 text-2xs">
                   <Plus className="w-3.5 h-3.5" />
                   Adicionar Cargo
                 </button>
@@ -419,7 +419,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     <button
                       type="button"
                       onClick={() => setProfile({ ...profile, experience: profile.experience.filter((_, i) => i !== idx) })}
-                      className="absolute top-4 right-4 text-neutral-500 hover:bg-black hover:text-white transition-colors cursor-pointer p-1"
+                      className="absolute top-4 right-4 text-muted hover:bg-black hover:text-white transition-colors cursor-pointer p-1"
                       title="Remover cargo"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -427,8 +427,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3 pr-8">
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-neutral-600 block mb-0.5">Cargo / Título</label>
-                        <input
+                        <label htmlFor="field-7" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Cargo / Título</label>
+                        <input id="field-7"
                           type="text"
                           value={exp.title}
                           onChange={(e) => {
@@ -441,8 +441,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-neutral-600 block mb-0.5">Empresa</label>
-                        <input
+                        <label htmlFor="field-8" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Empresa</label>
+                        <input id="field-8"
                           type="text"
                           value={exp.company}
                           onChange={(e) => {
@@ -455,8 +455,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-neutral-600 block mb-0.5">Periodo / Datas</label>
-                        <input
+                        <label htmlFor="field-9" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Periodo / Datas</label>
+                        <input id="field-9"
                           type="text"
                           value={exp.period || ''}
                           onChange={(e) => {
@@ -469,8 +469,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-neutral-600 block mb-0.5">Local</label>
-                        <input
+                        <label htmlFor="field-10" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Local</label>
+                        <input id="field-10"
                           type="text"
                           value={exp.location || ''}
                           onChange={(e) => {
@@ -485,9 +485,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     </div>
 
                     <div className="space-y-1.5 mt-2">
-                      <label className="text-[10px] font-bold uppercase text-neutral-600">
+                      <div className="text-2xs font-bold uppercase text-muted-strong">
                         Conquistas e Responsabilidades (Bullets):
-                      </label>
+                      </div>
                       {exp.description.map((bullet, bIdx) => (
                         <div key={bIdx} className="flex items-center gap-2">
                           <span className="font-bold">•</span>
@@ -508,7 +508,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                               updated[idx].description = updated[idx].description.filter((_, i) => i !== bIdx);
                               setProfile({ ...profile, experience: updated });
                             }}
-                            className="text-neutral-500 hover:bg-black hover:text-white cursor-pointer p-1.5 transition-colors"
+                            className="text-muted hover:bg-black hover:text-white cursor-pointer p-1.5 transition-colors"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -535,7 +535,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             <section>
               <div className="flex items-center justify-between mb-3">
                 <SectionLabel index="04" title={`Atividades de Liderança (${(profile.leadership || []).length})`} />
-                <button type="button" onClick={handleAddLeadership} className="brutal-btn flex items-center gap-1.5 px-3 py-1.5 text-[10px]">
+                <button type="button" onClick={handleAddLeadership} className="brutal-btn flex items-center gap-1.5 px-3 py-1.5 text-2xs">
                   <Plus className="w-3.5 h-3.5" />
                   Adicionar Atividade
                 </button>
@@ -547,7 +547,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     <button
                       type="button"
                       onClick={() => setProfile({ ...profile, leadership: (profile.leadership || []).filter((_, i) => i !== idx) })}
-                      className="absolute top-4 right-4 text-neutral-500 hover:bg-black hover:text-white transition-colors cursor-pointer p-1"
+                      className="absolute top-4 right-4 text-muted hover:bg-black hover:text-white transition-colors cursor-pointer p-1"
                       title="Remover atividade"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -555,8 +555,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3 pr-8">
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-neutral-600 block mb-0.5">Cargo / Posição</label>
-                        <input
+                        <label htmlFor="field-11" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Cargo / Posição</label>
+                        <input id="field-11"
                           type="text"
                           value={lead.title}
                           onChange={(e) => {
@@ -569,8 +569,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-neutral-600 block mb-0.5">Organização</label>
-                        <input
+                        <label htmlFor="field-12" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Organização</label>
+                        <input id="field-12"
                           type="text"
                           value={lead.company}
                           onChange={(e) => {
@@ -583,8 +583,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-neutral-600 block mb-0.5">Periodo / Datas</label>
-                        <input
+                        <label htmlFor="field-13" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Periodo / Datas</label>
+                        <input id="field-13"
                           type="text"
                           value={lead.period || ''}
                           onChange={(e) => {
@@ -597,8 +597,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-neutral-600 block mb-0.5">Local</label>
-                        <input
+                        <label htmlFor="field-14" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Local</label>
+                        <input id="field-14"
                           type="text"
                           value={lead.location || ''}
                           onChange={(e) => {
@@ -613,9 +613,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     </div>
 
                     <div className="space-y-1.5 mt-2">
-                      <label className="text-[10px] font-bold uppercase text-neutral-600">
+                      <div className="text-2xs font-bold uppercase text-muted-strong">
                         Impacto e Responsabilidades (Bullets):
-                      </label>
+                      </div>
                       {lead.description.map((bullet, bIdx) => (
                         <div key={bIdx} className="flex items-center gap-2">
                           <span className="font-bold">•</span>
@@ -636,7 +636,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                               updated[idx].description = updated[idx].description.filter((_, i) => i !== bIdx);
                               setProfile({ ...profile, leadership: updated });
                             }}
-                            className="text-neutral-500 hover:bg-black hover:text-white cursor-pointer p-1.5 transition-colors"
+                            className="text-muted hover:bg-black hover:text-white cursor-pointer p-1.5 transition-colors"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -663,7 +663,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             <section>
               <div className="flex items-center justify-between mb-3">
                 <SectionLabel index="05" title={`Formação Acadêmica (${profile.education.length})`} />
-                <button type="button" onClick={handleAddEducation} className="brutal-btn flex items-center gap-1.5 px-3 py-1.5 text-[10px]">
+                <button type="button" onClick={handleAddEducation} className="brutal-btn flex items-center gap-1.5 px-3 py-1.5 text-2xs">
                   <Plus className="w-3.5 h-3.5" />
                   Adicionar Formação
                 </button>
@@ -675,14 +675,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     <button
                       type="button"
                       onClick={() => setProfile({ ...profile, education: profile.education.filter((_, i) => i !== idx) })}
-                      className="absolute top-3 right-3 text-neutral-500 hover:bg-black hover:text-white transition-colors cursor-pointer p-1"
+                      className="absolute top-3 right-3 text-muted hover:bg-black hover:text-white transition-colors cursor-pointer p-1"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-6">
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-neutral-600 block mb-0.5">Instituição</label>
-                        <input
+                        <label htmlFor="field-15" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Instituição</label>
+                        <input id="field-15"
                           type="text"
                           value={edu.institution}
                           onChange={(e) => {
@@ -695,8 +695,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-neutral-600 block mb-0.5">Curso / Grau</label>
-                        <input
+                        <label htmlFor="field-16" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Curso / Grau</label>
+                        <input id="field-16"
                           type="text"
                           value={edu.degree}
                           onChange={(e) => {
@@ -709,8 +709,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-neutral-600 block mb-0.5">Ano de Conclusão</label>
-                        <input
+                        <label htmlFor="field-17" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Ano de Conclusão</label>
+                        <input id="field-17"
                           type="text"
                           value={edu.year}
                           onChange={(e) => {
@@ -723,8 +723,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-neutral-600 block mb-0.5">Local</label>
-                        <input
+                        <label htmlFor="field-18" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Local</label>
+                        <input id="field-18"
                           type="text"
                           value={edu.location || ''}
                           onChange={(e) => {
@@ -775,7 +775,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             <section>
               <div className="flex items-center justify-between mb-3">
                 <SectionLabel index="07" title={`Projetos (${(profile.projects || []).length})`} />
-                <button type="button" onClick={handleAddProject} className="brutal-btn flex items-center gap-1.5 px-3 py-1.5 text-[10px]">
+                <button type="button" onClick={handleAddProject} className="brutal-btn flex items-center gap-1.5 px-3 py-1.5 text-2xs">
                   <Plus className="w-3.5 h-3.5" />
                   Adicionar Projeto
                 </button>
@@ -787,14 +787,14 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     <button
                       type="button"
                       onClick={() => setProfile({ ...profile, projects: (profile.projects || []).filter((_, i) => i !== idx) })}
-                      className="absolute top-3 right-3 text-neutral-500 hover:bg-black hover:text-white transition-colors cursor-pointer p-1"
+                      className="absolute top-3 right-3 text-muted hover:bg-black hover:text-white transition-colors cursor-pointer p-1"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-6">
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-neutral-600 block mb-0.5">Nome</label>
-                        <input
+                        <label htmlFor="field-19" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Nome</label>
+                        <input id="field-19"
                           type="text"
                           value={proj.name}
                           onChange={(e) => {
@@ -807,8 +807,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold uppercase text-neutral-600 block mb-0.5">Período</label>
-                        <input
+                        <label htmlFor="field-20" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Período</label>
+                        <input id="field-20"
                           type="text"
                           value={proj.period || ''}
                           onChange={(e) => {
@@ -822,8 +822,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                       </div>
                     </div>
                     <div className="mt-2">
-                      <label className="text-[10px] font-bold uppercase text-neutral-600 block mb-0.5">Descrição / destaques</label>
-                      <textarea
+                      <label htmlFor="field-21" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Descrição / destaques</label>
+                      <textarea id="field-21"
                         rows={2}
                         value={Array.isArray(proj.description) ? proj.description.join('\n') : proj.description || ''}
                         onChange={(e) => {
@@ -842,7 +842,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             <section>
               <div className="flex items-center justify-between mb-3">
                 <SectionLabel index="08" title={`Idiomas (${(profile.languages || []).length})`} />
-                <button type="button" onClick={handleAddLanguage} className="brutal-btn flex items-center gap-1.5 px-3 py-1.5 text-[10px]">
+                <button type="button" onClick={handleAddLanguage} className="brutal-btn flex items-center gap-1.5 px-3 py-1.5 text-2xs">
                   <Plus className="w-3.5 h-3.5" />
                   Adicionar Idioma
                 </button>
@@ -875,7 +875,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     <button
                       type="button"
                       onClick={() => setProfile({ ...profile, languages: (profile.languages || []).filter((_, i) => i !== idx) })}
-                      className="text-neutral-500 hover:bg-black hover:text-white cursor-pointer p-1.5 transition-colors"
+                      className="text-muted hover:bg-black hover:text-white cursor-pointer p-1.5 transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -887,7 +887,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             <section>
               <div className="flex items-center justify-between mb-3">
                 <SectionLabel index="09" title={`Certificações (${(profile.certifications || []).length})`} />
-                <button type="button" onClick={handleAddCertification} className="brutal-btn flex items-center gap-1.5 px-3 py-1.5 text-[10px]">
+                <button type="button" onClick={handleAddCertification} className="brutal-btn flex items-center gap-1.5 px-3 py-1.5 text-2xs">
                   <Plus className="w-3.5 h-3.5" />
                   Adicionar Certificação
                 </button>
@@ -909,7 +909,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                     <button
                       type="button"
                       onClick={() => setProfile({ ...profile, certifications: (profile.certifications || []).filter((_, i) => i !== idx) })}
-                      className="text-neutral-500 hover:bg-black hover:text-white cursor-pointer p-1.5 transition-colors"
+                      className="text-muted hover:bg-black hover:text-white cursor-pointer p-1.5 transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -938,7 +938,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
           <div className="max-w-xl mx-auto space-y-6">
             <section>
               <SectionLabel index="10" title="Provedor de Inteligencia Artificial" />
-              <p className="text-xs text-neutral-600 font-mono -mt-1 mb-3">
+              <p className="text-xs text-muted-strong font-mono -mt-1 mb-3">
                 Selecione o modelo que irá analisar as páginas de vaga e adaptar os currículos.
               </p>
 
@@ -954,7 +954,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                   onApiKeyChange={setAiApiKey}
                   onBaseUrlChange={setAiBaseUrl}
                   keyHint={
-                    <span className="text-neutral-500 normal-case tracking-normal">
+                    <span className="text-muted normal-case tracking-normal">
                       (armazenada apenas no SQLite local)
                     </span>
                   }
@@ -980,7 +980,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             </section>
 
             <div className="hairline-b py-3 flex items-center justify-between text-xs font-mono">
-              <span className="text-neutral-500">Gerador de PDF:</span>
+              <span className="text-muted">Gerador de PDF:</span>
               <strong>{health.compiler_type || 'Tectonic'} (local)</strong>
             </div>
 

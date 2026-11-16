@@ -107,7 +107,7 @@ export const SettingsPanel: React.FC = () => {
               keyProviders={settings?.key_providers || []}
               keyHint={
                 settings?.key_providers?.includes(aiProvider) ? (
-                  <span className="text-neutral-500 normal-case tracking-normal">
+                  <span className="text-muted normal-case tracking-normal">
                     (Chave salva para este provedor.)
                   </span>
                 ) : undefined
@@ -137,15 +137,15 @@ export const SettingsPanel: React.FC = () => {
             <div className="border-2 border-black p-3">
               <div className="font-bold uppercase mb-1">Currículo base</div>
               {baseProfile ? (
-                <div className="text-[11px] font-mono space-y-0.5 mb-3">
+                <div className="text-11 font-mono space-y-0.5 mb-3">
                   <div className="font-bold text-xs">{baseProfile.name}</div>
-                  <div className="text-neutral-600">{baseProfile.email}</div>
+                  <div className="text-muted-strong">{baseProfile.email}</div>
                   {baseProfile.source_file && (
-                    <div className="text-neutral-500">arquivo: {baseProfile.source_file}</div>
+                    <div className="text-muted">arquivo: {baseProfile.source_file}</div>
                   )}
                 </div>
               ) : (
-                <div className="text-[11px] font-mono text-neutral-500 mb-3">nenhum perfil ativo</div>
+                <div className="text-11 font-mono text-muted mb-3">nenhum perfil ativo</div>
               )}
               {baseProfile && (
                 <button
@@ -162,7 +162,7 @@ export const SettingsPanel: React.FC = () => {
                     }
                   }}
                   disabled={swapping}
-                  className="brutal-btn w-full py-2 text-[11px]"
+                  className="brutal-btn w-full py-2 text-11"
                 >
                   {swapping ? 'Removendo...' : 'Remover currículo base'}
                 </button>
