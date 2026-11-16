@@ -22,8 +22,20 @@ function cleanOldBundles() {
   }
 }
 
+// Paginas de extensao nao precisam de crossorigin nos tags gerados. Em
+// algumas versoes do Chrome esse atributo faz o modulo ser tratado como
+// recurso cross-world e a pagina fica em branco.
+function stripCrossorigin() {
+  return {
+    name: 'strip-crossorigin',
+    transformIndexHtml(html: string) {
+      return html.replace(/\s+crossorigin(?:="[^"]*")?/g, '')
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss(), cleanOldBundles()],
+  plugins: [react(), tailwindcss(), cleanOldBundles(), stripCrossorigin()],
   base: './',
   build: {
     outDir: '../extension',

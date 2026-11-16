@@ -36,6 +36,8 @@
   no allowlist do index.css).
 - Extensao sem avisos de preload: `modulePreload` desligado no Vite e
   preloads de fonte removidos do painel/Estudio.
+- Paginas da extensao sem `crossorigin` nos tags gerados e com uma
+  mensagem de carregamento enquanto o React substitui a raiz.
 
 ### Movimento e feedback
 
