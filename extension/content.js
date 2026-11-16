@@ -1,4 +1,7 @@
 (() => {
+  if (window.__resumeContentLoaded) return;
+  window.__resumeContentLoaded = true;
+
   const UI_FONT = "'Switzer',system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif";
 
   // A extensão usa Switzer também no overlay da página. O content script

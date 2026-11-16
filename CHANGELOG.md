@@ -9,12 +9,19 @@
 - A prévia do PDF usa `?inline=1`; o download só acontece no botão.
 - Nova aba Chat: peça mudanças em linguagem natural e a IA aplica na
   versão atual, sem inventar fatos.
+- O chat agora mostra as mudanças e pede Aplicar/Descartar; não aplica
+  mais sozinho.
+- Novo editor LaTeX com CodeMirror: números de linha, highlight semântico,
+  busca, undo/redo e barra de status. Carregado sob demanda.
 - A captura manual “Selecionar painel da vaga” fica sempre visível.
 - O botão “Capturar Vaga” agora abre direto o modo de seleção por clique.
 - O overlay da vaga usa Switzer, borda 1px e sombras suaves.
 - Superfície mais macOS: bordas 1px, sombras suaves, radius maior,
   amarelo unificado em `#ffe800` e tipografia Switzer.
 - Mais respiro: paddings maiores no painel, Estúdio, chat e cards.
+- A extensão injeta o content script nas abas já abertas ao instalar ou
+  atualizar, evitando F5 manual.
+- Dependências de produção sem vulnerabilidades conhecidas (`npm audit`).
 
 ### Produção
 

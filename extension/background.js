@@ -75,8 +75,39 @@ try {
       console.error("resuMe SW ensure:", e);
     }
   };
-  if (chrome.runtime.onInstalled) chrome.runtime.onInstalled.addListener(ensureBackend);
-  if (chrome.runtime.onStartup) chrome.runtime.onStartup.addListener(ensureBackend);
+  // Injeta o content script nas abas que ja estavam abertas quando a
+  // extensao foi instalada/recarregada. Evita o F5 manual.
+  const injectExistingTabs = async () => {
+    if (!chrome.scripting || !chrome.scripting.executeScript) return;
+    try {
+      const tabs = await chrome.tabs.query({ url: ["http://*/*", "https://*/*"] });
+      for (const tab of tabs) {
+        if (!tab.id) continue;
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ["content.js"],
+          });
+        } catch {
+          // Aba restrita ou sem permissao: segue.
+        }
+      }
+    } catch {
+      // Sem acesso a abas: segue.
+    }
+  };
+
+  const onInstalled = () => {
+    ensureBackend();
+    void injectExistingTabs();
+  };
+  const onStartup = () => {
+    ensureBackend();
+    void injectExistingTabs();
+  };
+
+  if (chrome.runtime.onInstalled) chrome.runtime.onInstalled.addListener(onInstalled);
+  if (chrome.runtime.onStartup) chrome.runtime.onStartup.addListener(onStartup);
   ensureBackend(); // wake-up do service worker (MV3 morre e renasce)
 } catch (e) {
   console.error("resuMe SW:", e);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import {
   Camera,
   Loader2,
@@ -22,7 +22,10 @@ import { cvFilename } from './cvFilename';
 import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
 import { ApplicationHistory } from './components/history/ApplicationHistory';
 import { SettingsPanel } from './components/settings/SettingsPanel';
-import { StudioModal } from './components/studio/StudioModal';
+
+const StudioModal = lazy(() =>
+  import('./components/studio/StudioModal').then((m) => ({ default: m.StudioModal })),
+);
 import { ActionButton, Stage, Skeleton } from './components/ActionButton';
 import { ToastStack, useToasts } from './components/Toast';
 
@@ -389,7 +392,15 @@ export function SidePanelApp() {
 
       <ToastStack items={toasts} onDismiss={dismiss} />
       {studioOpen && result && (
-        <StudioModal data={result} onClose={() => setStudioOpen(false)} />
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-white text-xs text-muted">
+              Abrindo Estúdio…
+            </div>
+          }
+        >
+          <StudioModal data={result} onClose={() => setStudioOpen(false)} />
+        </Suspense>
       )}
     </div>
   );

@@ -120,12 +120,14 @@ O entregável é sempre o currículo customizado.
 | --- | --- |
 | `sidePanel` | UI principal dockada ao navegador |
 | `storage` | passar o resultado da captura para a aba do Estúdio |
-| `tabs` | localizar a aba ativa para enviar a mensagem de captura |
+| `tabs` | localizar a aba ativa e recarregar/injetar a captura |
+| `scripting` | injetar o content script em abas já abertas após instalar/atualizar |
 | content script `<all_urls>` | o detector precisa rodar na página da vaga |
 | host `http://127.0.0.1:8322/*` | comunicação com o motor local |
+| host `<all_urls>` | usada só para a injeção do content script de captura |
 
-Sem `activeTab`/`<all_urls>` em `host_permissions`: nada de acesso a dados de
-navegação; o único conteúdo lido é o texto do painel que **você** clicou.
+O `<all_urls>` não envia dados: o content script só lê o painel que **você**
+clica. O painel lateral conversa apenas com `127.0.0.1:8322`.
 
 ## Dados e privacidade
 

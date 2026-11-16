@@ -59,6 +59,10 @@
   --color-line-strong: #c9c9c9;
   --color-ok: #059669;
   --color-danger: #dc2626;
+  --color-danger-wash: #fef2f2;
+  --color-mac-red: #ff5f57;
+  --color-mac-yellow: #febc2e;
+  --color-mac-green: #28c840;
 
   --shadow-mac: 0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.06);
 }
@@ -93,6 +97,15 @@
     @apply bg-white text-black antialiased selection:bg-black selection:text-white;
   }
 
+  /* Vence temas/extensões que forçam Segoe UI ou 75% no body. */
+  body, body * {
+    font-family: 'Switzer', system-ui, -apple-system, sans-serif !important;
+  }
+
+  body {
+    font-size: 16px !important;
+  }
+
   /* Trava global: nenhuma página da extensão renderiza texto em outra
      família além de Switzer e Instrument Serif. Só o código usa --font-code. */
   *, *::before, *::after {
@@ -105,12 +118,12 @@
 }
 
 .font-editorial, .font-editorial * {
-  font-family: 'Instrument Serif', serif;
+  font-family: 'Instrument Serif', serif !important;
   letter-spacing: -0.02em;
 }
 
 .font-code, .font-code * {
-  font-family: var(--font-code);
+  font-family: var(--font-code) !important;
 }
 
 /* ---- primitivas de movimento ----

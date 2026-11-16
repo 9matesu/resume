@@ -13,8 +13,10 @@ precisa ler.** Não existem servidores do resuMe.
 | Preferências (template, idioma) | `backend\data\resume.db` |
 
 O painel lateral conversa apenas com `http://127.0.0.1:8322` (host
-permission única do manifest). As permissões da extensão estão documentadas
-em [EXTENSAO.md](EXTENSAO.md#permissões-e-por-quê).
+permission do motor). O `host_permissions` inclui `<all_urls>` apenas para
+injetar o content script de captura em abas web; essa injeção não envia
+dados. As permissões da extensão estão documentadas em
+[EXTENSAO.md](EXTENSAO.md#permissões-e-por-quê).
 
 ## O que é enviado (e para onde)
 

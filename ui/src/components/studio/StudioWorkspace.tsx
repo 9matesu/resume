@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import {
   Download,
   FileCode,
@@ -10,6 +10,8 @@ import {
   Sparkles,
   ExternalLink,
   X,
+  Copy,
+  RefreshCw,
 } from 'lucide-react';
 import {
   saveResumeEdit,
@@ -21,6 +23,10 @@ import { cvFilename } from '../../cvFilename';
 import { ActionButton, Stage } from '../ActionButton';
 import { ToastStack, useToasts } from '../Toast';
 import { ChatPanel } from './ChatPanel';
+
+const LatexEditor = lazy(() =>
+  import('./LatexEditor').then((m) => ({ default: m.LatexEditor })),
+);
 import type {
   AdaptedResult,
   CandidateProfile,
@@ -106,7 +112,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, o
     savedSnapshot.current.tex !== rawTex ||
     JSON.stringify(savedSnapshot.current.profile) !== JSON.stringify(profile);
 
-  const compileAndDownload = async () => {
+  const compilePdf = async (download = true) => {
     setCompiling(true);
     setPdfStatus('loading');
     setSaveError('');
@@ -123,19 +129,23 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, o
         savedSnapshot.current = { tex: res.tex, profile };
         toast('PDF atualizado.', 'ok');
       }
-      const a = document.createElement('a');
-      a.href = url;
-      a.download =
-        adaptedData.adaptation.pdf_filename ||
-        cvFilename(
-          adaptedData.adaptation.tailored_profile?.personal?.name || '',
-          adaptedData.job.title,
-          adaptedData.job.company,
-        );
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      toast('PDF baixado.', 'ok');
+      if (download) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download =
+          adaptedData.adaptation.pdf_filename ||
+          cvFilename(
+            adaptedData.adaptation.tailored_profile?.personal?.name || '',
+            adaptedData.job.title,
+            adaptedData.job.company,
+          );
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        toast('PDF baixado.', 'ok');
+      } else {
+        toast('Prévia atualizada.', 'ok');
+      }
     } catch (err: any) {
       setSaveError(err.message || 'Não salvou.');
       setPdfStatus('error');
@@ -144,6 +154,9 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, o
       setCompiling(false);
     }
   };
+
+  const compileAndDownload = () => compilePdf(true);
+  const recompile = () => compilePdf(false);
 
   // AI Polish single bullet (experience or leadership)
   const handlePolishBullet = async (section: 'experience' | 'leadership', expIdx: number, bIdx: number) => {
@@ -181,7 +194,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, o
         <div className="min-h-14 p-4 hairline-b bg-white flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="font-editorial text-lg normal-case leading-tight break-words">{adaptedData.job.title}</h2>
+              <h2 className="text-lg font-semibold normal-case leading-tight break-words">{adaptedData.job.title}</h2>
               <span className="text-xs text-muted font-medium">na {adaptedData.job.company}</span>
             </div>
             {adaptedData.job.location && (
@@ -256,6 +269,8 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, o
                 profile={profile}
                 onProfileChange={setProfile}
                 onToast={toast}
+                matchScore={matchScore}
+                atsCoverage={adaptedData.adaptation.ats?.coverage ?? null}
               />
             </div>
           ) : activeTab === 'visual' ? (
@@ -679,16 +694,76 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, o
             </>
           ) : (
             /* Raw LaTeX Source Tab */
-            <div className="h-full flex flex-col">
-              <label htmlFor="field-2" className="text-2xs font-bold uppercase tracking-wider mb-2 block">
-                Código do currículo
-              </label>
-              <textarea id="field-2"
-                value={rawTex}
-                onChange={(e) => setRawTex(e.target.value)}
-                className="font-code flex-1 min-h-lg w-full p-4 bg-black text-xs text-white border border-line-strong focus:outline-none leading-relaxed selection:bg-brand selection:text-black"
-                spellCheck={false}
-              />
+            <div className="flex h-full min-h-0 flex-col">
+              <div className="flex h-10 shrink-0 items-center justify-between border-b border-line bg-wash px-3">
+                <div className="flex items-center gap-2">
+                  <span className="flex items-center gap-1.5" aria-hidden="true">
+                    <span className="h-2.5 w-2.5 rounded-full bg-mac-red" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-mac-yellow" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-mac-green" />
+                  </span>
+                  <span className="text-2xs font-semibold">currículo.tex</span>
+                  {dirty && <span className="h-1.5 w-1.5 rounded-full bg-brand" title="Alterações não salvas" />}
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    aria-label="Copiar LaTeX"
+                    title="Copiar"
+                    onClick={() => {
+                      void navigator.clipboard.writeText(rawTex);
+                      toast('LaTeX copiado.', 'ok');
+                    }}
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-white hover:text-black"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Baixar arquivo .tex"
+                    title="Baixar .tex"
+                    onClick={() => {
+                      const blob = new Blob([rawTex], { type: 'text/plain;charset=utf-8' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = 'curriculo.tex';
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-white hover:text-black"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Recompilar PDF"
+                    title="Recompilar"
+                    onClick={() => void recompile()}
+                    disabled={compiling}
+                    className="flex h-7 items-center gap-1 rounded-md px-2 text-2xs font-semibold text-muted transition-colors hover:bg-white hover:text-black disabled:opacity-40"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${compiling ? 'spin' : ''}`} />
+                    Recompilar
+                  </button>
+                </div>
+              </div>
+              <div className="min-h-0 flex-1">
+                <Suspense
+                  fallback={
+                    <div className="flex h-full items-center justify-center bg-white text-xs text-muted">
+                      Carregando editor…
+                    </div>
+                  }
+                >
+                  <LatexEditor
+                    value={rawTex}
+                    onChange={setRawTex}
+                    onSave={() => void compilePdf(false)}
+                    errorMessage={saveError || undefined}
+                  />
+                </Suspense>
+              </div>
             </div>
           )}
         </div>

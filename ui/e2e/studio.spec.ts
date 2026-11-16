@@ -29,6 +29,12 @@ test.describe('studio UI/UX', () => {
     await expect(page.getByText('Segurança da Informação')).toBeVisible({ timeout: 10_000 });
     await page.screenshot({ path: 'e2e/screenshots/studio-loaded.png', fullPage: false });
 
+    // Fonte Switzer no body e no header do Estúdio.
+    const bodyFont = await page.evaluate(() => getComputedStyle(document.body).fontFamily);
+    const headerFont = await page.getByText('Segurança da Informação').first().evaluate((el) => getComputedStyle(el).fontFamily);
+    expect(bodyFont).toMatch(/Switzer/);
+    expect(headerFont).toMatch(/Switzer/);
+
     // Botão Baixar PDF existe e o layout em 1280px não estoura.
     await expect(page.getByRole('button', { name: /Baixar PDF/i }).first()).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -43,6 +49,43 @@ test.describe('studio UI/UX', () => {
       return els.map(r);
     });
     for (const b of boxes) expect(b.overflow).toBeLessThanOrEqual(2);
+  });
+
+  test('editor LaTeX tem números de linha e highlight', async ({ page }) => {
+    await page.addInitScript((data) => {
+      localStorage.setItem('resume_studio', JSON.stringify(data));
+    }, ADAPTED);
+    await page.route('**/api/resumes/res1', (r) => r.fulfill({ json: ADAPTED }));
+    await page.goto('/studio.html');
+    await page.getByRole('button', { name: /Código/i }).click();
+    await expect(page.getByTestId('latex-editor')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('.cm-lineNumbers')).toBeVisible();
+    await page.locator('.cm-content').click();
+    await page.keyboard.type('\\documentclass{article}');
+    await expect(page.locator('.cm-content')).toContainText('\\documentclass{article}');
+    await page.screenshot({ path: 'e2e/screenshots/studio-editor.png', fullPage: false });
+  });
+
+  test('chat sugere mudança e aplica no currículo', async ({ page }) => {
+    const revised = {
+      ...ADAPTED.adaptation.tailored_profile,
+      summary: 'Novo resumo mais curto.',
+    };
+    await page.addInitScript((data) => {
+      localStorage.setItem('resume_studio', JSON.stringify(data));
+    }, ADAPTED);
+    await page.route('**/api/resumes/res1', (r) => r.fulfill({ json: ADAPTED }));
+    await page.route('**/api/resumes/res1/chat', (r) => r.fulfill({
+      json: { reply: 'Resumo ajustado.', profile: revised },
+    }));
+    await page.goto('/studio.html');
+    await page.getByRole('button', { name: /Chat/i }).click();
+    await page.getByPlaceholder(/Peça uma mudança/i).fill('Deixe mais curto');
+    await page.getByRole('button', { name: 'Enviar mensagem' }).click();
+    await expect(page.getByText('Resumo ajustado.')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('button', { name: 'Aplicar' })).toBeVisible();
+    await page.getByRole('button', { name: 'Aplicar' }).click();
+    await expect(page.getByText('Aplicado ao currículo')).toBeVisible();
   });
 
   test('empty studio explains next step (screenshot)', async ({ page }) => {
