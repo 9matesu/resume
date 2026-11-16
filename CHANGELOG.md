@@ -4,8 +4,16 @@
 
 ### Estúdio e design
 
-- O Estúdio abre como modal em tela cheia e pode ser aberto em janela
-  separada. Abrir o Estúdio não baixa mais o PDF.
+- Novo workspace único em três regiões: navegação compacta, documento A4 e
+  inspetor contextual. Substitui a separação Captura/Arquivo/Estúdio.
+- Edição direta no documento: clique no texto, edite na prévia e veja o
+  resultado imediatamente. O documento estruturado é a fonte; o PDF é a
+  exportação.
+- Inspetor acompanha a seleção: título da seção, visibilidade, ordem,
+  campos de experiência/formação/habilidades e versões anteriores.
+- Salvamento automático com estado discreto (salvando/salvo/erro).
+- Histórico local de versões por candidatura, com restaurar.
+- O Estúdio abre como janela separada; o painel lateral fica como launcher.
 - A prévia do PDF usa `?inline=1`; o download só acontece no botão.
 - Nova aba Chat: peça mudanças em linguagem natural e a IA aplica na
   versão atual, sem inventar fatos.

@@ -39,6 +39,40 @@ export interface CandidateProfile {
   projects?: Array<{ name: string; role?: string; location?: string; period?: string; description?: string[] | string }>;
   certifications?: Array<{ name: string }>;
   languages?: Array<{ name: string; level?: string }>;
+  layout?: ResumeLayout;
+}
+
+export type ResumeSectionType =
+  | 'summary'
+  | 'experience'
+  | 'leadership'
+  | 'projects'
+  | 'education'
+  | 'skills'
+  | 'certifications'
+  | 'languages';
+
+export interface ResumeLayoutSection {
+  id: string;
+  type: ResumeSectionType;
+  title?: string;
+  visible: boolean;
+}
+
+export interface ResumeLayout {
+  sections: ResumeLayoutSection[];
+}
+
+export interface HistoryItem {
+  id: string;
+  title: string;
+  company: string;
+  location?: string;
+  url?: string;
+  match_score: number;
+  pdf_path: string;
+  recruiter_pitch: string;
+  created_at: string;
 }
 
 export interface JobData {
@@ -305,17 +339,7 @@ export async function sendResumeChat(
   return res.json();
 }
 
-export async function fetchHistory(): Promise<Array<{
-  id: string;
-  title: string;
-  company: string;
-  location?: string;
-  url?: string;
-  match_score: number;
-  pdf_path: string;
-  recruiter_pitch: string;
-  created_at: string;
-}>> {
+export async function fetchHistory(): Promise<HistoryItem[]> {
   const res = await fetch(`${API_BASE}/history`);
   if (!res.ok) throw new Error('Não li o histórico.');
   const data = await res.json();

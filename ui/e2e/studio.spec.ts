@@ -26,7 +26,7 @@ test.describe('studio UI/UX', () => {
       body: '%PDF-1.4 fake',
     }));
     await page.goto('/studio.html');
-    await expect(page.getByText('Segurança da Informação')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Segurança da Informação').first()).toBeVisible({ timeout: 10_000 });
     await page.screenshot({ path: 'e2e/screenshots/studio-loaded.png', fullPage: false });
 
     // Fonte Switzer no body e no header do Estúdio.
@@ -57,7 +57,7 @@ test.describe('studio UI/UX', () => {
     }, ADAPTED);
     await page.route('**/api/resumes/res1', (r) => r.fulfill({ json: ADAPTED }));
     await page.goto('/studio.html');
-    await page.getByRole('button', { name: /Código/i }).click();
+    await page.getByRole('button', { name: /LaTeX/i }).click();
     await expect(page.getByTestId('latex-editor')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('.cm-lineNumbers')).toBeVisible();
     await page.locator('.cm-content').click();
@@ -79,7 +79,7 @@ test.describe('studio UI/UX', () => {
       json: { reply: 'Resumo ajustado.', profile: revised },
     }));
     await page.goto('/studio.html');
-    await page.getByRole('button', { name: /Chat/i }).click();
+    await page.getByRole('button', { name: /Chat com IA/i }).click();
     await page.getByPlaceholder(/Peça uma mudança/i).fill('Deixe mais curto');
     await page.getByRole('button', { name: 'Enviar mensagem' }).click();
     await expect(page.getByText('Resumo ajustado.')).toBeVisible({ timeout: 10_000 });

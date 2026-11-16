@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Camera,
   Loader2,
@@ -17,15 +17,12 @@ import {
   saveStudioPayload,
   ensureBackend,
   isExtension,
+  detachStudio,
 } from './chrome';
 import { cvFilename } from './cvFilename';
 import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
 import { ApplicationHistory } from './components/history/ApplicationHistory';
 import { SettingsPanel } from './components/settings/SettingsPanel';
-
-const StudioModal = lazy(() =>
-  import('./components/studio/StudioModal').then((m) => ({ default: m.StudioModal })),
-);
 import { ActionButton, Stage, Skeleton } from './components/ActionButton';
 import { ToastStack, useToasts } from './components/Toast';
 
@@ -45,7 +42,6 @@ export function SidePanelApp() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<AdaptedResult | null>(null);
   const [starting, setStarting] = useState(false);
-  const [studioOpen, setStudioOpen] = useState(false);
   const autoEnsured = useRef(false);
   const downloadRef = useRef<HTMLAnchorElement>(null);
   const [stage, setStage] = useState<string | null>(null);
@@ -205,8 +201,8 @@ export function SidePanelApp() {
   const openStudio = async () => {
     if (!result) return;
     await saveStudioPayload(result);
-    setStudioOpen(true);
-    toast('Estúdio aberto.', 'ok');
+    detachStudio();
+    toast('Workspace aberto.', 'ok');
   };
 
   const handleDownload = () => {
@@ -361,7 +357,7 @@ export function SidePanelApp() {
                     Baixar PDF
                   </button>
                   <ActionButton
-                    label="Abrir Estúdio"
+                    label="Abrir workspace"
                     icon={<Maximize2 className="w-3.5 h-3.5" />}
                     variant="solid"
                     onClick={openStudio}
@@ -391,17 +387,6 @@ export function SidePanelApp() {
       </footer>
 
       <ToastStack items={toasts} onDismiss={dismiss} />
-      {studioOpen && result && (
-        <Suspense
-          fallback={
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-white text-xs text-muted">
-              Abrindo Estúdio…
-            </div>
-          }
-        >
-          <StudioModal data={result} onClose={() => setStudioOpen(false)} />
-        </Suspense>
-      )}
     </div>
   );
 }

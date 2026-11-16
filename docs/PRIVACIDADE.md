@@ -10,6 +10,7 @@ precisa ler.** Não existem servidores do resuMe.
 | Currículo base / perfil mestre | SQLite local (`backend\data\resume.db`) |
 | Chave de API do provedor de IA | mesma base, lida só pelo motor local; o navegador nunca vê a chave |
 | Vagas capturadas + PDFs + histórico | `backend\data\` |
+| Versões anteriores de cada candidatura | `chrome.storage.local` da extensão |
 | Preferências (template, idioma) | `backend\data\resume.db` |
 
 O painel lateral conversa apenas com `http://127.0.0.1:8322` (host
