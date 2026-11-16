@@ -59,7 +59,7 @@ export function ToastStack({
           <div
             key={t.id}
             data-testid="toast"
-            className="toast-in pointer-events-auto relative overflow-hidden flex items-start gap-2 border-2 border-black bg-white rounded-xl py-2 pl-2.5 pr-7 text-11 leading-snug shadow-brutal-sm"
+            className="toast-in pointer-events-auto relative overflow-hidden flex items-start gap-2 border border-line-strong bg-white rounded-xl py-3 pl-3 pr-8 text-11 leading-snug shadow-brutal-sm"
           >
             <span
               className={

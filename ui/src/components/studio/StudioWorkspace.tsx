@@ -178,7 +178,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, o
       {/* LEFT PANE: Editor (empilha no estreito) */}
       <div className="w-full h-1/2 lg:h-full lg:w-[55%] flex flex-col bg-white overflow-hidden border-b lg:border-b-0 lg:border-r border-line">
         {/* Top Job Context Bar */}
-        <div className="min-h-14 p-3 hairline-b bg-white flex flex-wrap items-center justify-between gap-2">
+        <div className="min-h-14 p-4 hairline-b bg-white flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="font-editorial text-lg normal-case leading-tight break-words">{adaptedData.job.title}</h2>
@@ -247,9 +247,9 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, o
         </div>
 
         {/* Scrollable Content Area */}
-        <div className={`flex-1 p-5 space-y-6 ${activeTab === 'chat' ? 'min-h-0 overflow-hidden' : 'overflow-y-auto'}`}>
+        <div className={`flex-1 p-6 space-y-6 ${activeTab === 'chat' ? 'min-h-0 overflow-hidden' : 'overflow-y-auto'}`}>
           {activeTab === 'chat' ? (
-            <div className="h-full min-h-0 -m-5">
+            <div className="h-full min-h-0 -m-6">
               <ChatPanel
                 resumeId={adaptedData.adaptation.id}
                 job={adaptedData.job}
@@ -280,7 +280,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, o
                 </div>
 
                 {profile.experience.map((exp, expIdx) => (
-                  <div key={expIdx} className="brutal-card p-4 space-y-3">
+                  <div key={expIdx} className="brutal-card p-5 space-y-3">
                     <div className="flex items-center justify-between">
                       <div>
                         <span className="font-bold text-xs uppercase">{exp.title}</span>
@@ -373,7 +373,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, o
                 </div>
 
                 {(profile.leadership || []).map((lead, leadIdx) => (
-                  <div key={leadIdx} className="brutal-card p-4 space-y-3">
+                  <div key={leadIdx} className="brutal-card p-5 space-y-3">
                     <div className="flex items-center justify-between">
                       <div>
                         <span className="font-bold text-xs uppercase">{lead.title || 'Nova atividade'}</span>
@@ -558,7 +558,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, o
                 </div>
 
                 {profile.education.map((edu, eduIdx) => (
-                  <div key={eduIdx} className="brutal-card p-4 space-y-3">
+                  <div key={eduIdx} className="brutal-card p-5 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-xs uppercase">{edu.institution || 'Nova formação'}</span>
                       <button
@@ -686,7 +686,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, o
               <textarea id="field-2"
                 value={rawTex}
                 onChange={(e) => setRawTex(e.target.value)}
-                className="font-code flex-1 min-h-lg w-full p-4 bg-black text-xs text-white border-2 border-black focus:outline-none leading-relaxed selection:bg-brand selection:text-black"
+                className="font-code flex-1 min-h-lg w-full p-4 bg-black text-xs text-white border border-line-strong focus:outline-none leading-relaxed selection:bg-brand selection:text-black"
                 spellCheck={false}
               />
             </div>
@@ -719,7 +719,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, o
       {/* RIGHT PANE: Live PDF Viewer */}
       <div className="w-full h-1/2 lg:h-full lg:w-[45%] flex flex-col bg-wash">
         {/* Viewer Toolbar */}
-        <div className="min-h-14 p-3 hairline-b bg-white flex flex-wrap items-center justify-between gap-2">
+        <div className="min-h-14 p-4 hairline-b bg-white flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-bold flex items-center gap-2">
             <span className="uppercase">Prévia do PDF</span>
           </span>
@@ -730,8 +730,8 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, o
         </div>
 
         {/* Embedded PDF iframe */}
-        <div className="flex-1 w-full h-full bg-wash-strong p-4">
-          <div className="w-full h-full overflow-hidden border-2 border-black bg-white shadow-brutal-md relative">
+        <div className="flex-1 w-full h-full bg-wash-strong p-5">
+          <div className="w-full h-full overflow-hidden border border-line-strong bg-white shadow-brutal-md relative">
             {expired ? (
               <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-6 text-center">
                 <span className="brutal-tag brutal-tag-black">Resultado expirado</span>

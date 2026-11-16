@@ -82,8 +82,14 @@
     height: 100%;
   }
 
+  html {
+    font-size: 16px;
+  }
+
   body {
     font-family: 'Switzer', system-ui, sans-serif;
+    font-size: 16px;
+    text-rendering: optimizeLegibility;
     @apply bg-white text-black antialiased selection:bg-black selection:text-white;
   }
 

@@ -10,8 +10,11 @@
 - Nova aba Chat: peça mudanças em linguagem natural e a IA aplica na
   versão atual, sem inventar fatos.
 - A captura manual “Selecionar painel da vaga” fica sempre visível.
+- O botão “Capturar Vaga” agora abre direto o modo de seleção por clique.
+- O overlay da vaga usa Switzer, borda 1px e sombras suaves.
 - Superfície mais macOS: bordas 1px, sombras suaves, radius maior,
   amarelo unificado em `#ffe800` e tipografia Switzer.
+- Mais respiro: paddings maiores no painel, Estúdio, chat e cards.
 
 ### Produção
 

@@ -26,6 +26,12 @@
       "run_at": "document_idle"
     }
   ],
+  "web_accessible_resources": [
+    {
+      "resources": ["fonts/switzer.woff2"],
+      "matches": ["<all_urls>"]
+    }
+  ],
   "permissions": [
     "sidePanel",
     "storage",

@@ -44,7 +44,8 @@ test('auto-extract path exists (JSON-LD + site selectors + scoring)', () => {
   assert.match(src, /scoreCandidate/);
 });
 
-test('overlay uses single UI font + rounded corners (menos quadrado)', () => {
+test('overlay uses Switzer + rounded corners (menos quadrado)', () => {
   assert.match(src, /UI_FONT/);
-  assert.match(src, /border-radius:999px/);
+  assert.match(src, /Switzer/);
+  assert.match(src, /border-radius:9px/);
 });

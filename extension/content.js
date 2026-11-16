@@ -1,5 +1,17 @@
 (() => {
-  const UI_FONT = "'Inter',system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif";
+  const UI_FONT = "'Switzer',system-ui,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif";
+
+  // A extensão usa Switzer também no overlay da página. O content script
+  // roda na origem da vaga, então expomos a fonte e a injetamos aqui.
+  try {
+    const fontStyle = document.createElement("style");
+    fontStyle.textContent =
+      "@font-face{font-family:Switzer;font-style:normal;font-weight:100 900;" +
+      "font-display:swap;src:url('" +
+      chrome.runtime.getURL("fonts/switzer.woff2") +
+      "') format('woff2');}";
+    document.documentElement.appendChild(fontStyle);
+  } catch {}
 
   // ---------- structured hints (JSON-LD JobPosting + meta) ----------
   function readStructured() {
@@ -223,53 +235,53 @@
     toast.setAttribute("data-resume", "toast");
     toast.style.cssText =
       "position:fixed;z-index:2147483647;left:50%;transform:translateX(-50%);bottom:16px;" +
-      "max-width:min(640px,92vw);background:#ffff00;color:#000;border:2px solid #000;" +
-      "box-shadow:6px 6px 0px 0px #000000;pointer-events:none;border-radius:14px;overflow:hidden;" +
-      `font-family:${UI_FONT};`;;
+      "max-width:min(640px,92vw);background:#fff;color:#000;border:1px solid var(--resume-line, #d4d4d4);" +
+      "box-shadow:0 12px 40px #00000014, 0 2px 6px #0000000a;pointer-events:none;border-radius:16px;overflow:hidden;" +
+      `font-family:${UI_FONT};`;
 
     const head = document.createElement("div");
     head.style.cssText =
-      "display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:2px solid #000;" +
-      "font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:0.05em;" +
-      `font-family:${UI_FONT};border-radius:14px 14px 0 0;`;;
+      "display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid #e5e5e5;" +
+      "font-size:11px;font-weight:600;letter-spacing:0;" +
+      `font-family:${UI_FONT};border-radius:16px 16px 0 0;`;
 
     const tag = document.createElement("span");
     tag.textContent = "PRÉVIA";
-    tag.style.cssText = "background:#000;color:#ffff00;padding:2px 8px;font-size:10px;flex-shrink:0;";
+    tag.style.cssText = "background:#000;color:#ffe800;padding:3px 8px;font-size:10px;font-weight:600;border-radius:6px;flex-shrink:0;";
 
     const meta = document.createElement("span");
     // Mostra descrição legível, sem paths técnicos
     meta.textContent = desc
       ? `${desc} · ${fmtCount(text.length)} caracteres`
       : `${fmtCount(text.length)} caracteres`;
-    meta.style.cssText = "flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:normal;text-transform:none;letter-spacing:0;";
+    meta.style.cssText = "flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:400;";
 
     const btnOther = document.createElement("button");
-    btnOther.textContent = "OUTRO";
+    btnOther.textContent = "Outro";
     btnOther.style.cssText =
-      `background:#fff;color:#000;border:2px solid #000;border-radius:999px;font:bold 11px ${UI_FONT};` +
-      "padding:4px 10px;cursor:pointer;pointer-events:auto;flex-shrink:0;";
+      `background:#fff;color:#000;border:1px solid #d4d4d4;border-radius:9px;font:600 11px ${UI_FONT};` +
+      "padding:5px 11px;cursor:pointer;pointer-events:auto;flex-shrink:0;";
 
     const btnCapture = document.createElement("button");
-    btnCapture.textContent = "CAPTURAR";
+    btnCapture.textContent = "Capturar";
     btnCapture.style.cssText =
-      `background:#000;color:#ffff00;border:2px solid #000;border-radius:999px;font:bold 11px ${UI_FONT};` +
-      "padding:4px 12px;cursor:pointer;pointer-events:auto;flex-shrink:0;";
+      `background:#000;color:#fff;border:1px solid #000;border-radius:9px;font:600 11px ${UI_FONT};` +
+      "padding:5px 13px;cursor:pointer;pointer-events:auto;flex-shrink:0;";
 
     const caption = document.createElement("div");
     caption.textContent = "Edite se precisar · Enter captura · Esc cancela";
     caption.style.cssText =
-      `padding:4px 10px;font:11px/1.4 ${UI_FONT};` +
-      "border-bottom:1px solid #000;color:#333;";
+      `padding:8px 14px;font:11px/1.4 ${UI_FONT};color:#666;` +
+      "border-bottom:1px solid #e5e5e5;";
 
     const ta = document.createElement("textarea");
     ta.value = text.slice(0, 4000);
     ta.spellcheck = false;
     ta.style.cssText =
       "display:block;width:100%;box-sizing:border-box;margin:0;border:0;" +
-      `font:12px/1.5 ${UI_FONT};` +
-      "padding:8px 10px;max-height:160px;min-height:60px;resize:vertical;outline:none;" +
-      "color:#000;background:#ffff00;border-radius:0 0 14px 14px;";
+      `font:12px/1.6 ${UI_FONT};` +
+      "padding:12px 14px;max-height:200px;min-height:72px;resize:vertical;outline:none;" +
+      "color:#000;background:#fff;border-radius:0 0 16px 16px;";
 
     head.append(tag, meta, btnOther, btnCapture);
     toast.append(head, caption, ta);
@@ -316,10 +328,10 @@
     hint.setAttribute("data-resume", "hint");
     hint.textContent = "Mova o mouse · ↑/↓ expande seleção · Clique = prévia · Esc cancela";
     hint.style.cssText =
-      "position:fixed;z-index:2147483647;top:12px;left:50%;transform:translateX(-50%);" +
-      "background:#000;color:#ffff00;border:2px solid #ffff00;" +
-      `font:bold 11px/1.4 ${UI_FONT};padding:6px 14px;letter-spacing:0.03em;` +
-      "white-space:nowrap;pointer-events:none;border-radius:999px;";
+      "position:fixed;z-index:2147483647;top:16px;left:50%;transform:translateX(-50%);" +
+      "background:#000;color:#ffe800;border:1px solid #000;" +
+      `font:600 11px/1.4 ${UI_FONT};padding:8px 14px;letter-spacing:0;` +
+      "white-space:nowrap;pointer-events:none;border-radius:9px;";
     document.documentElement.appendChild(hint);
     state.hint = hint;
   }
@@ -462,12 +474,12 @@
     const overlay = document.createElement("div");
     overlay.setAttribute("data-resume", "overlay");
     overlay.style.cssText =
-      "position:fixed;z-index:2147483646;left:0;top:0;border:3px solid #ffff00;border-radius:12px;" +
-      "box-shadow:0 0 0 9999px rgba(0,0,0,0.35);pointer-events:none;display:none;";
+      "position:fixed;z-index:2147483646;left:0;top:0;border:1px solid #ffe800;border-radius:10px;" +
+      "box-shadow:0 0 0 9999px rgba(0,0,0,0.28);pointer-events:none;display:none;";
     const label = document.createElement("div");
     label.style.cssText =
-      `position:absolute;top:-28px;left:0;background:#ffff00;color:#000;border:1px solid #000;border-radius:999px;` +
-      `font:bold 11px/1.4 ${UI_FONT};padding:3px 10px;white-space:nowrap;max-width:360px;overflow:hidden;text-overflow:ellipsis;`;
+      `position:absolute;top:-30px;left:0;background:#000;color:#ffe800;border:1px solid #000;border-radius:8px;` +
+      `font:600 11px/1.4 ${UI_FONT};padding:4px 10px;white-space:nowrap;max-width:360px;overflow:hidden;text-overflow:ellipsis;`;
     overlay.appendChild(label);
     document.documentElement.appendChild(overlay);
 

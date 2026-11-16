@@ -12,7 +12,6 @@ import {
 import type { AppHealth, CandidateProfile, AdaptedResult } from './services/api';
 import {
   startCaptureSelection,
-  startAutoCapture,
   cancelCaptureSelection,
   onCaptureResult,
   saveStudioPayload,
@@ -180,24 +179,9 @@ export function SidePanelApp() {
     return () => window.removeEventListener('keydown', onKey);
   }, [busy]);
 
-  // Auto tenta primeiro; se não achar a vaga, o botão “Selecionar painel”
-  // fica sempre disponível como caminho manual.
-  const handleCapture = async () => {
-    setBusy(true);
-    setResult(null);
-    setStage('read');
-    try {
-      await startAutoCapture();
-      setStage('adapt');
-    } catch (e: any) {
-      toast(e.message || 'A captura falhou.', 'error');
-      setBusy(false);
-      setStage(null);
-    }
-  };
-
   const handleDomCapture = async () => {
     setBusy(true);
+    setResult(null);
     setStage('select');
     try {
       await startCaptureSelection();
@@ -276,7 +260,7 @@ export function SidePanelApp() {
           <button
             key={n.id}
             onClick={() => setView(n.id)}
-            className={`py-2 cursor-pointer transition-colors ${
+            className={`py-2.5 cursor-pointer transition-colors ${
               view === n.id ? 'bg-black text-white' : 'bg-white hover:bg-wash'
             }`}
           >
@@ -286,14 +270,15 @@ export function SidePanelApp() {
       </nav>
 
       {/* Body */}
-      <main className="flex-1 overflow-y-auto p-4">
+      <main className="flex-1 overflow-y-auto p-5">
         {view === 'capture' && (
           <div className="space-y-4">
             <button
-              onClick={handleCapture}
+              type="button"
+              onClick={handleDomCapture}
               disabled={busy}
               data-testid="auto-capture"
-              className="w-full bg-brutal-yellow border-2 border-black rounded-2xl p-6 text-left active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer disabled:opacity-60"
+              className="w-full bg-brand border border-line-strong rounded-xl p-6 text-left active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer disabled:opacity-60"
             >
               <div className="flex items-center gap-2">
                 {busy ? (
@@ -309,20 +294,10 @@ export function SidePanelApp() {
               <Stage label={STAGE_TEXT[stage].label} detail={STAGE_TEXT[stage].detail} />
             )}
 
-            <button
-              type="button"
-              onClick={handleDomCapture}
-              disabled={busy}
-              data-testid="manual-capture"
-              className="brutal-btn w-full py-2 text-xs"
-            >
-              Selecionar painel da vaga
-            </button>
-
             {busy && !stage && <Skeleton rows={2} />}
 
             {result && (
-              <div className="brutal-card p-4 space-y-3">
+              <div className="brutal-card p-5 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h2 className="font-editorial text-lg normal-case leading-tight">{result.job.title}</h2>

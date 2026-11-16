@@ -67,7 +67,7 @@ export function ChatPanel({ resumeId, job, profile, onProfileChange, onToast }: 
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-wash">
-      <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-5">
+      <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
           <div className="flex items-center gap-2 text-2xs font-semibold uppercase tracking-wide text-muted">
             <Sparkles className="h-3.5 w-3.5" />
@@ -112,7 +112,7 @@ export function ChatPanel({ resumeId, job, profile, onProfileChange, onToast }: 
         </div>
       </div>
 
-      <div className="border-t border-line bg-white px-4 py-3">
+      <div className="border-t border-line bg-white px-6 py-4">
         <div className="mx-auto flex w-full max-w-2xl items-end gap-2">
           <textarea
             value={input}

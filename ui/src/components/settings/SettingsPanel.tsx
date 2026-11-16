@@ -126,7 +126,7 @@ export const SettingsPanel: React.FC = () => {
                 <span>{testing ? 'Testando…' : 'Testar Conexão com a IA'}</span>
               </button>
               {testResult && (
-                <div className={`mt-2 p-2.5 flex items-center gap-2 border-2 border-black ${testResult.ok ? 'bg-brutal-yellow' : 'bg-white'}`}>
+                <div className={`mt-2 p-2.5 flex items-center gap-2 border border-line-strong ${testResult.ok ? 'bg-brutal-yellow' : 'bg-white'}`}>
                   <span className="brutal-tag brutal-tag-black shrink-0">{testResult.ok ? 'OK' : 'Falha'}</span>
                   <span>{testResult.message}</span>
                 </div>
@@ -134,7 +134,7 @@ export const SettingsPanel: React.FC = () => {
             </div>
 
             {/* Currículo base */}
-            <div className="border-2 border-black p-3">
+            <div className="border border-line-strong p-4">
               <div className="font-bold uppercase mb-1">Currículo base</div>
               {baseProfile ? (
                 <div className="text-11 font-mono space-y-0.5 mb-3">

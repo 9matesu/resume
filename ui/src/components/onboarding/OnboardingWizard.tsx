@@ -277,7 +277,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                   fileInputRef.current?.click();
                 }
               }}
-              className="w-full bg-brutal-yellow border-2 border-black p-8 sm:p-12 text-center shadow-brutal-lg cursor-pointer"
+              className="w-full bg-brutal-yellow border border-line-strong p-8 sm:p-12 text-center shadow-brutal-lg cursor-pointer"
             >
               <h1 className="font-editorial text-4xl sm:text-5xl text-black font-normal leading-105 tracking-tight mb-4">
                 {uploading ? 'Lendo o currículo…' : 'Arraste seu currículo para cá'}
@@ -304,7 +304,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                 </span>
               </div>
               {uploadError && (
-                <div className="mb-6 bg-white border-2 border-black p-3 text-xs font-mono text-left flex items-center gap-2">
+                <div className="mb-6 bg-white border border-line-strong p-3 text-xs font-mono text-left flex items-center gap-2">
                   <span className="brutal-tag brutal-tag-black shrink-0">Erro</span>
                   <span>{uploadError}</span>
                 </div>
@@ -971,7 +971,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                 </button>
 
                 {aiTestResult && (
-                  <div className={`p-3 text-xs flex items-center gap-2 border-2 border-black ${aiTestResult.ok ? 'bg-brutal-yellow' : 'bg-white'}`}>
+                  <div className={`p-3 text-xs flex items-center gap-2 border border-line-strong ${aiTestResult.ok ? 'bg-brutal-yellow' : 'bg-white'}`}>
                     <span className="brutal-tag brutal-tag-black shrink-0">{aiTestResult.ok ? 'OK' : 'Falha'}</span>
                     <span>{aiTestResult.message}</span>
                   </div>
