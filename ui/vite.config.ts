@@ -28,6 +28,10 @@ export default defineConfig({
   build: {
     outDir: '../extension',
     emptyOutDir: false,
+    // Extensão Chrome: o preload de módulo com crossorigin gera
+    // "cross-world extension resource mismatch" no painel. O import
+    // dinâmico continua funcionando sem o link de modulepreload.
+    modulePreload: false,
     rollupOptions: {
       input: {
         sidepanel: 'sidepanel.html',

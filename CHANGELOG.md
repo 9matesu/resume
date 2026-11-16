@@ -34,6 +34,8 @@
   associados e codigo morto `components/arc` removido. O check do
   design.how caiu de 477 para 6 apontamentos (58 excecoes documentadas
   no allowlist do index.css).
+- Extensao sem avisos de preload: `modulePreload` desligado no Vite e
+  preloads de fonte removidos do painel/Estudio.
 
 ### Movimento e feedback
 
