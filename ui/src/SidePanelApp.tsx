@@ -16,7 +16,6 @@ import {
   cancelCaptureSelection,
   onCaptureResult,
   saveStudioPayload,
-  openStudioTab,
   ensureBackend,
   isExtension,
 } from './chrome';
@@ -24,7 +23,8 @@ import { cvFilename } from './cvFilename';
 import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
 import { ApplicationHistory } from './components/history/ApplicationHistory';
 import { SettingsPanel } from './components/settings/SettingsPanel';
-import { ActionButton, TextButton, Stage, Skeleton } from './components/ActionButton';
+import { StudioModal } from './components/studio/StudioModal';
+import { ActionButton, Stage, Skeleton } from './components/ActionButton';
 import { ToastStack, useToasts } from './components/Toast';
 
 type View = 'capture' | 'history' | 'settings';
@@ -43,10 +43,10 @@ export function SidePanelApp() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<AdaptedResult | null>(null);
   const [starting, setStarting] = useState(false);
+  const [studioOpen, setStudioOpen] = useState(false);
   const autoEnsured = useRef(false);
   const downloadRef = useRef<HTMLAnchorElement>(null);
   const [stage, setStage] = useState<string | null>(null);
-  const [showManual, setShowManual] = useState(false);
   const { items: toasts, push: toast, dismiss } = useToasts();
 
   const applyHealth = async (h: AppHealth) => {
@@ -180,24 +180,16 @@ export function SidePanelApp() {
     return () => window.removeEventListener('keydown', onKey);
   }, [busy]);
 
-  // Um botão só. O auto tenta primeiro; se não achar a vaga, ele cai sozinho
-  // para a seleção manual. O link aparece só nesse caso, como escape.
+  // Auto tenta primeiro; se não achar a vaga, o botão “Selecionar painel”
+  // fica sempre disponível como caminho manual.
   const handleCapture = async () => {
     setBusy(true);
     setResult(null);
     setStage('read');
-    setShowManual(false);
     try {
       await startAutoCapture();
       setStage('adapt');
     } catch (e: any) {
-      if ((e as any)?.fallback === 'manual') {
-        setShowManual(true);
-        toast('Não achei a vaga sozinho. Selecione o painel.', 'info');
-        setBusy(false);
-        setStage(null);
-        return;
-      }
       toast(e.message || 'A captura falhou.', 'error');
       setBusy(false);
       setStage(null);
@@ -226,7 +218,7 @@ export function SidePanelApp() {
   const openStudio = async () => {
     if (!result) return;
     await saveStudioPayload(result);
-    openStudioTab();
+    setStudioOpen(true);
     toast('Estúdio aberto.', 'ok');
   };
 
@@ -276,19 +268,8 @@ export function SidePanelApp() {
     );
   }
 
-  const online = health.status === 'ok';
-
   return (
     <div className="h-full flex flex-col bg-white text-black select-none">
-      {/* Header */}
-      <header className="hairline-b px-4 py-2.5 flex items-center justify-between shrink-0">
-        <span className="text-sm font-bold tracking-tight">resuMe</span>
-        <span className="brutal-tag">
-          <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-ok' : 'bg-danger'}`} />
-          {online ? 'Online' : 'Offline'}
-        </span>
-      </header>
-
       {/* Nav */}
       <nav className="hairline-b grid grid-cols-3 text-11 uppercase font-bold shrink-0 divide-x divide-black">
         {NAV.map((n) => (
@@ -328,13 +309,15 @@ export function SidePanelApp() {
               <Stage label={STAGE_TEXT[stage].label} detail={STAGE_TEXT[stage].detail} />
             )}
 
-            {showManual && (
-              <div className="flex items-center gap-2">
-                <TextButton onClick={handleDomCapture} testId="manual-capture">
-                  Não achou? Selecione o painel
-                </TextButton>
-              </div>
-            )}
+            <button
+              type="button"
+              onClick={handleDomCapture}
+              disabled={busy}
+              data-testid="manual-capture"
+              className="brutal-btn w-full py-2 text-xs"
+            >
+              Selecionar painel da vaga
+            </button>
 
             {busy && !stage && <Skeleton rows={2} />}
 
@@ -430,6 +413,9 @@ export function SidePanelApp() {
       </footer>
 
       <ToastStack items={toasts} onDismiss={dismiss} />
+      {studioOpen && result && (
+        <StudioModal data={result} onClose={() => setStudioOpen(false)} />
+      )}
     </div>
   );
 }

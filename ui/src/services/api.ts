@@ -288,6 +288,23 @@ export async function polishBullet(bullet: string, roleContext?: string): Promis
   return data.polished;
 }
 
+export async function sendResumeChat(
+  id: string,
+  message: string,
+  profile: CandidateProfile,
+): Promise<{ reply: string; profile: CandidateProfile }> {
+  const res = await fetch(`${API_BASE}/resumes/${id}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, profile }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'A IA não conseguiu editar.');
+  }
+  return res.json();
+}
+
 export async function fetchHistory(): Promise<Array<{
   id: string;
   title: string;

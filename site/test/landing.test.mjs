@@ -85,10 +85,10 @@ test('sem jargão técnico nem prova social fabricada', () => {
   assert.match(html, /TODO-PROVA-SOCIAL/);
   assert.doesNotMatch(html, /\d+[\d.]*\s*(mil|k usuários|usuários ativos|downloads)/i);
 });
-test('zero Google Fonts, zero CDN; Inter e Instrument locais (OFL)', () => {
+test('zero Google Fonts, zero CDN; Switzer e Instrument locais (OFL/ITF-FFL)', () => {
   assert.doesNotMatch(html, /fonts\.googleapis|fonts\.gstatic/);
   assert.doesNotMatch(html, /api\.fontshare\.com/);
-  assert.match(html, /inter-wght\.woff2/);
+  assert.match(html, /switzer\.woff2/);
 });
 test('FAQ usa details/summary (acessível, sem JS)', () => {
   assert.match(html, /<details/); assert.match(html, /<summary/);

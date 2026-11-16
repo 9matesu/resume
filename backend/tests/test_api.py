@@ -348,6 +348,28 @@ def test_resume_detail_roundtrip(client=None):
     assert c.get("/api/resumes/nope_missing").status_code == 404
 
 
+def test_resume_pdf_inline_does_not_attach():
+    c = TestClient(app)
+    rec = _make_resume(c)
+    inline = c.get(f"/api/resumes/{rec['id']}/pdf?inline=1")
+    assert inline.status_code == 200
+    assert inline.headers["content-disposition"].startswith("inline")
+    download = c.get(f"/api/resumes/{rec['id']}/pdf")
+    assert download.status_code == 200
+    assert download.headers["content-disposition"].startswith("attachment")
+
+
+def test_resume_chat_requires_key(monkeypatch):
+    _patch_settings(monkeypatch, _keyless_settings())
+    c = TestClient(app)
+    rec = _make_resume(c)
+    resp = c.post(f"/api/resumes/{rec['id']}/chat", json={
+        "message": "Deixe o resumo mais curto.",
+    })
+    assert resp.status_code == 400
+    assert "chave" in resp.json()["detail"].lower()
+
+
 def test_resume_update_persists(client=None):
     c = TestClient(app)
     rec = _make_resume(c)

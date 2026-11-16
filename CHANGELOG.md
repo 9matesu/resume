@@ -2,6 +2,17 @@
 
 ## [unreleased]
 
+### Estúdio e design
+
+- O Estúdio abre como modal em tela cheia e pode ser aberto em janela
+  separada. Abrir o Estúdio não baixa mais o PDF.
+- A prévia do PDF usa `?inline=1`; o download só acontece no botão.
+- Nova aba Chat: peça mudanças em linguagem natural e a IA aplica na
+  versão atual, sem inventar fatos.
+- A captura manual “Selecionar painel da vaga” fica sempre visível.
+- Superfície mais macOS: bordas 1px, sombras suaves, radius maior,
+  amarelo unificado em `#ffe800` e tipografia Switzer.
+
 ### Produção
 
 - Chave de API nunca vaza entre provedores: sem fallback global, a chave e
@@ -56,13 +67,14 @@
 
 ### Fontes e comunicação
 
-- Só duas famílias: Instrument Serif nos títulos, Inter em todo o resto.
-  Schibsted e Switzer saíram, Fontshare saiu, tudo é OFL local.
-- Duas famílias, nada mais. Onde o design pedia "mono", agora é Inter.
+- Só duas famílias: Instrument Serif nos títulos, Switzer em todo o resto.
+  Switzer e Instrument são locais; zero CDN.
+- Duas famílias, nada mais. Onde o design pedia "mono", agora é Switzer.
   Regra global `* { font-family: inherit }` trava a uniformidade; só o
   editor de código usa `--font-code` (pilha do sistema).
-- E2E novo: todo texto visível renderiza em Inter ou Instrument Serif
+- E2E novo: todo texto visível renderiza em Switzer ou Instrument Serif
   (`ui/e2e/sidepanel.spec.ts`), falha se qualquer terceira família entrar.
+- O header “resuMe” e a pill Online/Offline saíram do painel.
 - Playwright na porta 5179 (a 5173 é do goongrid nesta máquina).
 
 ### Revisão de arquitetura

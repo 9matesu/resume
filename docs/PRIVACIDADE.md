@@ -37,11 +37,9 @@ em [EXTENSAO.md](EXTENSAO.md#permissões-e-por-quê).
 
 ## Fontes e terceiros
 
-- A **extensão** embute apenas fontes sob licença SIL OFL (Instrument Serif,
-  Schibsted Grotesk) — zero requisições a CDNs.
-- O **site** resuMe carrega Switzer via CDN da Fontshare (permitido pela
-  ITF-FFL para o próprio site); é a única requisição de terceiros da página,
-  feita pelo navegador de quem a visita, não pela extensão.
+- A **extensão** embute apenas fontes locais: Instrument Serif (SIL OFL) e
+  Switzer (ITF-FFL, via Fontshare) — zero requisições a CDNs.
+- O **site** usa as mesmas fontes locais, sem CDN de terceiros.
 
 ## Compilação
 

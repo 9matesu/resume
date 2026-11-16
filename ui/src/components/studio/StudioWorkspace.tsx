@@ -7,6 +7,9 @@ import {
   Loader2,
   Wand2,
   Save,
+  Sparkles,
+  ExternalLink,
+  X,
 } from 'lucide-react';
 import {
   saveResumeEdit,
@@ -17,6 +20,7 @@ import {
 import { cvFilename } from '../../cvFilename';
 import { ActionButton, Stage } from '../ActionButton';
 import { ToastStack, useToasts } from '../Toast';
+import { ChatPanel } from './ChatPanel';
 import type {
   AdaptedResult,
   CandidateProfile,
@@ -25,10 +29,14 @@ import type {
 interface StudioWorkspaceProps {
   adaptedData: AdaptedResult;
   onBackToOverlay?: () => void;
+  onClose?: () => void;
+  onDetach?: () => void;
 }
 
-export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData }) => {
-  const [activeTab, setActiveTab] = useState<'visual' | 'latex'>('visual');
+const inlinePdfUrl = (url: string) => `${url}${url.includes('?') ? '&' : '?'}inline=1`;
+
+export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, onClose, onDetach }) => {
+  const [activeTab, setActiveTab] = useState<'visual' | 'latex' | 'chat'>('visual');
   const [profile, setProfile] = useState<CandidateProfile>(() => {
     const coerceBullets = (d: unknown): string[] =>
       Array.isArray(d)
@@ -166,11 +174,11 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-dvh w-screen bg-white text-black overflow-hidden select-none">
+    <div className="flex flex-col lg:flex-row h-dvh w-full bg-white text-black overflow-hidden select-none">
       {/* LEFT PANE: Editor (empilha no estreito) */}
-      <div className="w-full h-1/2 lg:h-full lg:w-1/2 flex flex-col bg-white overflow-hidden border-b lg:border-b-0 border-line-strong">
+      <div className="w-full h-1/2 lg:h-full lg:w-[55%] flex flex-col bg-white overflow-hidden border-b lg:border-b-0 lg:border-r border-line">
         {/* Top Job Context Bar */}
-        <div className="p-4 hairline-b bg-white flex flex-wrap items-center justify-between gap-2">
+        <div className="min-h-14 p-3 hairline-b bg-white flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="font-editorial text-lg normal-case leading-tight break-words">{adaptedData.job.title}</h2>
@@ -189,28 +197,68 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
             )}
 
             {/* Mode Toggle */}
-            <div className="flex border-2 border-black text-xs font-bold uppercase">
+            <div className="flex rounded-lg border border-line bg-wash p-0.5 text-xs font-semibold">
               <button
                 onClick={() => setActiveTab('visual')}
-                className={`flex items-center gap-1 px-3 py-1.5 cursor-pointer transition-colors ${activeTab === 'visual' ? 'bg-black text-white' : 'bg-white text-black hover:bg-wash'}`}
+                className={`flex items-center gap-1 rounded-md px-3 py-1.5 cursor-pointer transition-colors ${activeTab === 'visual' ? 'bg-white text-black shadow-mac' : 'text-muted hover:text-black'}`}
               >
                 <Sliders className="w-3.5 h-3.5" />
                 Visual
               </button>
               <button
+                onClick={() => setActiveTab('chat')}
+                className={`flex items-center gap-1 rounded-md px-3 py-1.5 cursor-pointer transition-colors ${activeTab === 'chat' ? 'bg-white text-black shadow-mac' : 'text-muted hover:text-black'}`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Chat
+              </button>
+              <button
                 onClick={() => setActiveTab('latex')}
-                className={`flex items-center gap-1 px-3 py-1.5 cursor-pointer transition-colors border-l-2 border-black ${activeTab === 'latex' ? 'bg-black text-white' : 'bg-white text-black hover:bg-wash'}`}
+                className={`flex items-center gap-1 rounded-md px-3 py-1.5 cursor-pointer transition-colors ${activeTab === 'latex' ? 'bg-white text-black shadow-mac' : 'text-muted hover:text-black'}`}
               >
                 <FileCode className="w-3.5 h-3.5" />
                 Código
               </button>
             </div>
+
+            {onDetach && (
+              <button
+                type="button"
+                aria-label="Abrir Estúdio em janela separada"
+                title="Abrir em janela separada"
+                onClick={onDetach}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-line bg-white text-muted transition-colors hover:bg-wash hover:text-black"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </button>
+            )}
+            {onClose && (
+              <button
+                type="button"
+                aria-label="Fechar Estúdio"
+                title="Fechar"
+                onClick={onClose}
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-line bg-white text-muted transition-colors hover:bg-wash hover:text-black"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 
         {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-6">
-          {activeTab === 'visual' ? (
+        <div className={`flex-1 p-5 space-y-6 ${activeTab === 'chat' ? 'min-h-0 overflow-hidden' : 'overflow-y-auto'}`}>
+          {activeTab === 'chat' ? (
+            <div className="h-full min-h-0 -m-5">
+              <ChatPanel
+                resumeId={adaptedData.adaptation.id}
+                job={adaptedData.job}
+                profile={profile}
+                onProfileChange={setProfile}
+                onToast={toast}
+              />
+            </div>
+          ) : activeTab === 'visual' ? (
             <>
               {/* Summary Section */}
               <div className="space-y-2">
@@ -669,9 +717,9 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
       </div>
 
       {/* RIGHT PANE: Live PDF Viewer */}
-      <div className="w-full h-1/2 lg:h-full lg:w-1/2 flex flex-col bg-wash">
+      <div className="w-full h-1/2 lg:h-full lg:w-[45%] flex flex-col bg-wash">
         {/* Viewer Toolbar */}
-        <div className="p-3 hairline-b bg-white flex flex-wrap items-center justify-between gap-2">
+        <div className="min-h-14 p-3 hairline-b bg-white flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-bold flex items-center gap-2">
             <span className="uppercase">Prévia do PDF</span>
           </span>
@@ -727,7 +775,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData })
                 )}
                 <iframe
                   key={pdfKey}
-                  src={pdfUrl}
+                  src={inlinePdfUrl(pdfUrl)}
                   title="Pré-visualização do Currículo"
                   className="w-full h-full border-none"
                   onLoad={() => setPdfStatus('ready')}

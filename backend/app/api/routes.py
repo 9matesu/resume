@@ -426,6 +426,38 @@ def polish_bullet_endpoint(payload: PolishBulletPayload):
     res = gateway.AIProvider._extract_json(raw)
     return {"polished": res.get("polished", payload.bullet)}
 
+class ResumeChatPayload(BaseModel):
+    message: str
+    profile: dict | None = None
+
+@router.post("/resumes/{resume_id}/chat")
+def resume_chat_endpoint(resume_id: str, payload: ResumeChatPayload):
+    """Chat de edição: a IA muda só o que o usuário pediu, sem inventar fatos."""
+    message = (payload.message or "").strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="Escreva o que quer mudar.")
+    rec = job_model.get_adapted_resume(resume_id)
+    if not rec:
+        raise HTTPException(status_code=404, detail="Esse currículo não existe mais.")
+    job = job_model.get_job(rec["job_id"]) or {}
+    s = get_settings()
+    try:
+        prov = gateway.get_provider(s)
+    except AIError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    profile = payload.profile or rec["tailored_profile"]
+    system, user = prompts.build_resume_chat_request(message, profile, job)
+    try:
+        raw = prov.chat(system, user, expect_json=True)
+        data = gateway.AIProvider._extract_json(raw)
+    except AIError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"A edição quebrou: {e}")
+    reply = str(data.get("reply") or "Atualizei o currículo.").strip()
+    new_profile = data.get("profile") if isinstance(data.get("profile"), dict) else profile
+    return {"reply": reply, "profile": new_profile}
+
 @router.get("/history")
 def get_history_endpoint():
     items = job_model.list_history(50)
@@ -501,7 +533,7 @@ def delete_resume_endpoint(res_id: str):
     return {"status": "deleted"}
 
 @router.get("/resumes/{res_id}/pdf")
-def get_resume_pdf(res_id: str):
+def get_resume_pdf(res_id: str, inline: bool = False):
     res = job_model.get_adapted_resume(res_id)
     if not res or not res.get("pdf_path"):
         raise HTTPException(status_code=404, detail="Esse registro não tem PDF salvo.")
@@ -520,8 +552,11 @@ def get_resume_pdf(res_id: str):
                                   job_rec.get("company", ""))
         except Exception:
             dl_name = "CV.pdf"
+    disposition = content_disposition(dl_name)
+    if inline:
+        disposition = disposition.replace("attachment", "inline", 1)
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": content_disposition(dl_name)}
+        headers={"Content-Disposition": disposition}
     )

@@ -2,13 +2,13 @@
 
 /* resuMe typography: TWO families only,
    - Instrument Serif (OFL): editorial headlines
-   - Inter (OFL): everything functional. Variable woff2 = one file. */
+   - Switzer (ITF-FFL, via Fontshare): everything functional. Variable woff2 = one file. */
 @font-face {
-  font-family: 'Inter';
+  font-family: 'Switzer';
   font-style: normal;
   font-weight: 100 900;
   font-display: swap;
-  src: url('/fonts/inter-wght.woff2') format('woff2');
+  src: url('/fonts/switzer.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Instrument Serif';
@@ -26,11 +26,11 @@
 }
 
 @theme {
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  /* Duas famílias, nada mais. Onde o design pedia "mono", agora é Inter.
+  --font-sans: 'Switzer', system-ui, -apple-system, sans-serif;
+  /* Duas famílias, nada mais. Onde o design pedia "mono", agora é Switzer.
      Só o editor de código do Estúdio usa a pilha do sistema (ui-monospace),
      com --font-code explícito. */
-  --font-mono: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Switzer', system-ui, -apple-system, sans-serif;
   --font-code: ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
   --radius-soft: 14px;
   --radius-pill: 999px;
@@ -43,26 +43,28 @@
   --text-11--line-height: 1.2;
   --leading-105: 1.05;
 
-  --shadow-brutal-sm: 3px 3px 0 0 #000000;
-  --shadow-brutal-md: 8px 8px 0 0 #000000;
-  --shadow-brutal-lg: 10px 10px 0 0 #000000;
+  --shadow-brutal-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-brutal-md: 0 8px 24px rgba(0, 0, 0, 0.07);
+  --shadow-brutal-lg: 0 12px 32px rgba(0, 0, 0, 0.08);
 
   --color-ink: #000000;
   --color-paper: #ffffff;
-  --color-brand: #ffff00;
+  --color-brand: #ffe800;
   --color-muted: #666666;
   --color-muted-strong: #444444;
   --color-subtle: #999999;
   --color-wash: #f5f5f5;
-  --color-wash-strong: #e5e5e5;
-  --color-line: #e5e5e5;
-  --color-line-strong: #1a1a1a;
+  --color-wash-strong: #ececec;
+  --color-line: #e3e3e3;
+  --color-line-strong: #c9c9c9;
   --color-ok: #059669;
   --color-danger: #dc2626;
+
+  --shadow-mac: 0 1px 2px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.06);
 }
 
 :root {
-  --resume-font: 'Inter', system-ui, -apple-system, sans-serif;
+  --resume-font: 'Switzer', system-ui, -apple-system, sans-serif;
   --resume-radius: 14px;
   --resume-radius-pill: 999px;
 
@@ -81,12 +83,12 @@
   }
 
   body {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Switzer', system-ui, sans-serif;
     @apply bg-white text-black antialiased selection:bg-black selection:text-white;
   }
 
   /* Trava global: nenhuma página da extensão renderiza texto em outra
-     família além de Inter e Instrument Serif. Só o código usa --font-code. */
+     família além de Switzer e Instrument Serif. Só o código usa --font-code. */
   *, *::before, *::after {
     font-family: inherit;
   }
@@ -179,134 +181,119 @@
 
 
 .bg-brutal-yellow {
-  background-color: #ffff00;
+  background-color: var(--color-brand);
 }
 
 .brutal-card {
   background-color: #ffffff;
-  border: 2px solid #000000;
-  border-radius: var(--resume-radius);
-  box-shadow: 4px 4px 0px 0px #000000;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  box-shadow: var(--shadow-mac);
 }
 
 .brutal-yellow-card {
-  background-color: #ffff00;
-  border: 2px solid #000000;
-  border-radius: calc(var(--resume-radius) + 4px);
-  box-shadow: 8px 8px 0px 0px #000000;
+  background-color: #fffbe6;
+  border: 1px solid #f2d600;
+  border-radius: 14px;
+  box-shadow: var(--shadow-mac);
 }
 
-/* A sombra dura vive num ::after para poder andar com o botão via transform.
-   Animar box-shadow força repaint a cada frame; mover um pseudo-elemento não. */
+/* Botões macOS: 1px de borda, sombra suave, sem uppercase. */
 .brutal-btn,
 .brutal-btn-yellow {
-  position: relative;
   font-family: inherit;
-  font-weight: 700;
-  text-transform: uppercase;
-  border: 2px solid #000000;
-  border-radius: 10px;
+  font-weight: 600;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 9px;
+  background-color: #ffffff;
+  color: var(--color-ink);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
   cursor: pointer;
   transition: background-color var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease);
-}
-
-.brutal-btn::after,
-.brutal-btn-yellow::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background-color: #000000;
-  transform: translate(3px, 3px);
-  transition: transform var(--dur-fast) var(--ease);
-}
-
-.brutal-btn {
-  background-color: #ffffff;
-  color: #000000;
+    color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease);
 }
 
 .brutal-btn-yellow {
-  background-color: #ffff00;
+  background-color: var(--color-brand);
+  border-color: rgba(0, 0, 0, 0.2);
   color: #000000;
 }
 
-.brutal-btn:hover,
-.brutal-btn-yellow:hover {
-  background-color: #000000;
-  color: #ffffff;
+.brutal-btn:hover {
+  background-color: var(--color-wash);
 }
 
 .brutal-btn-yellow:hover {
-  color: #ffff00;
+  background-color: #f5d90a;
+  color: #000000;
 }
 
-.brutal-btn:active::after,
-.brutal-btn-yellow:active::after {
-  transform: translate(2px, 2px);
+.brutal-btn:active,
+.brutal-btn-yellow:active {
+  transform: translateY(1px);
+  box-shadow: none;
 }
 
 .brutal-btn:disabled,
 .brutal-btn-yellow:disabled {
   opacity: 0.55;
   cursor: not-allowed;
-}
-
-.brutal-btn:disabled::after,
-.brutal-btn-yellow:disabled::after {
-  transform: translate(3px, 3px);
+  transform: none;
+  box-shadow: none;
 }
 
 .hairline-b {
-  border-bottom: 1px solid #1a1a1a;
+  border-bottom: 1px solid var(--color-line);
 }
 
 .hairline-t {
-  border-top: 1px solid #1a1a1a;
+  border-top: 1px solid var(--color-line);
 }
 
 .hairline-l {
-  border-left: 1px solid #1a1a1a;
+  border-left: 1px solid var(--color-line);
 }
 
 .hairline-r {
-  border-right: 1px solid #1a1a1a;
+  border-right: 1px solid var(--color-line);
 }
 
 .hairline-light-b {
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid var(--color-line);
 }
 
 .brutal-input {
   width: 100%;
   background-color: #ffffff;
-  color: #000000;
-  border: 2px solid #000000;
-  border-radius: 10px;
+  color: var(--color-ink);
+  border: 1px solid var(--color-line-strong);
+  border-radius: 9px;
   font-family: inherit;
   font-size: 12px;
   padding: 8px 10px;
   outline: none;
+  transition: border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
 }
 
 .brutal-input:focus {
-  box-shadow: 3px 3px 0px 0px #ffff00;
+  border-color: var(--color-line-strong);
+  box-shadow: 0 0 0 4px rgba(255, 232, 0, 0.35);
 }
 
 .brutal-input::placeholder {
-  color: #9a9a9a;
+  color: var(--color-subtle);
 }
 
 .brutal-input:disabled {
-  background-color: #f1f1f1;
-  color: #777777;
+  background-color: var(--color-wash);
+  color: var(--color-subtle);
 }
 
 select.brutal-input {
   cursor: pointer;
-  border-radius: 10px;
+  border-radius: 9px;
   appearance: none;
   background-image: linear-gradient(45deg, transparent 50%, #000 50%), linear-gradient(135deg, #000 50%, transparent 50%);
   background-position: calc(100% - 16px) calc(50% + 1px), calc(100% - 11px) calc(50% + 1px);
@@ -323,16 +310,15 @@ textarea.brutal-input {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid #000000;
+  border: 1px solid var(--color-line);
   border-radius: var(--resume-radius-pill);
-  background-color: #ffffff;
-  color: #000000;
-  padding: 2px 10px;
+  background-color: var(--color-wash);
+  color: var(--color-ink);
+  padding: 2px 9px;
   font-family: inherit;
   font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-weight: 600;
+  letter-spacing: 0;
   line-height: 1.6;
   white-space: nowrap;
 }
@@ -340,11 +326,13 @@ textarea.brutal-input {
 .brutal-tag-black {
   background-color: #000000;
   color: #ffffff;
+  border-color: #000000;
 }
 
 .brutal-tag-yellow {
-  background-color: #ffff00;
+  background-color: var(--color-brand);
   color: #000000;
+  border-color: #f2d600;
 }
 
 .ledger-table {

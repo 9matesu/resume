@@ -1,0 +1,7 @@
+Switzer
+Copyright 2020 The Switzer Project Authors (https://www.fontshare.com/fonts/switzer)
+Distributed via Fontshare (Indian Type Foundry) under the ITF Free Font License (ITF-FFL).
+
+License reference: https://www.fontshare.com/licenses/itf-ffl
+
+The font files are bundled locally so the extension and the site make no third-party font requests.

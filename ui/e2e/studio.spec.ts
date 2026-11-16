@@ -19,7 +19,12 @@ test.describe('studio UI/UX', () => {
     await page.addInitScript((data) => {
       localStorage.setItem('resume_studio', JSON.stringify(data));
     }, ADAPTED);
-    await page.route('**/api/history', (r) => r.fulfill({ json: { history: [{ id: 'res1' }] } }));
+    await page.route('**/api/resumes/res1', (r) => r.fulfill({ json: ADAPTED }));
+    await page.route('**/api/resumes/res1/pdf*', (r) => r.fulfill({
+      status: 200,
+      contentType: 'application/pdf',
+      body: '%PDF-1.4 fake',
+    }));
     await page.goto('/studio.html');
     await expect(page.getByText('Segurança da Informação')).toBeVisible({ timeout: 10_000 });
     await page.screenshot({ path: 'e2e/screenshots/studio-loaded.png', fullPage: false });

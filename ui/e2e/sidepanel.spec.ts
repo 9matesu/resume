@@ -42,9 +42,9 @@ test.describe('sidepanel UI/UX', () => {
     });
     for (const group of Object.values(radii)) for (const r of group) expect(r).not.toBe('0px');
 
-    // Fontes uniformes: corpo usa Inter, sem Segoe/system-ui no content overlay.
+    // Fontes uniformes: corpo usa Switzer, sem Segoe/system-ui no content overlay.
     const bodyFont = await page.evaluate(() => getComputedStyle(document.body).fontFamily);
-    expect(bodyFont).toMatch(/Inter/);
+    expect(bodyFont).toMatch(/Switzer/);
 
     // Sem overflow horizontal no painel estreito (erro comum de UX).
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -111,12 +111,12 @@ test.describe('sidepanel UI/UX', () => {
     }, opts);
   }
 
-  test('captura tem um botão só, com escape manual sob demanda', async ({ page }) => {
+  test('captura automática e seleção manual ficam sempre disponíveis', async ({ page }) => {
     await mockBase(page);
     await withChrome(page, { autoFallback: true });
     await page.goto('/sidepanel.html');
     await expect(page.getByTestId('auto-capture')).toBeVisible();
-    await expect(page.getByTestId('manual-capture')).toHaveCount(0);
+    await expect(page.getByTestId('manual-capture')).toBeVisible();
 
     await page.getByTestId('auto-capture').click();
     await expect(page.getByTestId('manual-capture')).toBeVisible();
@@ -148,14 +148,14 @@ test.describe('sidepanel UI/UX', () => {
     expect(parseFloat(dur)).toBeLessThan(0.01);
   });
 
-  // Trava de marca: TODO texto visível renderiza em Inter ou Instrument Serif.
+  // Trava de marca: TODO texto visível renderiza em Switzer ou Instrument Serif.
   // Qualquer terceira família que entrar no CSS quebra este teste.
-  test('todo texto visível usa só Inter ou Instrument Serif', async ({ page }) => {
+  test('todo texto visível usa só Switzer ou Instrument Serif', async ({ page }) => {
     await mockBase(page);
     await page.goto('/sidepanel.html');
     await expect(page.getByTestId('auto-capture')).toBeVisible();
     const offenders = await page.evaluate(() => {
-      const allowed = /Inter|Instrument Serif/;
+      const allowed = /Switzer|Instrument Serif/;
       const bad: string[] = [];
       document.querySelectorAll<HTMLElement>('body *').forEach((el) => {
         const text = (el.childElementCount === 0 ? el.textContent : '').trim();

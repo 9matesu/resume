@@ -110,3 +110,17 @@ export function openStudioTab(): void {
     window.open('studio.html', '_blank');
   }
 }
+
+/** Abre o Estúdio em uma janela separada, sem baixar o PDF. */
+export function detachStudio(): void {
+  if (isExtension) {
+    void chrome.windows.create({
+      url: chrome.runtime.getURL('studio.html'),
+      type: 'popup',
+      width: 1280,
+      height: 800,
+    });
+    return;
+  }
+  window.open('studio.html', '_blank', 'width=1280,height=800');
+}
