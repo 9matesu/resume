@@ -47,6 +47,8 @@
   no allowlist do index.css).
 - Extensao sem avisos de preload: `modulePreload` desligado no Vite e
   preloads de fonte removidos do painel/Estudio.
+- O build nao apaga mais os bundles gerados. A limpeza acontece antes
+  (`prebuild`), senao o painel ficava em “Carregando o resuMe…”.
 - Paginas da extensao sem `crossorigin` nos tags gerados e com uma
   mensagem de carregamento enquanto o React substitui a raiz.
 

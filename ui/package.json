@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
+    "clean:assets": "node scripts/clean-assets.mjs",
+    "prebuild": "npm run clean:assets",
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "oxlint",
