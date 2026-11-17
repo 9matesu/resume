@@ -23,6 +23,7 @@ import { cvFilename } from './cvFilename';
 import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
 import { ApplicationHistory } from './components/history/ApplicationHistory';
 import { SettingsPanel } from './components/settings/SettingsPanel';
+import { WelcomeCard } from './components/WelcomeCard';
 import { ActionButton, Stage, Skeleton } from './components/ActionButton';
 import { ToastStack, useToasts } from './components/Toast';
 
@@ -46,6 +47,7 @@ export function SidePanelApp() {
   const downloadRef = useRef<HTMLAnchorElement>(null);
   const [stage, setStage] = useState<string | null>(null);
   const [showAiSetup, setShowAiSetup] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
   const { items: toasts, push: toast, dismiss } = useToasts();
 
   const applyHealth = async (h: AppHealth) => {
@@ -112,6 +114,37 @@ export function SidePanelApp() {
     } catch {
       // Se o storage estiver indisponível, o fluxo ao vivo continua funcionando.
     }
+  };
+
+  useEffect(() => {
+    let alive = true;
+    const read = async () => {
+      try {
+        if (isExtension && chrome.storage?.local) {
+          const stored = await chrome.storage.local.get('resume_welcome_seen');
+          if (alive) setShowWelcome(!stored.resume_welcome_seen);
+        } else {
+          setShowWelcome(!localStorage.getItem('resume_welcome_seen'));
+        }
+      } catch {
+        if (alive) setShowWelcome(true);
+      }
+    };
+    void read();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const closeWelcome = () => {
+    setShowWelcome(false);
+    try {
+      if (isExtension && chrome.storage?.local) {
+        void chrome.storage.local.set({ resume_welcome_seen: true });
+      } else {
+        localStorage.setItem('resume_welcome_seen', 'true');
+      }
+    } catch {}
   };
 
   useEffect(() => {
@@ -285,6 +318,9 @@ export function SidePanelApp() {
       <main className="flex-1 overflow-y-auto p-5">
         {view === 'capture' && (
           <div className="flex min-h-full flex-col">
+            {showWelcome && !result && !showAiSetup && (
+              <WelcomeCard onClose={closeWelcome} />
+            )}
             {showAiSetup ? (
               <div className="flex flex-1 items-center justify-center p-5">
                 <div className="w-full max-w-sm rounded-xl border border-line bg-white p-5 shadow-mac">

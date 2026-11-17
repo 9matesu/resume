@@ -16,6 +16,21 @@ interface AiProviderFieldsProps {
   keyProviders?: string[];
 }
 
+const AUTH_URLS: Record<string, string> = {
+  gemini: 'https://aistudio.google.com/app/apikey',
+  openai: 'https://platform.openai.com/api-keys',
+  anthropic: 'https://console.anthropic.com/settings/keys',
+  groq: 'https://console.groq.com/keys',
+  openrouter: 'https://openrouter.ai/keys',
+  together: 'https://api.together.xyz/settings/api-keys',
+  mistral: 'https://console.mistral.ai/api-keys',
+  deepseek: 'https://platform.deepseek.com/api_keys',
+  xai: 'https://console.x.ai',
+  nvidia: 'https://build.nvidia.com',
+};
+
+const LOCAL_PROVIDERS = new Set(['ollama', 'openai-compatible']);
+
 export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
   catalog,
   provider,
@@ -131,6 +146,26 @@ export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
               </button>
             </div>
           </div>
+          {authMode === 'oauth' && (
+            <div className="mb-2">
+              {LOCAL_PROVIDERS.has(provider) ? (
+                <p className="text-2xs leading-relaxed text-ok">
+                  Provedor local: não precisa de chave. Basta salvar e usar.
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = AUTH_URLS[provider];
+                    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+                  }}
+                  className="brutal-btn w-full py-2 text-2xs"
+                >
+                  Conectar com {entry?.label || provider}
+                </button>
+              )}
+            </div>
+          )}
           <label htmlFor="ai-api-key" className="text-2xs font-bold uppercase tracking-wider block mb-1">
             {authMode === 'oauth' ? 'Access token (OAuth/SSO)' : 'Chave de API'} {keyHint}
           </label>

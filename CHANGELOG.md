@@ -10,6 +10,12 @@
   atualiza sozinha.
 - A prévia HTML estilo Google Docs saiu. O documento é editado como código
   LaTeX, não como uma página visual.
+- O PDF usa visualizador próprio (PDF.js) com camada de texto: clique em um
+  campo do PDF para editar o valor e ver a mudança no LaTeX. O visualizador
+  nativo do Chrome saiu.
+- Primeiro acesso tem um onboarding com os 3 passos do fluxo.
+- Provedores de IA têm botão “Conectar” que abre a página de login/autorização;
+  provedores locais (Ollama/LM Studio) não precisam de chave.
 - Template LaTeX usa Latin Modern por padrão e permite trocar entre Helvetica,
   Times, Charter, Linux Libertine e TeX Gyre Heros em Ajustes → Documento.
 - Sem chave de IA, a captura mostra um painel inline com os passos e um botão

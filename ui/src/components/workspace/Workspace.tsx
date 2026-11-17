@@ -6,6 +6,7 @@ import type {
   HistoryItem,
 } from '../../services/api';
 import {
+  absUrl,
   fetchHealth,
   fetchHistory,
   fetchResumeDetail,
@@ -28,12 +29,14 @@ const LatexEditor = lazy(() =>
   import('../studio/LatexEditor').then((m) => ({ default: m.LatexEditor })),
 );
 
+const PdfViewer = lazy(() =>
+  import('./PdfViewer').then((m) => ({ default: m.PdfViewer })),
+);
+
 interface WorkspaceProps {
   initialData: AdaptedResult;
   onClose: () => void;
 }
-
-const inlinePdfUrl = (url: string) => `${url}${url.includes('?') ? '&' : '?'}inline=1`;
 
 const versionsKey = (id: string) => `resume_versions_${id}`;
 
@@ -88,7 +91,7 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
   const [profile, setProfile] = useState<CandidateProfile>(
     initialData.adaptation.tailored_profile,
   );
-  const [pdfUrl, setPdfUrl] = useState(initialData.adaptation.pdf_url);
+  const [pdfUrl, setPdfUrl] = useState(absUrl(initialData.adaptation.pdf_url));
   const [rawTex, setRawTex] = useState(initialData.adaptation.tex_code);
   const [view, setView] = useState<WorkspaceView>('latex');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
@@ -143,6 +146,52 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
     setUndoStack((prev) => [...prev.slice(-49), profile]);
     setRedoStack([]);
     setProfile(next);
+  };
+
+  const editField = (fieldId: string, value: string) => {
+    const next = JSON.parse(JSON.stringify(profile)) as CandidateProfile;
+    const parts = fieldId.split('.');
+    if (parts[0] === 'personal') {
+      (next.personal as unknown as Record<string, string>)[parts[1]] = value;
+    } else if (parts[0] === 'summary') {
+      next.summary = value;
+    } else if (parts[0] === 'experience') {
+      const index = Number(parts[1]);
+      if (parts[2] === 'description') {
+        next.experience[index].description[Number(parts[3])] = value;
+      } else {
+        (next.experience[index] as unknown as Record<string, string>)[parts[2]] = value;
+      }
+    } else if (parts[0] === 'leadership') {
+      const index = Number(parts[1]);
+      const list = [...(next.leadership || [])];
+      if (parts[2] === 'description') {
+        list[index].description[Number(parts[3])] = value;
+      } else {
+        (list[index] as unknown as Record<string, string>)[parts[2]] = value;
+      }
+      next.leadership = list;
+    } else if (parts[0] === 'education') {
+      const index = Number(parts[1]);
+      (next.education[index] as unknown as Record<string, string>)[parts[2]] = value;
+    } else if (parts[0] === 'skills') {
+      next.skills[Number(parts[1])] = value;
+    } else if (parts[0] === 'projects') {
+      const list = [...(next.projects || [])];
+      (list[Number(parts[1])] as unknown as Record<string, string>)[parts[2]] = value;
+      next.projects = list;
+    } else if (parts[0] === 'certifications') {
+      const list = [...(next.certifications || [])];
+      const index = Number(parts[1]);
+      if (typeof list[index] === 'string') list[index] = { name: value } as never;
+      else (list[index] as unknown as Record<string, string>).name = value;
+      next.certifications = list;
+    } else if (parts[0] === 'languages') {
+      const list = [...(next.languages || [])];
+      (list[Number(parts[1])] as unknown as Record<string, string>).name = value;
+      next.languages = list;
+    }
+    applyProfile(next);
   };
 
   const undo = () => {
@@ -404,20 +453,20 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
           )}
 
           {view === 'pdf' && (
-            <div className="h-full overflow-auto bg-wash p-6">
-              <div className="mx-auto h-full max-w-4xl overflow-hidden rounded-lg border border-line bg-white shadow-mac">
-                {pdfUrl ? (
-                  <iframe
-                    src={inlinePdfUrl(pdfUrl)}
-                    title="Prévia do PDF"
-                    className="h-full w-full border-none"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-xs text-muted">
-                    Nenhum PDF gerado.
+            <div className="h-full overflow-hidden bg-wash">
+              <Suspense
+                fallback={
+                  <div className="flex h-full items-center justify-center bg-white text-xs text-muted">
+                    Carregando PDF…
                   </div>
-                )}
-              </div>
+                }
+              >
+                <PdfViewer
+                  pdfUrl={pdfUrl}
+                  profile={profile}
+                  onEditField={editField}
+                />
+              </Suspense>
             </div>
           )}
 
