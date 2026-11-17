@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
-import type { CandidateProfile, JobData } from '../../services/api';
+import type { CandidateProfile } from '../../services/api';
 import {
   addEducation,
   addExperience,
@@ -15,7 +15,6 @@ import {
 
 interface InspectorProps {
   profile: CandidateProfile;
-  job: JobData;
   selected: Selection | null;
   onChange: (profile: CandidateProfile) => void;
   versions: ResumeVersion[];
@@ -25,7 +24,6 @@ interface InspectorProps {
 
 export function Inspector({
   profile,
-  job,
   selected,
   onChange,
   versions,
@@ -129,19 +127,6 @@ export function Inspector({
               rows={5}
               className="brutal-input leading-relaxed"
             />
-          </div>
-
-          <div>
-            <div className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">
-              Candidatura
-            </div>
-            <div className="flex flex-col gap-1 text-xs">
-              <div className="font-semibold">{job.title}</div>
-              <div className="text-muted">{job.company}</div>
-              <div className="text-2xs text-subtle">
-                {saveStatus === 'saved' ? 'Salvo' : saveStatus === 'saving' ? 'Salvando…' : 'Erro ao salvar'}
-              </div>
-            </div>
           </div>
 
           <Versions versions={versions} onRestore={onRestore} />

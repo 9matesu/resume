@@ -179,6 +179,15 @@ export function SidePanelApp() {
   }, [busy]);
 
   const handleDomCapture = async () => {
+    if (health && !health.has_api_key) {
+      const ok = window.confirm(
+        'Você não configurou uma IA. Sem IA, o currículo será compilado sem adaptação. Quer continuar?',
+      );
+      if (!ok) {
+        setView('settings');
+        return;
+      }
+    }
     setBusy(true);
     setResult(null);
     setStage('select');
@@ -271,32 +280,40 @@ export function SidePanelApp() {
       {/* Body */}
       <main className="flex-1 overflow-y-auto p-5">
         {view === 'capture' && (
-          <div className="space-y-4">
-            <button
-              type="button"
-              onClick={handleDomCapture}
-              disabled={busy}
-              data-testid="auto-capture"
-              className="w-full bg-brand border border-line-strong rounded-xl p-6 text-left active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer disabled:opacity-60"
-            >
-              <div className="flex items-center gap-2">
-                {busy ? (
-                  <Loader2 className="spin w-5 h-5" />
-                ) : (
-                  <Camera className="w-5 h-5" />
-                )}
-                <span className="font-editorial text-2xl leading-none">Capturar Vaga</span>
+          <div className="flex min-h-full flex-col">
+            {!result && (
+              <div className="flex flex-1 flex-col items-center justify-center gap-5 py-10 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand text-black shadow-mac">
+                  <Camera className="h-6 w-6" />
+                </div>
+                <div className="space-y-1">
+                  <h2 className="font-editorial text-3xl leading-none">Capturar vaga</h2>
+                  <p className="max-w-xs text-2xs leading-relaxed text-muted">
+                    Leio a vaga na página e preparo a adaptação. Você revisa antes de enviar.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDomCapture}
+                  disabled={busy}
+                  data-testid="auto-capture"
+                  className="w-full max-w-xs bg-brand border border-line-strong rounded-xl p-4 flex items-center justify-center gap-2 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer disabled:opacity-60"
+                >
+                  {busy ? <Loader2 className="spin h-5 w-5" /> : <Camera className="h-5 w-5" />}
+                  <span className="font-editorial text-xl leading-none">Capturar Vaga</span>
+                </button>
+                <p className="text-2xs text-subtle">Alt+Shift+A também captura a aba ativa.</p>
               </div>
-            </button>
+            )}
 
-            {stage && STAGE_TEXT[stage] && (
+            {stage && !result && STAGE_TEXT[stage] && (
               <Stage label={STAGE_TEXT[stage].label} detail={STAGE_TEXT[stage].detail} />
             )}
 
-            {busy && !stage && <Skeleton rows={2} />}
+            {busy && !result && !stage && <Skeleton rows={2} />}
 
             {result && (
-              <div className="brutal-card p-5 space-y-3">
+              <div className="capture-in brutal-card p-5 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h2 className="font-editorial text-lg normal-case leading-tight">{result.job.title}</h2>

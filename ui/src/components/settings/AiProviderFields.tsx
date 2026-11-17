@@ -33,6 +33,7 @@ export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
   const [detecting, setDetecting] = useState(false);
   const [detectMsg, setDetectMsg] = useState('');
   const autoDetectedFor = useRef('');
+  const [authMode, setAuthMode] = useState<'key' | 'oauth'>('key');
 
   const entry = catalog.find((p) => p.id === provider);
   const listId = React.useId();
@@ -107,17 +108,50 @@ export const AiProviderFields: React.FC<AiProviderFieldsProps> = ({
 
       {entry?.needs_key && (
         <div>
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <span className="text-2xs font-bold uppercase tracking-wider">Autenticação</span>
+            <div className="flex items-center rounded-lg border border-line bg-wash p-0.5">
+              <button
+                type="button"
+                onClick={() => setAuthMode('key')}
+                className={`rounded-md px-2 py-1 text-2xs font-semibold ${
+                  authMode === 'key' ? 'bg-white text-ink shadow-mac' : 'text-muted hover:text-black'
+                }`}
+              >
+                Chave
+              </button>
+              <button
+                type="button"
+                onClick={() => setAuthMode('oauth')}
+                className={`rounded-md px-2 py-1 text-2xs font-semibold ${
+                  authMode === 'oauth' ? 'bg-white text-ink shadow-mac' : 'text-muted hover:text-black'
+                }`}
+              >
+                OAuth / SSO
+              </button>
+            </div>
+          </div>
           <label htmlFor="ai-api-key" className="text-2xs font-bold uppercase tracking-wider block mb-1">
-            Chave de API {keyHint}
+            {authMode === 'oauth' ? 'Access token (OAuth/SSO)' : 'Chave de API'} {keyHint}
           </label>
           <input
             id="ai-api-key"
             type="password"
             value={apiKey}
             onChange={(e) => onApiKeyChange(e.target.value)}
-            placeholder={entry.key_hint || 'Insira a Chave de API'}
+            placeholder={
+              authMode === 'oauth'
+                ? 'Token de acesso do provedor'
+                : entry.key_hint || 'Insira a Chave de API'
+            }
             className="brutal-input"
           />
+          {authMode === 'oauth' && (
+            <p className="mt-1 text-2xs leading-relaxed text-muted">
+              O fluxo OAuth completo depende do provedor. Cole um access token válido
+              ou use um provedor compatível.
+            </p>
+          )}
         </div>
       )}
 

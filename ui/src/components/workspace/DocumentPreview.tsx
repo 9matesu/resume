@@ -10,8 +10,6 @@ import {
 
 interface DocumentPreviewProps {
   profile: CandidateProfile;
-  jobTitle: string;
-  company: string;
   zoom: number;
   selected: Selection | null;
   onSelect: (selection: Selection | null) => void;
@@ -33,8 +31,6 @@ function commitText(
 
 export function DocumentPreview({
   profile,
-  jobTitle,
-  company,
   zoom,
   selected,
   onSelect,
@@ -225,7 +221,7 @@ export function DocumentPreview({
             >
               <GripVertical className="h-3.5 w-3.5" />
             </button>
-            <h2 className="text-[15px] font-bold text-ink">{title}</h2>
+            <h2 className="text-[16px] font-bold text-ink">{title}</h2>
           </div>
         </div>
 
@@ -287,11 +283,11 @@ export function DocumentPreview({
                         {exp.title || 'Cargo'}
                       </span>
                       {exp.company && (
-                        <span className="font-normal text-muted"> · {exp.company}</span>
+                        <span className="font-normal italic text-muted"> · {exp.company}</span>
                       )}
                     </div>
                   </div>
-                  <div className="shrink-0 text-[11px] text-muted">
+                  <div className="shrink-0 text-[11px] italic text-muted">
                     {exp.period}
                     {exp.location ? ` · ${exp.location}` : ''}
                   </div>
@@ -520,10 +516,6 @@ export function DocumentPreview({
               </span>
             ))}
           </p>
-          <div className="mt-2 text-[10px] uppercase tracking-wide text-subtle">
-            {jobTitle}
-            {company ? ` · ${company}` : ''}
-          </div>
         </header>
 
         <div ref={contentRef} className="flex flex-col gap-6">

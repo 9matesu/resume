@@ -15,6 +15,11 @@
   arraste no documento.
 - Quebras de página agora respeitam limites de seção, sem cortar uma
   seção no meio quando ela cabe inteira na próxima página.
+- Template LaTeX usa Helvetica para alinhar com a prévia Switzer.
+- Removidas duplicações de vaga/empresa no documento e no inspetor.
+- Captura com check de chave de IA antes de iniciar; opção de access token
+  OAuth/SSO no provedor.
+- Tela de captura centralizada, com mais respiro e animação ao aparecer.
 - Inspetor acompanha a seleção: título da seção, visibilidade, ordem,
   campos de experiência/formação/habilidades e versões anteriores.
 - Salvamento automático com estado discreto (salvando/salvo/erro).

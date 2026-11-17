@@ -6,6 +6,7 @@ import type {
   HistoryItem,
 } from '../../services/api';
 import {
+  fetchHealth,
   fetchHistory,
   fetchResumeDetail,
   saveResumeEdit,
@@ -92,7 +93,7 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
   const [rawTex, setRawTex] = useState(initialData.adaptation.tex_code);
   const [selected, setSelected] = useState<Selection | null>(null);
   const [view, setView] = useState<WorkspaceView>('document');
-  const [zoom, setZoom] = useState(0.8);
+  const [zoom, setZoom] = useState(1);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [capturing, setCapturing] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(true);
@@ -255,6 +256,20 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
     }
     setCapturing(true);
     try {
+      try {
+        const health = await fetchHealth();
+        if (!health.has_api_key) {
+          const ok = window.confirm(
+            'Você não configurou uma IA. Sem IA, o currículo será compilado sem adaptação. Quer continuar?',
+          );
+          if (!ok) {
+            setCapturing(false);
+            return;
+          }
+        }
+      } catch {
+        // Sem health, segue e deixa o pipeline decidir.
+      }
       const url = current.job.url;
       if (!url) {
         await startAutoCapture();
@@ -365,8 +380,6 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
             <>
               <DocumentPreview
                 profile={profile}
-                jobTitle={current.job.title}
-                company={current.job.company}
                 zoom={zoom}
                 selected={selected}
                 onSelect={setSelected}
@@ -449,7 +462,6 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
         ) : inspectorOpen ? (
           <Inspector
             profile={profile}
-            job={current.job}
             selected={selected}
             onChange={applyProfile}
             versions={versions}
