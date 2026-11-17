@@ -45,6 +45,7 @@ export function SidePanelApp() {
   const autoEnsured = useRef(false);
   const downloadRef = useRef<HTMLAnchorElement>(null);
   const [stage, setStage] = useState<string | null>(null);
+  const [showAiSetup, setShowAiSetup] = useState(false);
   const { items: toasts, push: toast, dismiss } = useToasts();
 
   const applyHealth = async (h: AppHealth) => {
@@ -114,6 +115,10 @@ export function SidePanelApp() {
   };
 
   useEffect(() => {
+    if (health?.has_api_key) setShowAiSetup(false);
+  }, [health?.has_api_key]);
+
+  useEffect(() => {
     init().then((ok) => {
       if (!ok && isExtension && !autoEnsured.current) {
         autoEnsured.current = true;
@@ -178,16 +183,15 @@ export function SidePanelApp() {
     return () => window.removeEventListener('keydown', onKey);
   }, [busy]);
 
-  const handleDomCapture = async () => {
-    if (health && !health.has_api_key) {
-      const ok = window.confirm(
-        'Você não configurou uma IA. Sem IA, o currículo será compilado sem adaptação. Quer continuar?',
-      );
-      if (!ok) {
-        setView('settings');
-        return;
-      }
+  const handleDomCapture = async (force = false) => {
+    if (!force && health && !health.has_api_key) {
+      setBusy(false);
+      setStage(null);
+      setShowAiSetup(true);
+      setView('capture');
+      return;
     }
+    setShowAiSetup(false);
     setBusy(true);
     setResult(null);
     setStage('select');
@@ -281,7 +285,44 @@ export function SidePanelApp() {
       <main className="flex-1 overflow-y-auto p-5">
         {view === 'capture' && (
           <div className="flex min-h-full flex-col">
-            {!result && (
+            {showAiSetup ? (
+              <div className="flex flex-1 items-center justify-center p-5">
+                <div className="w-full max-w-sm rounded-xl border border-line bg-white p-5 shadow-mac">
+                  <h2 className="font-editorial text-2xl leading-tight">Configure a IA primeiro</h2>
+                  <p className="mt-1 text-2xs leading-relaxed text-muted">
+                    Sem IA, o currículo não é adaptado. Faça:
+                  </p>
+                  <ol className="mt-3 list-decimal space-y-1 pl-5 text-2xs text-muted-strong">
+                    <li>Abra Ajustes.</li>
+                    <li>Escolha o provedor e o modelo.</li>
+                    <li>Cole a chave de API e teste.</li>
+                    <li>Volte para Capturar.</li>
+                  </ol>
+                  <div className="mt-4 flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAiSetup(false);
+                        setView('settings');
+                      }}
+                      className="brutal-btn-yellow w-full py-2 text-xs"
+                    >
+                      Abrir ajustes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAiSetup(false);
+                        void handleDomCapture(true);
+                      }}
+                      className="brutal-btn w-full py-2 text-2xs"
+                    >
+                      Capturar sem IA
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : !result ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-5 py-10 text-center">
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand text-black shadow-mac">
                   <Camera className="h-6 w-6" />
@@ -294,7 +335,7 @@ export function SidePanelApp() {
                 </div>
                 <button
                   type="button"
-                  onClick={handleDomCapture}
+                  onClick={() => void handleDomCapture()}
                   disabled={busy}
                   data-testid="auto-capture"
                   className="w-full max-w-xs bg-brand border border-line-strong rounded-xl p-4 flex items-center justify-center gap-2 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer disabled:opacity-60"
@@ -304,15 +345,15 @@ export function SidePanelApp() {
                 </button>
                 <p className="text-2xs text-subtle">Alt+Shift+A também captura a aba ativa.</p>
               </div>
-            )}
+            ) : null}
 
-            {stage && !result && STAGE_TEXT[stage] && (
+            {stage && !result && !showAiSetup && STAGE_TEXT[stage] && (
               <Stage label={STAGE_TEXT[stage].label} detail={STAGE_TEXT[stage].detail} />
             )}
 
-            {busy && !result && !stage && <Skeleton rows={2} />}
+            {busy && !result && !stage && !showAiSetup && <Skeleton rows={2} />}
 
-            {result && (
+            {result && !showAiSetup && (
               <div className="capture-in brutal-card p-5 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>

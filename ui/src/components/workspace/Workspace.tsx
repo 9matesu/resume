@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from 'react';
-import { Minus, Plus } from 'lucide-react';
+import { KeyRound } from 'lucide-react';
 import type {
   AdaptedResult,
   CandidateProfile,
@@ -19,11 +19,10 @@ import {
 import { cvFilename } from '../../cvFilename';
 import { CommandBar, type WorkspaceView } from './CommandBar';
 import { NavPane } from './NavPane';
-import { DocumentPreview } from './DocumentPreview';
 import { Inspector } from './Inspector';
 import { ChatPanel } from '../studio/ChatPanel';
 import { ToastStack, useToasts } from '../Toast';
-import type { ResumeVersion, Selection } from './document';
+import type { ResumeVersion } from './document';
 
 const LatexEditor = lazy(() =>
   import('../studio/LatexEditor').then((m) => ({ default: m.LatexEditor })),
@@ -91,17 +90,17 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
   );
   const [pdfUrl, setPdfUrl] = useState(initialData.adaptation.pdf_url);
   const [rawTex, setRawTex] = useState(initialData.adaptation.tex_code);
-  const [selected, setSelected] = useState<Selection | null>(null);
-  const [view, setView] = useState<WorkspaceView>('document');
-  const [zoom, setZoom] = useState(1);
+  const [view, setView] = useState<WorkspaceView>('latex');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [capturing, setCapturing] = useState(false);
+  const [showAiSetup, setShowAiSetup] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
   const [versions, setVersions] = useState<ResumeVersion[]>([]);
   const [undoStack, setUndoStack] = useState<CandidateProfile[]>([]);
   const [redoStack, setRedoStack] = useState<CandidateProfile[]>([]);
   const skipSave = useRef(true);
+  const lastCompiledTex = useRef(initialData.adaptation.tex_code);
   const { items: toasts, push: toast, dismiss } = useToasts();
 
   const loadHistory = async () => {
@@ -129,6 +128,7 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
         if (!alive) return;
         setPdfUrl(detail.adaptation.pdf_url);
         setRawTex(detail.adaptation.tex_code);
+        lastCompiledTex.current = detail.adaptation.tex_code;
       })
       .catch(() => {
         // mantém a URL inicial
@@ -167,6 +167,7 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
       const res = await saveResumeEdit(current.adaptation.id, { profile: profileToSave });
       setPdfUrl(res.pdf_url);
       setRawTex(res.tex);
+      lastCompiledTex.current = res.tex;
       setSaveStatus('saved');
       const list = [
         { id: Date.now(), at: Date.now(), profile: profileToSave },
@@ -215,7 +216,7 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
         setProfile(data.adaptation.tailored_profile);
         setPdfUrl(data.adaptation.pdf_url);
         setRawTex(data.adaptation.tex_code);
-        setSelected(null);
+        lastCompiledTex.current = data.adaptation.tex_code;
         setUndoStack([]);
         setRedoStack([]);
         setHistory((prev) => [newHistoryItem(data), ...prev.filter((i) => i.id !== data.adaptation.id)]);
@@ -239,7 +240,7 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
       setProfile(detail.adaptation.tailored_profile);
       setPdfUrl(detail.adaptation.pdf_url);
       setRawTex(detail.adaptation.tex_code);
-      setSelected(null);
+      lastCompiledTex.current = detail.adaptation.tex_code;
       setUndoStack([]);
       setRedoStack([]);
       void readVersions(detail.adaptation.id).then(setVersions);
@@ -259,13 +260,9 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
       try {
         const health = await fetchHealth();
         if (!health.has_api_key) {
-          const ok = window.confirm(
-            'Você não configurou uma IA. Sem IA, o currículo será compilado sem adaptação. Quer continuar?',
-          );
-          if (!ok) {
-            setCapturing(false);
-            return;
-          }
+          setShowAiSetup(true);
+          setCapturing(false);
+          return;
         }
       } catch {
         // Sem health, segue e deixa o pipeline decidir.
@@ -315,17 +312,28 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
     }
   };
 
-  const compileLatex = async () => {
+  const compileLatex = async (silent = false) => {
     try {
       const res = await saveResumeEdit(current.adaptation.id, { tex_code: rawTex });
       setPdfUrl(res.pdf_url);
       setRawTex(res.tex);
-      toast('PDF atualizado.', 'ok');
+      lastCompiledTex.current = res.tex;
+      if (!silent) toast('PDF atualizado.', 'ok');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Não compilei o PDF.';
-      toast(message, 'error');
+      if (!silent) toast(message, 'error');
     }
   };
+
+  useEffect(() => {
+    if (view !== 'latex') return;
+    if (rawTex === lastCompiledTex.current) return;
+    const timer = setTimeout(() => {
+      void compileLatex(true);
+    }, 1500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawTex, view]);
 
   const restoreVersion = (version: ResumeVersion) => {
     applyProfile(version.profile);
@@ -376,39 +384,6 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
         />
 
         <main className="relative min-w-0 flex-1 overflow-hidden">
-          {view === 'document' && (
-            <>
-              <DocumentPreview
-                profile={profile}
-                zoom={zoom}
-                selected={selected}
-                onSelect={setSelected}
-                onChange={applyProfile}
-              />
-              <div className="pointer-events-none absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-line bg-white px-2 py-1 shadow-mac">
-                <button
-                  type="button"
-                  aria-label="Diminuir zoom"
-                  onClick={() => setZoom((z) => Math.max(0.5, Number((z - 0.1).toFixed(1))))}
-                  className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full text-muted hover:bg-wash hover:text-black"
-                >
-                  <Minus className="h-3.5 w-3.5" />
-                </button>
-                <span className="pointer-events-auto w-10 text-center text-2xs text-muted">
-                  {Math.round(zoom * 100)}%
-                </span>
-                <button
-                  type="button"
-                  aria-label="Aumentar zoom"
-                  onClick={() => setZoom((z) => Math.min(1.4, Number((z + 0.1).toFixed(1))))}
-                  className="pointer-events-auto flex h-6 w-6 items-center justify-center rounded-full text-muted hover:bg-wash hover:text-black"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </>
-          )}
-
           {view === 'latex' && (
             <div className="h-full p-4">
               <Suspense
@@ -445,6 +420,45 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
               </div>
             </div>
           )}
+
+          {showAiSetup && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/95 p-6">
+              <div className="w-full max-w-md rounded-xl border border-line bg-white p-6 shadow-mac">
+                <div className="mb-3 flex items-center gap-2">
+                  <KeyRound className="h-4 w-4 text-muted" />
+                  <h2 className="text-lg font-semibold">Configure a IA primeiro</h2>
+                </div>
+                <p className="mb-4 text-2xs leading-relaxed text-muted">
+                  Sem IA, o currículo não é adaptado. Faça:
+                </p>
+                <ol className="mb-5 list-decimal space-y-1 pl-5 text-2xs text-muted-strong">
+                  <li>Abra Ajustes no painel lateral.</li>
+                  <li>Escolha o provedor e o modelo.</li>
+                  <li>Cole a chave de API e teste.</li>
+                  <li>Volte para Capturar.</li>
+                </ol>
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowAiSetup(false)}
+                    className="brutal-btn px-3 py-2 text-2xs"
+                  >
+                    Agora não
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAiSetup(false);
+                      onClose();
+                    }}
+                    className="brutal-btn-yellow px-3 py-2 text-2xs"
+                  >
+                    Abrir ajustes
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
 
         {chatOpen ? (
@@ -461,12 +475,10 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
           </div>
         ) : inspectorOpen ? (
           <Inspector
-            profile={profile}
-            selected={selected}
-            onChange={applyProfile}
             versions={versions}
             onRestore={restoreVersion}
             saveStatus={saveStatus}
+            onClose={onClose}
           />
         ) : null}
       </div>

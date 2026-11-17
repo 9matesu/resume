@@ -57,7 +57,6 @@ test.describe('studio UI/UX', () => {
     }, ADAPTED);
     await page.route('**/api/resumes/res1', (r) => r.fulfill({ json: ADAPTED }));
     await page.goto('/studio.html');
-    await page.getByRole('button', { name: /LaTeX/i }).click();
     await expect(page.getByTestId('latex-editor')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('.cm-lineNumbers')).toBeVisible();
     await page.locator('.cm-content').click();

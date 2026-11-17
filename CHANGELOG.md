@@ -4,37 +4,23 @@
 
 ### Estúdio e design
 
-- Novo workspace único em três regiões: navegação compacta, documento A4 e
-  inspetor contextual. Substitui a separação Captura/Arquivo/Estúdio.
-- Edição direta no documento: clique no texto, edite na prévia e veja o
-  resultado imediatamente. O documento estruturado é a fonte; o PDF é a
-  exportação.
-- Seções reordenáveis por arrastar; paginação A4 visual com navegação
-  entre páginas e indicador `1 / N`.
-- Experiências, formações e habilidades também podem ser reordenadas por
-  arraste no documento.
-- Quebras de página agora respeitam limites de seção, sem cortar uma
-  seção no meio quando ela cabe inteira na próxima página.
-- Template LaTeX usa a fonte clássica Latin Modern por padrão e permite trocar
-  entre Helvetica, Times, Charter, Linux Libertine e TeX Gyre Heros em Ajustes.
-- Removidas duplicações de vaga/empresa no documento e no inspetor.
-- Captura com check de chave de IA antes de iniciar; opção de access token
-  OAuth/SSO no provedor.
+- Novo workspace único com navegação compacta, editor LaTeX e inspetor.
+- O editor principal é o LaTeX: números de linha, highlight semântico, busca,
+  undo/redo e compilação automática após parar de digitar. A prévia PDF
+  atualiza sozinha.
+- A prévia HTML estilo Google Docs saiu. O documento é editado como código
+  LaTeX, não como uma página visual.
+- Template LaTeX usa Latin Modern por padrão e permite trocar entre Helvetica,
+  Times, Charter, Linux Libertine e TeX Gyre Heros em Ajustes → Documento.
+- Sem chave de IA, a captura mostra um painel inline com os passos e um botão
+  “Abrir ajustes”. Nenhum popup de navegador.
+- Captura com check de chave antes de iniciar; opção de access token OAuth/SSO.
 - Tela de captura centralizada, com mais respiro e animação ao aparecer.
-- Inspetor acompanha a seleção: título da seção, visibilidade, ordem,
-  campos de experiência/formação/habilidades e versões anteriores.
 - Salvamento automático com estado discreto (salvando/salvo/erro).
-- Inspetor com formatação por seção: alinhamento, tamanho e peso do texto.
-- Template LaTeX passou a usar sans-serif para alinhar com a prévia HTML.
 - Histórico local de versões por candidatura, com restaurar.
 - O Estúdio abre como janela separada; o painel lateral fica como launcher.
 - A prévia do PDF usa `?inline=1`; o download só acontece no botão.
-- Nova aba Chat: peça mudanças em linguagem natural e a IA aplica na
-  versão atual, sem inventar fatos.
-- O chat agora mostra as mudanças e pede Aplicar/Descartar; não aplica
-  mais sozinho.
-- Novo editor LaTeX com CodeMirror: números de linha, highlight semântico,
-  busca, undo/redo e barra de status. Carregado sob demanda.
+- Chat opcional: mostra as mudanças e pede Aplicar/Descartar; não aplica sozinho.
 - A captura manual “Selecionar painel da vaga” fica sempre visível.
 - O botão “Capturar Vaga” agora abre direto o modo de seleção por clique.
 - O overlay da vaga usa Switzer, borda 1px e sombras suaves.
