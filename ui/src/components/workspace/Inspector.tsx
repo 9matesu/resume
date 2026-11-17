@@ -208,6 +208,94 @@ export function Inspector({
               className="h-4 w-4 accent-black"
             />
           </label>
+
+          <div className="mt-4">
+            <div className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">
+              Formatação
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-2xs text-muted">Alinhamento</span>
+                <div className="flex items-center gap-1">
+                  {(['left', 'center', 'right'] as const).map((align) => (
+                    <button
+                      key={align}
+                      type="button"
+                      onClick={() =>
+                        onChange({
+                          ...profile,
+                          layout: updateSection(layout, section.id, {
+                            style: { ...section.style, align },
+                          }),
+                        })
+                      }
+                      className={`rounded-md px-2 py-1 text-2xs ${
+                        (section.style?.align || 'left') === align
+                          ? 'bg-black text-white'
+                          : 'bg-wash text-muted hover:text-black'
+                      }`}
+                    >
+                      {align === 'left' ? 'Esq' : align === 'center' ? 'Centro' : 'Dir'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-2xs text-muted">Tamanho</span>
+                <div className="flex items-center gap-1">
+                  {(['sm', 'md', 'lg'] as const).map((fontSize) => (
+                    <button
+                      key={fontSize}
+                      type="button"
+                      onClick={() =>
+                        onChange({
+                          ...profile,
+                          layout: updateSection(layout, section.id, {
+                            style: { ...section.style, fontSize },
+                          }),
+                        })
+                      }
+                      className={`rounded-md px-2 py-1 text-2xs ${
+                        (section.style?.fontSize || 'md') === fontSize
+                          ? 'bg-black text-white'
+                          : 'bg-wash text-muted hover:text-black'
+                      }`}
+                    >
+                      {fontSize === 'sm' ? 'P' : fontSize === 'md' ? 'M' : 'G'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-2xs text-muted">Peso</span>
+                <div className="flex items-center gap-1">
+                  {(['normal', 'semibold'] as const).map((weight) => (
+                    <button
+                      key={weight}
+                      type="button"
+                      onClick={() =>
+                        onChange({
+                          ...profile,
+                          layout: updateSection(layout, section.id, {
+                            style: { ...section.style, weight },
+                          }),
+                        })
+                      }
+                      className={`rounded-md px-2 py-1 text-2xs ${
+                        (section.style?.weight || 'normal') === weight
+                          ? 'bg-black text-white'
+                          : 'bg-wash text-muted hover:text-black'
+                      }`}
+                    >
+                      {weight === 'normal' ? 'Normal' : 'Semibold'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {section.type === 'summary' && (

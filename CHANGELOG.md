@@ -12,6 +12,8 @@
 - Inspetor acompanha a seleção: título da seção, visibilidade, ordem,
   campos de experiência/formação/habilidades e versões anteriores.
 - Salvamento automático com estado discreto (salvando/salvo/erro).
+- Inspetor com formatação por seção: alinhamento, tamanho e peso do texto.
+- Template LaTeX passou a usar sans-serif para alinhar com a prévia HTML.
 - Histórico local de versões por candidatura, com restaurar.
 - O Estúdio abre como janela separada; o painel lateral fica como launcher.
 - A prévia do PDF usa `?inline=1`; o download só acontece no botão.

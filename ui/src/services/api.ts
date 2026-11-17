@@ -57,6 +57,13 @@ export interface ResumeLayoutSection {
   type: ResumeSectionType;
   title?: string;
   visible: boolean;
+  style?: ResumeSectionStyle;
+}
+
+export interface ResumeSectionStyle {
+  align?: 'left' | 'center' | 'right';
+  fontSize?: 'sm' | 'md' | 'lg';
+  weight?: 'normal' | 'semibold';
 }
 
 export interface ResumeLayout {

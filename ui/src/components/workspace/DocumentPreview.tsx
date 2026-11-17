@@ -1,4 +1,4 @@
-import type { FocusEvent } from 'react';
+import type { CSSProperties, FocusEvent } from 'react';
 import type { CandidateProfile, ResumeLayoutSection } from '../../services/api';
 import {
   getLayout,
@@ -85,14 +85,25 @@ export function DocumentPreview({
     const isSelected = selected?.sectionId === section.id;
     const ring = isSelected ? 'ring-1 ring-brand ring-offset-4 ring-offset-white' : '';
     const title = sectionTitle(section);
+    const sectionStyle: CSSProperties = {
+      textAlign: section.style?.align || 'left',
+      fontSize:
+        section.style?.fontSize === 'sm'
+          ? '12px'
+          : section.style?.fontSize === 'lg'
+            ? '14px'
+            : '13px',
+      fontWeight: section.style?.weight === 'semibold' ? 600 : 400,
+    };
 
     return (
       <section
         key={section.id}
         onClick={() => onSelect({ sectionId: section.id })}
+        style={sectionStyle}
         className={`relative -mx-3 cursor-text px-3 py-2 transition-shadow ${ring}`}
       >
-        <h2 className="mb-2 text-[13px] font-semibold uppercase tracking-[0.08em] text-muted">
+        <h2 className="mb-2 border-b border-line pb-1 text-[15px] font-bold text-ink">
           {title}
         </h2>
 
@@ -101,7 +112,7 @@ export function DocumentPreview({
             contentEditable
             suppressContentEditableWarning
             onBlur={commitText(profile.summary, updateSummary)}
-            className="min-h-10 whitespace-pre-wrap text-[12.5px] leading-relaxed text-ink outline-none"
+            className="min-h-10 whitespace-pre-wrap text-inherit leading-relaxed text-ink outline-none"
           >
             {profile.summary || 'Clique para escrever o resumo.'}
           </p>
@@ -115,7 +126,7 @@ export function DocumentPreview({
             {profile.experience.map((exp, expIdx) => (
               <div key={expIdx} className="break-inside-avoid">
                 <div className="flex items-baseline justify-between gap-3">
-                  <div className="text-[12.5px] font-semibold text-ink">
+                  <div className="text-inherit font-semibold text-ink">
                     <span
                       contentEditable
                       suppressContentEditableWarning
@@ -133,7 +144,7 @@ export function DocumentPreview({
                     {exp.location ? ` · ${exp.location}` : ''}
                   </div>
                 </div>
-                <ul className="mt-1 list-disc space-y-0.5 pl-5 text-[12.5px] leading-relaxed text-ink">
+                <ul className="mt-1 list-disc space-y-0.5 pl-5 text-inherit leading-relaxed text-ink">
                   {exp.description.map((bullet, bulletIdx) => (
                     <li
                       key={bulletIdx}
@@ -154,7 +165,7 @@ export function DocumentPreview({
         {section.type === 'leadership' && (
           <div className="flex flex-col gap-2">
             {(profile.leadership || []).map((lead, leadIdx) => (
-              <div key={leadIdx} className="text-[12.5px] leading-relaxed">
+              <div key={leadIdx} className="text-inherit leading-relaxed">
                 <div className="font-semibold">{lead.title || 'Liderança'}</div>
                 <div className="text-muted">
                   {lead.company}
@@ -173,7 +184,7 @@ export function DocumentPreview({
         {section.type === 'projects' && (
           <div className="flex flex-col gap-2">
             {(profile.projects || []).map((project, projectIdx) => (
-              <div key={projectIdx} className="text-[12.5px] leading-relaxed">
+              <div key={projectIdx} className="text-inherit leading-relaxed">
                 <div className="font-semibold">{project.name || 'Projeto'}</div>
                 <div className="text-muted">
                   {project.role}
@@ -190,7 +201,7 @@ export function DocumentPreview({
               <p className="text-[12px] text-subtle">Nenhuma formação. Adicione no inspetor.</p>
             )}
             {profile.education.map((edu, eduIdx) => (
-              <div key={eduIdx} className="text-[12.5px] leading-relaxed">
+              <div key={eduIdx} className="text-inherit leading-relaxed">
                 <div className="font-semibold">
                   <span
                     contentEditable
@@ -226,7 +237,7 @@ export function DocumentPreview({
         )}
 
         {section.type === 'certifications' && (
-          <div className="flex flex-col gap-1 text-[12.5px]">
+          <div className="flex flex-col gap-1 text-inherit">
             {(profile.certifications || []).map((cert, i) => (
               <div key={i}>{typeof cert === 'string' ? cert : cert.name}</div>
             ))}
@@ -234,7 +245,7 @@ export function DocumentPreview({
         )}
 
         {section.type === 'languages' && (
-          <div className="flex flex-col gap-1 text-[12.5px]">
+          <div className="flex flex-col gap-1 text-inherit">
             {(profile.languages || []).map((lang, i) => (
               <div key={i}>
                 {lang.name}
@@ -256,7 +267,7 @@ export function DocumentPreview({
           minHeight: 1123,
           transform: `scale(${zoom})`,
           transformOrigin: 'top center',
-          padding: 64,
+          padding: 56,
           marginBottom: 64,
         }}
       >
@@ -268,7 +279,7 @@ export function DocumentPreview({
             contentEditable
             suppressContentEditableWarning
             onBlur={commitText(profile.personal.name, (name) => updatePersonal('name', name))}
-            className="text-[30px] font-semibold leading-tight tracking-tight text-ink outline-none"
+            className="text-[24px] font-bold leading-tight tracking-tight text-ink outline-none"
           >
             {profile.personal.name || 'Seu nome'}
           </h1>
