@@ -60,6 +60,7 @@ test.describe('studio UI/UX', () => {
     await page.getByRole('button', { name: /LaTeX/i }).click();
     await expect(page.getByTestId('latex-editor')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('.cm-lineNumbers')).toBeVisible();
+    await expect(page.locator('.cm-content')).toContainText('% tex');
     await page.locator('.cm-content').click();
     await page.keyboard.type('\\documentclass{article}');
     await expect(page.locator('.cm-content')).toContainText('\\documentclass{article}');

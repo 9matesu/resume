@@ -43,34 +43,64 @@ export function DocumentPreview({
   const layout = getLayout(profile);
   const scrollRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const [dragged, setDragged] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<string | null>(null);
-  const [pages, setPages] = useState(1);
+  const [draggedExp, setDraggedExp] = useState<number | null>(null);
+  const [dragOverExp, setDragOverExp] = useState<number | null>(null);
+  const [draggedEdu, setDraggedEdu] = useState<number | null>(null);
+  const [dragOverEdu, setDragOverEdu] = useState<number | null>(null);
+  const [draggedSkill, setDraggedSkill] = useState<number | null>(null);
+  const [dragOverSkill, setDragOverSkill] = useState<number | null>(null);
+  const [pageBreaks, setPageBreaks] = useState<number[]>([]);
   const [page, setPage] = useState(1);
+  const pages = pageBreaks.length + 1;
 
   useLayoutEffect(() => {
-    const element = contentRef.current;
-    if (!element) return;
+    const content = contentRef.current;
+    if (!content) return;
+
     const measure = () => {
-      const height = element.scrollHeight;
-      setPages(Math.max(1, Math.ceil((height + 112) / 1123)));
+      const contentTop = content.getBoundingClientRect().top;
+      const pageHeight = 1011; // 1123 - 2 * 56
+      let pageStart = 0;
+      const breaks: number[] = [];
+
+      for (const section of layout.sections.filter((s) => s.visible)) {
+        const element = sectionRefs.current[section.id];
+        if (!element) continue;
+        const top = element.getBoundingClientRect().top - contentTop;
+        const height = element.offsetHeight;
+        if (top + height > pageStart + pageHeight && top > pageStart) {
+          breaks.push(top);
+          pageStart = top;
+        }
+      }
+
+      setPageBreaks(breaks);
     };
+
     measure();
     const observer = new ResizeObserver(measure);
-    observer.observe(element);
+    observer.observe(content);
     return () => observer.disconnect();
-  }, [profile]);
+  }, [profile, layout]);
 
   const goToPage = (target: number) => {
     const next = Math.min(pages, Math.max(1, target));
     setPage(next);
-    scrollRef.current?.scrollTo({ top: (next - 1) * 1123 * zoom, behavior: 'smooth' });
+    const top = next === 1 ? 0 : 24 + (56 + pageBreaks[next - 2]) * zoom;
+    scrollRef.current?.scrollTo({ top, behavior: 'smooth' });
   };
 
   const onScroll = () => {
     const element = scrollRef.current;
     if (!element) return;
-    const next = Math.min(pages, Math.floor(element.scrollTop / (1123 * zoom)) + 1);
+    const top = (element.scrollTop - 24) / zoom - 56;
+    let next = 1;
+    pageBreaks.forEach((offset, index) => {
+      if (top >= offset) next = index + 2;
+    });
     if (next !== page) setPage(next);
   };
 
@@ -115,6 +145,30 @@ export function DocumentPreview({
     });
   };
 
+  const reorderExperience = (from: number, to: number) => {
+    if (from === to) return;
+    const list = [...profile.experience];
+    const [moved] = list.splice(from, 1);
+    list.splice(to, 0, moved);
+    onChange({ ...profile, experience: list });
+  };
+
+  const reorderEducation = (from: number, to: number) => {
+    if (from === to) return;
+    const list = [...profile.education];
+    const [moved] = list.splice(from, 1);
+    list.splice(to, 0, moved);
+    onChange({ ...profile, education: list });
+  };
+
+  const reorderSkill = (from: number, to: number) => {
+    if (from === to) return;
+    const list = [...profile.skills];
+    const [moved] = list.splice(from, 1);
+    list.splice(to, 0, moved);
+    onChange({ ...profile, skills: list });
+  };
+
   const renderSection = (section: ResumeLayoutSection) => {
     const isSelected = selected?.sectionId === section.id;
     const ring = isSelected ? 'ring-1 ring-brand ring-offset-4 ring-offset-white' : '';
@@ -133,6 +187,9 @@ export function DocumentPreview({
     return (
       <section
         key={section.id}
+        ref={(element) => {
+          sectionRefs.current[section.id] = element;
+        }}
         onClick={() => onSelect({ sectionId: section.id })}
         onDragOver={(event) => {
           event.preventDefault();
@@ -189,20 +246,50 @@ export function DocumentPreview({
               <p className="text-[12px] text-subtle">Nenhuma experiência. Adicione no inspetor.</p>
             )}
             {profile.experience.map((exp, expIdx) => (
-              <div key={expIdx} className="break-inside-avoid">
+              <div
+                key={expIdx}
+                className={`break-inside-avoid ${dragOverExp === expIdx ? 'ring-1 ring-brand' : ''}`}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setDragOverExp(expIdx);
+                }}
+                onDragLeave={() => setDragOverExp(null)}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  if (draggedExp !== null) reorderExperience(draggedExp, expIdx);
+                  setDraggedExp(null);
+                  setDragOverExp(null);
+                }}
+              >
                 <div className="flex items-baseline justify-between gap-3">
-                  <div className="text-inherit font-semibold text-ink">
-                    <span
-                      contentEditable
-                      suppressContentEditableWarning
-                      onBlur={commitText(exp.title, (title) => updateExperience(expIdx, { title }))}
-                      className="outline-none"
+                  <div className="flex items-baseline gap-2">
+                    <button
+                      type="button"
+                      draggable
+                      onDragStart={(event) => {
+                        setDraggedExp(expIdx);
+                        event.dataTransfer.effectAllowed = 'move';
+                      }}
+                      onDragEnd={() => setDraggedExp(null)}
+                      aria-label="Arrastar experiência"
+                      title="Arrastar experiência"
+                      className="cursor-grab text-subtle hover:text-black"
                     >
-                      {exp.title || 'Cargo'}
-                    </span>
-                    {exp.company && (
-                      <span className="font-normal text-muted"> · {exp.company}</span>
-                    )}
+                      <GripVertical className="h-3.5 w-3.5" />
+                    </button>
+                    <div className="text-inherit font-semibold text-ink">
+                      <span
+                        contentEditable
+                        suppressContentEditableWarning
+                        onBlur={commitText(exp.title, (title) => updateExperience(expIdx, { title }))}
+                        className="outline-none"
+                      >
+                        {exp.title || 'Cargo'}
+                      </span>
+                      {exp.company && (
+                        <span className="font-normal text-muted"> · {exp.company}</span>
+                      )}
+                    </div>
                   </div>
                   <div className="shrink-0 text-[11px] text-muted">
                     {exp.period}
@@ -266,18 +353,50 @@ export function DocumentPreview({
               <p className="text-[12px] text-subtle">Nenhuma formação. Adicione no inspetor.</p>
             )}
             {profile.education.map((edu, eduIdx) => (
-              <div key={eduIdx} className="text-inherit leading-relaxed">
-                <div className="font-semibold">
-                  <span
-                    contentEditable
-                    suppressContentEditableWarning
-                    onBlur={commitText(edu.institution, (institution) =>
-                      updateEducation(eduIdx, { institution }),
-                    )}
-                    className="outline-none"
+              <div
+                key={eduIdx}
+                className={`text-inherit leading-relaxed ${
+                  dragOverEdu === eduIdx ? 'ring-1 ring-brand' : ''
+                }`}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setDragOverEdu(eduIdx);
+                }}
+                onDragLeave={() => setDragOverEdu(null)}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  if (draggedEdu !== null) reorderEducation(draggedEdu, eduIdx);
+                  setDraggedEdu(null);
+                  setDragOverEdu(null);
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    draggable
+                    onDragStart={(event) => {
+                      setDraggedEdu(eduIdx);
+                      event.dataTransfer.effectAllowed = 'move';
+                    }}
+                    onDragEnd={() => setDraggedEdu(null)}
+                    aria-label="Arrastar formação"
+                    title="Arrastar formação"
+                    className="cursor-grab text-subtle hover:text-black"
                   >
-                    {edu.institution || 'Instituição'}
-                  </span>
+                    <GripVertical className="h-3.5 w-3.5" />
+                  </button>
+                  <div className="font-semibold">
+                    <span
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={commitText(edu.institution, (institution) =>
+                        updateEducation(eduIdx, { institution }),
+                      )}
+                      className="outline-none"
+                    >
+                      {edu.institution || 'Instituição'}
+                    </span>
+                  </div>
                 </div>
                 <div className="text-muted">
                   {edu.degree}
@@ -290,8 +409,30 @@ export function DocumentPreview({
 
         {section.type === 'skills' && (
           <div className="flex flex-wrap gap-1.5">
-            {profile.skills.map((skill) => (
-              <span key={skill} className="brutal-tag">
+            {profile.skills.map((skill, skillIdx) => (
+              <span
+                key={`${skill}-${skillIdx}`}
+                draggable
+                onDragStart={(event) => {
+                  setDraggedSkill(skillIdx);
+                  event.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragEnd={() => setDraggedSkill(null)}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setDragOverSkill(skillIdx);
+                }}
+                onDragLeave={() => setDragOverSkill(null)}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  if (draggedSkill !== null) reorderSkill(draggedSkill, skillIdx);
+                  setDraggedSkill(null);
+                  setDragOverSkill(null);
+                }}
+                className={`brutal-tag cursor-grab ${
+                  dragOverSkill === skillIdx ? 'ring-1 ring-brand' : ''
+                }`}
+              >
                 {skill}
               </span>
             ))}
@@ -333,18 +474,18 @@ export function DocumentPreview({
         className="relative mx-auto bg-white shadow-mac"
         style={{
           width: 794,
-          minHeight: Math.max(1123, pages * 1123),
+          minHeight: 1123,
           transform: `scale(${zoom})`,
           transformOrigin: 'top center',
           padding: 56,
           marginBottom: 64,
         }}
       >
-        {Array.from({ length: Math.max(0, pages - 1) }).map((_, index) => (
+        {pageBreaks.map((offset, index) => (
           <div
             key={index}
             className="pointer-events-none absolute left-0 right-0 border-t border-dashed border-line"
-            style={{ top: (index + 1) * 1123 }}
+            style={{ top: 56 + offset }}
             aria-hidden="true"
           />
         ))}

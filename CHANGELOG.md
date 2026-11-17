@@ -11,6 +11,10 @@
   exportação.
 - Seções reordenáveis por arrastar; paginação A4 visual com navegação
   entre páginas e indicador `1 / N`.
+- Experiências, formações e habilidades também podem ser reordenadas por
+  arraste no documento.
+- Quebras de página agora respeitam limites de seção, sem cortar uma
+  seção no meio quando ela cabe inteira na próxima página.
 - Inspetor acompanha a seleção: título da seção, visibilidade, ordem,
   campos de experiência/formação/habilidades e versões anteriores.
 - Salvamento automático com estado discreto (salvando/salvo/erro).
