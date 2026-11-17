@@ -132,6 +132,7 @@ export interface AppSettings {
   default_template: string;
   default_lang: string;
   compiler_preference: string;
+  resume_font: string;
   detected_compiler: string | null;
   compiler_path: string | null;
 }

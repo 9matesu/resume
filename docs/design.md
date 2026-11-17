@@ -10,7 +10,7 @@ O svg atual é um retângulo amarelo de cantos arredondados com o texto Me em He
 Preto `#000000` e amarelo `#ffe800` no app e no site. Neutros de suporte: branco, `#f5f5f5` (superfície), `#999999` (placeholder), `#666666` (texto secundário), `#e3e3e3` (linha). Regra de duas cores: superfícies alternam entre branco, preto e amarelo; sem gradientes como preenchimento.
 
 ## Tipografia
-Switzer em toda a interface, inclusive botões e inputs. Instrument Serif só em títulos editoriais via `.font-editorial`. Mono real só para código e TeX: `--font-mono` é pilha `ui-monospace`, usada no editor de código. Arquivos locais: `ui/public/fonts/switzer.woff2`, `instrument-regular.woff2` e `instrument-italic.woff2`, com licenças ao lado. O site usa as mesmas famílias locais. Zero CDN, zero Google Fonts.
+Switzer em toda a interface, inclusive botões e inputs. Instrument Serif só em títulos editoriais via `.font-editorial`. Mono real só para código e TeX: `--font-mono` é pilha `ui-monospace`, usada no editor de código. Arquivos locais: `ui/public/fonts/switzer.woff2`, `instrument-regular.woff2` e `instrument-italic.woff2`, com licenças ao lado. O site usa as mesmas famílias locais. Zero CDN, zero Google Fonts. A fonte do PDF é escolhida em Ajustes → Documento: Latin Modern (padrão), Helvetica, Times, Charter, Linux Libertine ou TeX Gyre Heros.
 
 ## Componentes
 - `.brutal-card`: superfície branca, borda 1px, radius 12, sombra suave.

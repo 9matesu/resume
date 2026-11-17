@@ -31,6 +31,7 @@ class Settings:
     default_template: str = "devcelio"
     default_lang: str = "en"     # "en" or "pt"
     compiler_preference: str = "auto" # "auto" | "tectonic" | "pdflatex"
+    resume_font: str = "lmodern" # lmodern | helvetica | times | charter | libertine | tgheros
 
 def get_settings() -> Settings:
     from . import db
@@ -43,6 +44,7 @@ def get_settings() -> Settings:
     s.default_template = os.environ.get("DEFAULT_TEMPLATE", s.default_template)
     s.default_lang = os.environ.get("DEFAULT_LANG", s.default_lang)
     s.compiler_preference = os.environ.get("COMPILER_PREFERENCE", s.compiler_preference)
+    s.resume_font = os.environ.get("RESUME_FONT", s.resume_font)
     
     # DB overrides
     rows = db.query("SELECT key, value FROM settings")
@@ -58,6 +60,7 @@ def get_settings() -> Settings:
     if "default_template" in db_map: s.default_template = db_map["default_template"]
     if "default_lang" in db_map: s.default_lang = db_map["default_lang"]
     if "compiler_preference" in db_map: s.compiler_preference = db_map["compiler_preference"]
+    if "resume_font" in db_map: s.resume_font = db_map["resume_font"]
     return s
 
 def update_setting(key: str, value: str):

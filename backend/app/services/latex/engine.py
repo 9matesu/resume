@@ -188,7 +188,7 @@ def normalize_resume(resume: dict) -> dict:
 
 
 def render_tex(template: str, resume: dict, job: dict,
-               lang: str | None = None) -> str:
+               lang: str | None = None, font: str | None = None) -> str:
     if template.lower() in ("standard", "standard_ats", "ats", "padrao", "padrao_ats"):
         template = "editorial"
     tpl_dir = TEMPLATE_DIR / template
@@ -208,6 +208,7 @@ def render_tex(template: str, resume: dict, job: dict,
     personal = resume.get("personal", {})
     return tpl.render(resume=normalize_resume(resume), job=job,
                       personal=personal, lang=lang,
+                      font=font or "lmodern",
                       contact_line=build_contact_line(personal))
 
 
@@ -316,13 +317,13 @@ def _extract_errors(stdout: str) -> str:
 
 
 def generate(template: str, resume: dict, job: dict, batch_label: str,
-             candidate_name: str = "") -> dict:
+             candidate_name: str = "", font: str | None = None) -> dict:
     """Full render+compile for one item. Returns paths + tex source + lang."""
     folder = slugify(job.get("company", "unknown"), job.get("title", "job"))
     out_dir = OUTPUT_DIR / "resumes" / batch_label / folder
     out_dir.mkdir(parents=True, exist_ok=True)
     lang = detect_language(job)
-    tex = render_tex(template, resume, job, lang=lang)
+    tex = render_tex(template, resume, job, lang=lang, font=font)
     (out_dir / "resume.tex").write_text(tex, encoding="utf-8")
     pdf = compile_pdf(tex, out_dir,
                       candidate_name=(resume.get("personal") or {}).get("name", ""))

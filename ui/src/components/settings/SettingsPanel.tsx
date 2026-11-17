@@ -11,6 +11,7 @@ export const SettingsPanel: React.FC = () => {
   const [aiModel, setAiModel] = useState('');
   const [aiApiKey, setAiApiKey] = useState('');
   const [aiBaseUrl, setAiBaseUrl] = useState('');
+  const [resumeFont, setResumeFont] = useState('lmodern');
   const [baseProfile, setBaseProfile] = useState<MasterCandidate | null>(null);
   const [swapping, setSwapping] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -28,6 +29,7 @@ export const SettingsPanel: React.FC = () => {
       setAiProvider(data.ai_provider);
       setAiModel(data.ai_model);
       setAiBaseUrl(data.ai_base_url || '');
+      setResumeFont(data.resume_font || 'lmodern');
       setBaseProfile(prof.has_profile && prof.candidate ? prof.candidate : null);
     } catch (err) {
       console.error(err);
@@ -70,6 +72,7 @@ export const SettingsPanel: React.FC = () => {
         ai_provider: aiProvider,
         ai_model: aiModel,
         ai_base_url: effectiveBaseUrl(),
+        resume_font: resumeFont,
         ...(aiApiKey ? { ai_api_key: aiApiKey, provider_for_key: aiProvider } : {}),
       });
       setSaved(true);
@@ -131,6 +134,31 @@ export const SettingsPanel: React.FC = () => {
                   <span>{testResult.message}</span>
                 </div>
               )}
+            </div>
+
+            {/* Fonte do documento */}
+            <div className="border border-line-strong p-4 space-y-3">
+              <div className="font-bold uppercase mb-1">Documento</div>
+              <label htmlFor="resume-font" className="text-2xs font-bold uppercase tracking-wider block mb-1">
+                Fonte do currículo
+              </label>
+              <select
+                id="resume-font"
+                value={resumeFont}
+                onChange={(e) => setResumeFont(e.target.value)}
+                className="brutal-input cursor-pointer"
+              >
+                <option value="lmodern">Latin Modern (padrão LaTeX)</option>
+                <option value="helvetica">Helvetica</option>
+                <option value="times">Times</option>
+                <option value="charter">Charter</option>
+                <option value="libertine">Linux Libertine</option>
+                <option value="tgheros">TeX Gyre Heros</option>
+              </select>
+              <p className="text-2xs leading-relaxed text-muted">
+                A fonte vale para o PDF gerado pelo LaTeX. A prévia do documento
+                acompanha a estrutura; o PDF final usa a fonte escolhida.
+              </p>
             </div>
 
             {/* Currículo base */}

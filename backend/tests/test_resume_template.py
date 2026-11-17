@@ -150,6 +150,17 @@ def test_devcelio_header_has_contact_and_links():
     assert "linkedin.com/in/anasilva" in tex
 
 
+def test_devcelio_font_default_is_latin_modern():
+    tex = engine.render_tex("devcelio", _sample_profile(), {"title": "Dev"}, lang="pt", font="lmodern")
+    assert "\\usepackage{lmodern}" in tex
+
+
+def test_devcelio_font_helvetica():
+    tex = engine.render_tex("devcelio", _sample_profile(), {"title": "Dev"}, lang="pt", font="helvetica")
+    assert "\\usepackage{helvet}" in tex
+    assert "\\renewcommand{\\familydefault}{\\sfdefault}" in tex
+
+
 def test_devcelio_cventry_renders_location():
     tex = engine.render_tex("devcelio", _sample_profile(), {"title": "Dev"}, lang="pt")
     assert "Remoto" in tex  # leadership location

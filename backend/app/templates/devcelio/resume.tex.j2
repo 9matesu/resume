@@ -4,8 +4,22 @@
 % --- PACOTES: BASE / IDIOMA ---
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage{helvet} % Helvetica clone, alinhado ao sans da prévia
-\renewcommand{\familydefault}{\sfdefault} % alinha a prévia HTML (Switzer) com o PDF
+% --- FONTE DO DOCUMENTO (escolhida em Ajustes) ---
+<% if font == 'helvetica' -%>
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+<% elif font == 'times' -%>
+\usepackage{mathptmx}
+<% elif font == 'charter' -%>
+\usepackage{charter}
+<% elif font == 'libertine' -%>
+\usepackage{libertine}
+<% elif font == 'tgheros' -%>
+\usepackage{tgheros}
+\renewcommand{\familydefault}{\sfdefault}
+<% else -%>
+\usepackage{lmodern}
+<% endif -%>
 <% if lang == 'en' -%>
 \usepackage[english]{babel}
 <%- else -%>

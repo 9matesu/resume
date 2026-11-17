@@ -15,7 +15,8 @@
   arraste no documento.
 - Quebras de página agora respeitam limites de seção, sem cortar uma
   seção no meio quando ela cabe inteira na próxima página.
-- Template LaTeX usa Helvetica para alinhar com a prévia Switzer.
+- Template LaTeX usa a fonte clássica Latin Modern por padrão e permite trocar
+  entre Helvetica, Times, Charter, Linux Libertine e TeX Gyre Heros em Ajustes.
 - Removidas duplicações de vaga/empresa no documento e no inspetor.
 - Captura com check de chave de IA antes de iniciar; opção de access token
   OAuth/SSO no provedor.

@@ -27,6 +27,7 @@ class SettingsPayload(BaseModel):
     default_template: str | None = None
     default_lang: str | None = None
     compiler_preference: str | None = None
+    resume_font: str | None = None
     probe: bool | None = None
 
 class ProfilePayload(BaseModel):
@@ -84,6 +85,7 @@ def get_settings_endpoint():
         "default_template": s.default_template,
         "default_lang": s.default_lang,
         "compiler_preference": s.compiler_preference,
+        "resume_font": s.resume_font,
         "detected_compiler": comp_type,
         "compiler_path": comp_path,
         # quais provedores ja tem chave salva (nomes so, nunca valores)
@@ -105,6 +107,7 @@ def save_settings_endpoint(payload: SettingsPayload):
     if payload.default_template is not None: update_setting("default_template", payload.default_template)
     if payload.default_lang is not None: update_setting("default_lang", payload.default_lang)
     if payload.compiler_preference is not None: update_setting("compiler_preference", payload.compiler_preference)
+    if payload.resume_font is not None: update_setting("resume_font", payload.resume_font)
     return {"status": "saved"}
 
 @router.post("/settings/test")
@@ -340,7 +343,8 @@ def _run_adapt_pipeline(job_data: dict, captured_chars: int | None = None) -> di
     try:
         gen_result = latex_engine.generate(
             s.default_template, tailored_profile, job_data, batch_label,
-            candidate_name=(cand.get("name") or ""))
+            candidate_name=(cand.get("name") or ""),
+            font=s.resume_font)
     except HTTPException:
         raise
     except Exception as e:
@@ -511,7 +515,10 @@ def update_resume(res_id: str, payload: ResumeUpdatePayload):
         tex = payload.tex_code
     elif payload.profile is not None:
         job_rec = job_model.get_job(res["job_id"]) or {"title": "Application", "company": "Company"}
-        tex = latex_engine.render_tex(s.default_template, payload.profile, job_rec, lang=s.default_lang)
+        tex = latex_engine.render_tex(
+            s.default_template, payload.profile, job_rec,
+            lang=s.default_lang, font=s.resume_font,
+        )
     out_dir = (Path(res["pdf_path"]).parent if res["pdf_path"]
                else OUTPUT_DIR / "resumes" / res_id)
     prof = payload.profile if payload.profile is not None else (res.get("tailored_profile") or {})
