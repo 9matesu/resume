@@ -9,6 +9,8 @@
 - Edição direta no documento: clique no texto, edite na prévia e veja o
   resultado imediatamente. O documento estruturado é a fonte; o PDF é a
   exportação.
+- Seções reordenáveis por arrastar; paginação A4 visual com navegação
+  entre páginas e indicador `1 / N`.
 - Inspetor acompanha a seleção: título da seção, visibilidade, ordem,
   campos de experiência/formação/habilidades e versões anteriores.
 - Salvamento automático com estado discreto (salvando/salvo/erro).

@@ -64,6 +64,16 @@ export function moveSection(layout: ResumeLayout, sectionId: string, direction: 
   return { sections };
 }
 
+export function reorderSection(layout: ResumeLayout, fromId: string, toId: string): ResumeLayout {
+  const sections = [...layout.sections];
+  const from = sections.findIndex((s) => s.id === fromId);
+  const to = sections.findIndex((s) => s.id === toId);
+  if (from < 0 || to < 0 || from === to) return layout;
+  const [moved] = sections.splice(from, 1);
+  sections.splice(to, 0, moved);
+  return { sections };
+}
+
 export function updateSection(
   layout: ResumeLayout,
   sectionId: string,

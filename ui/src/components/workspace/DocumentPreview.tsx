@@ -1,7 +1,9 @@
-import type { CSSProperties, FocusEvent } from 'react';
+import { useLayoutEffect, useRef, useState, type CSSProperties, type FocusEvent } from 'react';
+import { ChevronDown, ChevronUp, GripVertical } from 'lucide-react';
 import type { CandidateProfile, ResumeLayoutSection } from '../../services/api';
 import {
   getLayout,
+  reorderSection,
   sectionTitle,
   type Selection,
 } from './document';
@@ -39,6 +41,38 @@ export function DocumentPreview({
   onChange,
 }: DocumentPreviewProps) {
   const layout = getLayout(profile);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [dragged, setDragged] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState<string | null>(null);
+  const [pages, setPages] = useState(1);
+  const [page, setPage] = useState(1);
+
+  useLayoutEffect(() => {
+    const element = contentRef.current;
+    if (!element) return;
+    const measure = () => {
+      const height = element.scrollHeight;
+      setPages(Math.max(1, Math.ceil((height + 112) / 1123)));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [profile]);
+
+  const goToPage = (target: number) => {
+    const next = Math.min(pages, Math.max(1, target));
+    setPage(next);
+    scrollRef.current?.scrollTo({ top: (next - 1) * 1123 * zoom, behavior: 'smooth' });
+  };
+
+  const onScroll = () => {
+    const element = scrollRef.current;
+    if (!element) return;
+    const next = Math.min(pages, Math.floor(element.scrollTop / (1123 * zoom)) + 1);
+    if (next !== page) setPage(next);
+  };
 
   const updatePersonal = (field: keyof CandidateProfile['personal'], value: string) => {
     onChange({ ...profile, personal: { ...profile.personal, [field]: value } });
@@ -100,12 +134,43 @@ export function DocumentPreview({
       <section
         key={section.id}
         onClick={() => onSelect({ sectionId: section.id })}
+        onDragOver={(event) => {
+          event.preventDefault();
+          setDragOver(section.id);
+        }}
+        onDragLeave={() => setDragOver(null)}
+        onDrop={(event) => {
+          event.preventDefault();
+          if (dragged) {
+            onChange({ ...profile, layout: reorderSection(layout, dragged, section.id) });
+          }
+          setDragged(null);
+          setDragOver(null);
+        }}
         style={sectionStyle}
-        className={`relative -mx-3 cursor-text px-3 py-2 transition-shadow ${ring}`}
+        className={`relative -mx-3 cursor-text px-3 py-2 transition-shadow ${
+          dragOver === section.id ? 'ring-2 ring-brand' : ring
+        }`}
       >
-        <h2 className="mb-2 border-b border-line pb-1 text-[15px] font-bold text-ink">
-          {title}
-        </h2>
+        <div className="mb-2 flex items-center justify-between gap-2 border-b border-line pb-1">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              draggable
+              onDragStart={(event) => {
+                setDragged(section.id);
+                event.dataTransfer.effectAllowed = 'move';
+              }}
+              onDragEnd={() => setDragged(null)}
+              aria-label="Arrastar seção"
+              title="Arrastar seção"
+              className="cursor-grab text-subtle hover:text-black"
+            >
+              <GripVertical className="h-3.5 w-3.5" />
+            </button>
+            <h2 className="text-[15px] font-bold text-ink">{title}</h2>
+          </div>
+        </div>
 
         {section.type === 'summary' && (
           <p
@@ -259,18 +324,31 @@ export function DocumentPreview({
   };
 
   return (
-    <div className="h-full min-h-0 overflow-auto bg-wash px-6 py-6">
+    <div
+      ref={scrollRef}
+      onScroll={onScroll}
+      className="h-full min-h-0 overflow-auto bg-wash px-6 py-6"
+    >
       <div
-        className="mx-auto bg-white shadow-mac"
+        className="relative mx-auto bg-white shadow-mac"
         style={{
           width: 794,
-          minHeight: 1123,
+          minHeight: Math.max(1123, pages * 1123),
           transform: `scale(${zoom})`,
           transformOrigin: 'top center',
           padding: 56,
           marginBottom: 64,
         }}
       >
+        {Array.from({ length: Math.max(0, pages - 1) }).map((_, index) => (
+          <div
+            key={index}
+            className="pointer-events-none absolute left-0 right-0 border-t border-dashed border-line"
+            style={{ top: (index + 1) * 1123 }}
+            aria-hidden="true"
+          />
+        ))}
+
         <header
           className="mb-8 cursor-text border-b border-line pb-4"
           onClick={() => onSelect({ sectionId: 'header' })}
@@ -307,9 +385,36 @@ export function DocumentPreview({
           </div>
         </header>
 
-        <div className="flex flex-col gap-6">
+        <div ref={contentRef} className="flex flex-col gap-6">
           {layout.sections.filter((s) => s.visible).map(renderSection)}
         </div>
+      </div>
+
+      <div
+        className="fixed bottom-4 z-30 flex items-center gap-1 rounded-full border border-line bg-white px-2 py-1 shadow-mac"
+        style={{ right: 'var(--panel-offset, 16px)' }}
+      >
+        <button
+          type="button"
+          aria-label="Página anterior"
+          onClick={() => goToPage(page - 1)}
+          disabled={page <= 1}
+          className="flex h-6 w-6 items-center justify-center rounded-full text-muted hover:bg-wash hover:text-black disabled:opacity-30"
+        >
+          <ChevronUp className="h-3.5 w-3.5" />
+        </button>
+        <span className="min-w-10 text-center text-2xs text-muted">
+          {page} / {pages}
+        </span>
+        <button
+          type="button"
+          aria-label="Próxima página"
+          onClick={() => goToPage(page + 1)}
+          disabled={page >= pages}
+          className="flex h-6 w-6 items-center justify-center rounded-full text-muted hover:bg-wash hover:text-black disabled:opacity-30"
+        >
+          <ChevronDown className="h-3.5 w-3.5" />
+        </button>
       </div>
     </div>
   );

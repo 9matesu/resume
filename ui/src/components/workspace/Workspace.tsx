@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import type {
   AdaptedResult,
@@ -318,7 +318,14 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
   };
 
   return (
-    <div className="flex h-dvh w-full flex-col overflow-hidden bg-wash text-ink">
+    <div
+      className="flex h-dvh w-full flex-col overflow-hidden bg-wash text-ink"
+      style={
+        {
+          '--panel-offset': chatOpen ? '376px' : inspectorOpen ? '336px' : '16px',
+        } as CSSProperties
+      }
+    >
       <CommandBar
         title={current.job.title}
         company={current.job.company}
