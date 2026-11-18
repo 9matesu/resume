@@ -8,7 +8,7 @@ import {
   X,
 } from 'lucide-react';
 
-export type WorkspaceView = 'latex' | 'pdf';
+export type WorkspaceView = 'visual' | 'latex' | 'pdf';
 
 interface CommandBarProps {
   title: string;
@@ -30,6 +30,7 @@ interface CommandBarProps {
 }
 
 const VIEWS: { id: WorkspaceView; label: string }[] = [
+  { id: 'visual', label: 'Visual' },
   { id: 'latex', label: 'Editor' },
   { id: 'pdf', label: 'PDF' },
 ];

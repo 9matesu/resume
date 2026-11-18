@@ -8,6 +8,9 @@ import {
 import {
   fetchHealth,
   fetchMasterProfile,
+  adaptGrilled,
+  saveResumeEdit,
+  type GrillQuestion,
 } from './services/api';
 import type { AppHealth, CandidateProfile, AdaptedResult } from './services/api';
 import {
@@ -23,7 +26,6 @@ import { cvFilename } from './cvFilename';
 import { OnboardingWizard } from './components/onboarding/OnboardingWizard';
 import { ApplicationHistory } from './components/history/ApplicationHistory';
 import { SettingsPanel } from './components/settings/SettingsPanel';
-import { WelcomeCard } from './components/WelcomeCard';
 import { ActionButton, Stage, Skeleton } from './components/ActionButton';
 import { ToastStack, useToasts } from './components/Toast';
 
@@ -47,8 +49,93 @@ export function SidePanelApp() {
   const downloadRef = useRef<HTMLAnchorElement>(null);
   const [stage, setStage] = useState<string | null>(null);
   const [showAiSetup, setShowAiSetup] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(true);
   const { items: toasts, push: toast, dismiss } = useToasts();
+
+  // Grilling: perguntas sim/não depois da captura. Cada "sim" vira competência
+  // confirmada e readapta o currículo.
+  const [grill, setGrill] = useState<{
+    id: string;
+    questions: GrillQuestion[];
+    answers: Record<string, boolean>;
+  } | null>(null);
+  const [grilling, setGrilling] = useState(false);
+  const grilledFor = useRef<string | null>(null);
+
+  const localGrill = (r: AdaptedResult): GrillQuestion[] => {
+    const missing = (r.adaptation.ats?.missing || []).filter(Boolean) as string[];
+    const pool = missing.length
+      ? missing
+      : ((r.job.keywords || r.job.requirements || []).filter(Boolean) as string[]);
+    const seen: Record<string, boolean> = {};
+    const out: GrillQuestion[] = [];
+    for (const raw of pool) {
+      const kw = String(raw).trim();
+      if (!kw || seen[kw.toLowerCase()]) continue;
+      seen[kw.toLowerCase()] = true;
+      const short = kw.length > 42 ? kw.slice(0, 42).trim() + '…' : kw;
+      out.push({
+        id: 'q' + out.length,
+        keyword: kw,
+        text: 'Você tem experiência com ' + short + '?',
+      });
+      if (out.length >= 3) break;
+    }
+    return out;
+  };
+
+  const maybeGrill = (r: AdaptedResult) => {
+    if (grilledFor.current === r.adaptation.id) return;
+    const questions = localGrill(r);
+    if (!questions.length) return;
+    grilledFor.current = r.adaptation.id;
+    setGrill({ id: r.adaptation.id, questions, answers: {} });
+  };
+
+  const submitGrill = async () => {
+    if (!result || !grill) return;
+    const confirmed = grill.questions
+      .filter((q) => grill.answers[q.id])
+      .map((q) => q.keyword)
+      .filter(Boolean);
+    if (!confirmed.length) {
+      setGrill(null);
+      toast('Nenhuma competência confirmada.', 'info');
+      return;
+    }
+    setGrilling(true);
+    try {
+      let next: AdaptedResult;
+      try {
+        next = await adaptGrilled(result.job, confirmed);
+      } catch {
+        // Motor antigo: aplica as skills confirmadas no perfil e recompila.
+        const p = JSON.parse(JSON.stringify(result.adaptation.tailored_profile)) as CandidateProfile;
+        const have = (p.skills || []).map((s) => String(s).toLowerCase());
+        for (const k of confirmed) {
+          if (!have.includes(k.toLowerCase())) p.skills = [...(p.skills || []), k];
+        }
+        const res = await saveResumeEdit(result.adaptation.id, { profile: p });
+        next = {
+          ...result,
+          adaptation: {
+            ...result.adaptation,
+            tailored_profile: p,
+            tex_code: res.tex,
+            pdf_url: res.pdf_url,
+          },
+        };
+      }
+      grilledFor.current = next.adaptation.id;
+      setGrill(null);
+      setResult(next);
+      toast('Currículo readaptado.', 'ok');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Não consegui readaptar.';
+      toast(message, 'error');
+    } finally {
+      setGrilling(false);
+    }
+  };
 
   const applyHealth = async (h: AppHealth) => {
     setHealth(h);
@@ -106,45 +193,16 @@ export function SidePanelApp() {
       setBusy(false);
       setStage(null);
       if (pending.ok) {
-        setResult(pending.result as AdaptedResult);
+        const data = pending.result as AdaptedResult;
+        setResult(data);
         toast('Currículo pronto.', 'ok');
+        void maybeGrill(data);
       } else if (!pending.cancelled) {
         toast(String(pending.error || 'Falha na captura'), 'error');
       }
     } catch {
       // Se o storage estiver indisponível, o fluxo ao vivo continua funcionando.
     }
-  };
-
-  useEffect(() => {
-    let alive = true;
-    const read = async () => {
-      try {
-        if (isExtension && chrome.storage?.local) {
-          const stored = await chrome.storage.local.get('resume_welcome_seen');
-          if (alive) setShowWelcome(!stored.resume_welcome_seen);
-        } else {
-          setShowWelcome(!localStorage.getItem('resume_welcome_seen'));
-        }
-      } catch {
-        if (alive) setShowWelcome(true);
-      }
-    };
-    void read();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  const closeWelcome = () => {
-    setShowWelcome(false);
-    try {
-      if (isExtension && chrome.storage?.local) {
-        void chrome.storage.local.set({ resume_welcome_seen: true });
-      } else {
-        localStorage.setItem('resume_welcome_seen', 'true');
-      }
-    } catch {}
   };
 
   useEffect(() => {
@@ -181,10 +239,12 @@ export function SidePanelApp() {
       onCaptureResult(
         (r) => {
           clearPendingCapture();
-          setResult(r as AdaptedResult);
+          const data = r as AdaptedResult;
+          setResult(data);
           setBusy(false);
           setStage(null);
           toast('Currículo pronto.', 'ok');
+          void maybeGrill(data);
         },
         (m) => {
           clearPendingCapture();
@@ -239,8 +299,8 @@ export function SidePanelApp() {
   };
 
   const STAGE_TEXT: Record<string, { label: string; detail: string }> = {
-    read: { label: 'Lendo a vaga na página', detail: 'Leva um instante' },
-    adapt: { label: 'Adaptando seu currículo', detail: `Usando ${health?.ai_model || health?.ai_provider || 'a sua IA'}` },
+    read: { label: 'Lendo a vaga', detail: 'Já volto' },
+    adapt: { label: 'Ajustando seu currículo', detail: `Com ${health?.ai_model || health?.ai_provider || 'a sua IA'}` },
     select: { label: 'Clique no painel da vaga', detail: 'Esc cancela' },
   };
 
@@ -318,15 +378,12 @@ export function SidePanelApp() {
       <main className="flex-1 overflow-y-auto p-5">
         {view === 'capture' && (
           <div className="flex min-h-full flex-col">
-            {showWelcome && !result && !showAiSetup && (
-              <WelcomeCard onClose={closeWelcome} />
-            )}
             {showAiSetup ? (
               <div className="flex flex-1 items-center justify-center p-5">
                 <div className="w-full max-w-sm rounded-xl border border-line bg-white p-5 shadow-mac">
-                  <h2 className="font-editorial text-2xl leading-tight">Configure a IA primeiro</h2>
+                  <h2 className="font-editorial text-2xl leading-tight">Configure a IA</h2>
                   <p className="mt-1 text-2xs leading-relaxed text-muted">
-                    Sem IA, o currículo não é adaptado. Faça:
+                    Escolha um provedor e uma chave. Sem isso, o resuMe compila o perfil como está.
                   </p>
                   <ol className="mt-3 list-decimal space-y-1 pl-5 text-2xs text-muted-strong">
                     <li>Abra Ajustes.</li>
@@ -366,7 +423,8 @@ export function SidePanelApp() {
                 <div className="space-y-1">
                   <h2 className="font-editorial text-3xl leading-none">Capturar vaga</h2>
                   <p className="max-w-xs text-2xs leading-relaxed text-muted">
-                    Leio a vaga na página e preparo a adaptação. Você revisa antes de enviar.
+                    Leio a vaga na página e devolvo o currículo ajustado.
+                    Você baixa o PDF.
                   </p>
                 </div>
                 <button
@@ -377,7 +435,7 @@ export function SidePanelApp() {
                   className="w-full max-w-xs bg-brand border border-line-strong rounded-xl p-4 flex items-center justify-center gap-2 active:translate-x-0.5 active:translate-y-0.5 transition-transform cursor-pointer disabled:opacity-60"
                 >
                   {busy ? <Loader2 className="spin h-5 w-5" /> : <Camera className="h-5 w-5" />}
-                  <span className="font-editorial text-xl leading-none">Capturar Vaga</span>
+                  <span className="font-editorial text-xl leading-none">Capturar vaga</span>
                 </button>
                 <p className="text-2xs text-subtle">Alt+Shift+A também captura a aba ativa.</p>
               </div>
@@ -390,7 +448,77 @@ export function SidePanelApp() {
             {busy && !result && !stage && !showAiSetup && <Skeleton rows={2} />}
 
             {result && !showAiSetup && (
-              <div className="capture-in brutal-card p-5 space-y-3">
+              <div className="space-y-3">
+                {grill && grill.id === result.adaptation.id && (
+                  <div className="brutal-card p-4 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-editorial text-base leading-tight">Você sabe?</h3>
+                      <button
+                        type="button"
+                        onClick={() => setGrill(null)}
+                        className="text-2xs text-muted underline underline-offset-4 hover:text-black"
+                      >
+                        pular
+                      </button>
+                    </div>
+                    <p className="text-2xs text-muted">Marque o que você já fez.</p>
+                    <div className="space-y-1.5">
+                      {grill.questions.map((q) => {
+                        const answer = grill.answers[q.id];
+                        return (
+                          <div
+                            key={q.id}
+                            className="flex items-center justify-between gap-2 rounded-lg border border-line px-3 py-1.5"
+                          >
+                            <span className="text-2xs leading-snug text-ink">{q.text}</span>
+                            <div className="flex shrink-0 gap-1">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setGrill((g) =>
+                                    g ? { ...g, answers: { ...g.answers, [q.id]: true } } : g,
+                                  )
+                                }
+                                className={`rounded border px-2 py-0.5 text-2xs ${
+                                  answer === true
+                                    ? 'border-black bg-black text-white'
+                                    : 'border-line bg-white text-muted hover:text-black'
+                                }`}
+                              >
+                                sim
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setGrill((g) =>
+                                    g ? { ...g, answers: { ...g.answers, [q.id]: false } } : g,
+                                  )
+                                }
+                                className={`rounded border px-2 py-0.5 text-2xs ${
+                                  answer === false
+                                    ? 'border-black bg-black text-white'
+                                    : 'border-line bg-white text-muted hover:text-black'
+                                }`}
+                              >
+                                não
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void submitGrill()}
+                      disabled={grilling}
+                      className="brutal-btn-yellow w-full py-1.5 text-2xs disabled:opacity-60"
+                    >
+                      {grilling ? 'readaptando…' : 'readaptar'}
+                    </button>
+                  </div>
+                )}
+
+                <div className="capture-in brutal-card p-5 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h2 className="font-editorial text-lg normal-case leading-tight">{result.job.title}</h2>
@@ -407,39 +535,18 @@ export function SidePanelApp() {
                 </div>
 
                 {result.adaptation.ats && (
-                  <div className="hairline-b pb-3">
-                    <div className="flex items-center justify-between text-2xs font-bold uppercase mb-1">
-                      <span>Cobertura ATS</span>
-                      <span>{result.adaptation.ats.coverage.toFixed(0)}%</span>
-                    </div>
-                    {result.adaptation.ats.missing.length > 0 && (
-                      <p className="text-2xs text-muted">
-                        Faltou: {result.adaptation.ats.missing.slice(0, 5).join(', ')}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {result.adaptation.honest_gaps && result.adaptation.honest_gaps.length > 0 && (
-                  <p className="text-2xs text-muted-strong leading-relaxed">
-                    <strong>Lacunas:</strong> {result.adaptation.honest_gaps.slice(0, 2).join(' ')}
+                  <p className="text-2xs text-muted">
+                    ATS {result.adaptation.ats.coverage.toFixed(0)}%
+                    {result.adaptation.ats.missing.length > 0 &&
+                      ` · faltou: ${result.adaptation.ats.missing.slice(0, 4).join(', ')}`}
                   </p>
                 )}
 
-                {(result.adaptation.applied_keywords?.length ?? 0) > 0 && (
-                  <div className="hairline-b pb-3">
-                    <div className="text-2xs font-bold uppercase mb-1.5">Palavras-chave</div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {result.adaptation.applied_keywords!.map((k) => (
-                        <span key={k} className="brutal-tag">{k}</span>
-                      ))}
-                    </div>
-                  </div>
+                {result.adaptation.engine === 'heuristic' && (
+                  <p className="text-2xs leading-relaxed text-danger">
+                    Sem IA nesta captura. Configure a IA em Ajustes.
+                  </p>
                 )}
-
-                <p className="text-2xs text-subtle">
-                  revise o currículo antes de enviar
-                </p>
 
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -466,6 +573,7 @@ export function SidePanelApp() {
                 >
                   {result.adaptation.pdf_filename || 'curriculo.pdf'}
                 </a>
+                </div>
               </div>
             )}
           </div>

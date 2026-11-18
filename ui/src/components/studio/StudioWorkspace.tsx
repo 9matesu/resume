@@ -776,7 +776,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, o
             <Stage label="Gerando seu PDF" detail="Pode levar alguns segundos" />
           ) : (
             <span className="text-xs text-muted-strong">
-              {dirty ? 'Você tem alterações não salvas' : 'Tudo salvo'}
+              {dirty ? 'Tem alteração na mão' : 'Tudo salvo'}
             </span>
           )}
           <ActionButton
@@ -800,7 +800,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, o
           </span>
 
           <span className="text-2xs text-muted">
-            {compiling ? 'Atualizando…' : 'O PDF baixa pelo botão ao lado'}
+            {compiling ? 'Atualizando…' : 'O PDF sai no botão Baixar PDF.'}
           </span>
         </div>
 
@@ -829,7 +829,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, o
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center bg-white">
                     <span className="brutal-tag brutal-tag-black">Não abriu</span>
                     <p className="text-xs font-mono text-muted-strong max-w-xs">
-                      Não foi possível abrir a pré-visualização. Confira se o motor está rodando.
+                      Não abriu. Confira se o motor está rodando.
                     </p>
                     <div className="flex items-center gap-2">
                       <ActionButton

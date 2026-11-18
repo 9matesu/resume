@@ -283,8 +283,8 @@
     ta.style.cssText =
       "display:block;width:100%;box-sizing:border-box;margin:0;border:0;" +
       `font:12px/1.6 ${UI_FONT};` +
-      "padding:12px 14px;max-height:200px;min-height:72px;resize:vertical;outline:none;" +
-      "color:#000;background:#fff;border-radius:0 0 16px 16px;";
+      "padding:12px 14px;max-height:280px;min-height:120px;resize:vertical;outline:none;" +
+      "color:#000;background:#fff;border-radius:0 0 16px 16px;pointer-events:auto;overflow:auto;";
 
     head.append(tag, meta, btnOther, btnCapture);
     toast.append(head, caption, ta);

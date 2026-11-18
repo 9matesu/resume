@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { ArrowUp, Check, Copy, Sparkles, Trash2, X } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
+import { ArrowUp, Check, Copy, Sparkles, Trash2, Undo2 } from 'lucide-react';
 import { sendResumeChat } from '../../services/api';
 import type { CandidateProfile, JobData } from '../../services/api';
 
@@ -18,18 +18,143 @@ interface Message {
   role: 'user' | 'assistant';
   text: string;
   profile?: CandidateProfile;
+  before?: CandidateProfile;
   changes?: string[];
   applied?: boolean;
   discarded?: boolean;
   error?: boolean;
 }
 
+interface DiffLine {
+  type: 'add' | 'del' | 'ctx';
+  text: string;
+}
+
 const SUGGESTIONS = [
   'Deixe o resumo mais direto para esta vaga.',
   'Reescreva as descrições com verbos de ação.',
+  'Aumente a cobertura ATS ao máximo.',
   'Reduza o currículo para uma página.',
-  'Ajuste as palavras-chave para o ATS.',
 ];
+
+function profileToLines(p: CandidateProfile): string[] {
+  const out: string[] = [];
+  const personal = p.personal || ({} as CandidateProfile['personal']);
+  out.push(`name: ${personal.name || ''}`);
+  out.push(`email: ${personal.email || ''}`);
+  out.push(`phone: ${personal.phone || ''}`);
+  out.push(`location: ${personal.location || ''}`);
+  if (personal.linkedin) out.push(`linkedin: ${personal.linkedin}`);
+  if (personal.github) out.push(`github: ${personal.github}`);
+  if (personal.portfolio) out.push(`portfolio: ${personal.portfolio}`);
+  out.push('');
+  out.push('summary:');
+  out.push(p.summary || '');
+  out.push('');
+
+  (p.experience || []).forEach((exp, i) => {
+    out.push(`experience[${i}]: ${exp.title} | ${exp.company} | ${exp.period || ''}`);
+    (exp.description || []).forEach((bullet) => out.push(`  - ${bullet}`));
+  });
+
+  (p.leadership || []).forEach((lead, i) => {
+    out.push(`leadership[${i}]: ${lead.title} | ${lead.company} | ${lead.period || ''}`);
+    (lead.description || []).forEach((bullet) => out.push(`  - ${bullet}`));
+  });
+
+  (p.education || []).forEach((edu, i) => {
+    out.push(`education[${i}]: ${edu.institution} | ${edu.degree || ''} | ${edu.year || ''}`);
+  });
+
+  (p.projects || []).forEach((project, i) => {
+    out.push(`project[${i}]: ${project.name}`);
+  });
+
+  out.push('');
+  out.push(`skills: ${(p.skills || []).join(', ')}`);
+
+  const certifications = (p.certifications || []).map((c) => (typeof c === 'string' ? c : c.name));
+  if (certifications.length) out.push(`certifications: ${certifications.join(', ')}`);
+
+  const languages = (p.languages || []).map((l) => (l.level ? `${l.name}: ${l.level}` : l.name));
+  if (languages.length) out.push(`languages: ${languages.join(', ')}`);
+
+  return out;
+}
+
+function diffLines(before: string[], after: string[]): DiffLine[] {
+  const n = before.length;
+  const m = after.length;
+  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      dp[i][j] = before[i] === after[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+  const out: DiffLine[] = [];
+  let i = 0;
+  let j = 0;
+  while (i < n && j < m) {
+    if (before[i] === after[j]) {
+      out.push({ type: 'ctx', text: before[i] });
+      i++;
+      j++;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      out.push({ type: 'del', text: before[i] });
+      i++;
+    } else {
+      out.push({ type: 'add', text: after[j] });
+      j++;
+    }
+  }
+  while (i < n) {
+    out.push({ type: 'del', text: before[i] });
+    i++;
+  }
+  while (j < m) {
+    out.push({ type: 'add', text: after[j] });
+    j++;
+  }
+  return out;
+}
+
+function DiffBlock({ before, after }: { before: CandidateProfile; after: CandidateProfile }) {
+  const lines = useMemo(() => diffLines(profileToLines(before), profileToLines(after)), [before, after]);
+  const changed = lines.some((line) => line.type !== 'ctx');
+  if (!changed) return null;
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-lg border border-white/10 bg-[#0d0d0d]">
+      <div className="flex items-center justify-between border-b border-white/10 px-3 py-1.5">
+        <span className="font-mono text-[10px] text-white/50">diff · currículo.tex</span>
+        <span className="font-mono text-[10px] text-white/30">
+          {lines.filter((l) => l.type === 'add').length}+
+          {lines.filter((l) => l.type === 'del').length}−
+        </span>
+      </div>
+      <div className="max-h-72 overflow-auto whitespace-pre p-3 font-mono text-[10.5px] leading-relaxed">
+        {lines.map((line, index) => (
+          <div
+            key={index}
+            className={
+              line.type === 'add'
+                ? 'bg-emerald-500/10 text-emerald-300'
+                : line.type === 'del'
+                  ? 'bg-rose-500/10 text-rose-300'
+                  : 'text-white/40'
+            }
+          >
+            <span className="mr-3 inline-block w-5 select-none text-right text-white/20">
+              {index + 1}
+            </span>
+            <span className="select-none">{line.type === 'add' ? '+ ' : line.type === 'del' ? '− ' : '  '}</span>
+            {line.text || ' '}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function describeChanges(before: CandidateProfile, after: CandidateProfile): string[] {
   const changes: string[] = [];
@@ -56,7 +181,7 @@ export function ChatPanel({
   const initialMessage: Message = {
     id: 1,
     role: 'assistant',
-    text: `Estou com o currículo para ${job.title} na ${job.company}. Diga o que quer mudar e eu aplico só nessa versão.`,
+    text: `Estou com o currículo de ${job.title} na ${job.company}. Diga o que mudar. Eu aplico.`,
   };
   const [messages, setMessages] = useState<Message[]>([initialMessage]);
   const [input, setInput] = useState('');
@@ -72,13 +197,15 @@ export function ChatPanel({
   const send = async (text: string) => {
     const message = text.trim();
     if (!message || sending) return;
+    const before = profile;
     const userMsg: Message = { id: Date.now(), role: 'user', text: message };
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setSending(true);
     try {
       const res = await sendResumeChat(resumeId, message, profile);
-      const changes = describeChanges(profile, res.profile);
+      const changes = describeChanges(before, res.profile);
+      onProfileChange(res.profile);
       setMessages((prev) => [
         ...prev,
         {
@@ -86,10 +213,12 @@ export function ChatPanel({
           role: 'assistant',
           text: res.reply,
           profile: res.profile,
+          before,
           changes,
+          applied: true,
         },
       ]);
-      onToast('Sugestão pronta. Revise antes de aplicar.', 'ok');
+      onToast('Aplicado ao currículo.', 'ok');
       scrollToBottom();
     } catch (err: unknown) {
       const text = err instanceof Error ? err.message : 'Não consegui editar.';
@@ -104,29 +233,23 @@ export function ChatPanel({
     }
   };
 
-  const applyMessage = (message: Message) => {
-    if (!message.profile) return;
-    onProfileChange(message.profile);
-    setMessages((prev) =>
-      prev.map((m) => (m.id === message.id ? { ...m, applied: true, discarded: false } : m)),
-    );
-    onToast('Sugestão aplicada ao currículo.', 'ok');
-  };
-
-  const discardMessage = (message: Message) => {
+  const undoMessage = (message: Message) => {
+    if (!message.before) return;
+    onProfileChange(message.before);
     setMessages((prev) =>
       prev.map((m) => (m.id === message.id ? { ...m, discarded: true, applied: false } : m)),
     );
-    onToast('Sugestão descartada.', 'info');
+    onToast('Mudança desfeita.', 'info');
   };
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-wash">
-      <div className="shrink-0 border-b border-line bg-white px-6 py-4">
-        <div className="mx-auto flex w-full max-w-2xl items-start justify-between gap-3">
+      <div className="shrink-0 border-b border-line bg-white px-5 py-3">
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-2xs font-semibold uppercase tracking-wide text-muted">
-              Editando com IA
+            <div className="flex items-center gap-2 text-2xs font-semibold uppercase tracking-wide text-muted">
+              <Sparkles className="h-3.5 w-3.5" />
+              Ajustes com IA
             </div>
             <div className="truncate text-sm font-semibold text-ink">{job.title}</div>
             <div className="text-2xs text-muted">na {job.company}</div>
@@ -135,9 +258,7 @@ export function ChatPanel({
             {!!matchScore && matchScore > 0 && (
               <span className="brutal-tag brutal-tag-yellow">{matchScore.toFixed(0)}% match</span>
             )}
-            {atsCoverage != null && (
-              <span className="brutal-tag">{atsCoverage.toFixed(0)}% ATS</span>
-            )}
+            {atsCoverage != null && <span className="brutal-tag">{atsCoverage.toFixed(0)}% ATS</span>}
             <button
               type="button"
               aria-label="Limpar conversa"
@@ -151,17 +272,12 @@ export function ChatPanel({
         </div>
       </div>
 
-      <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto px-6 py-6">
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-          <div className="flex items-center gap-2 text-2xs font-semibold uppercase tracking-wide text-muted">
-            <Sparkles className="h-3.5 w-3.5" />
-            Edição com IA
-          </div>
-
+      <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto px-5 py-5">
+        <div className="flex flex-col gap-4">
           {messages.map((m) => (
             <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                className={`max-w-[92%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                   m.role === 'user'
                     ? 'bg-black text-white'
                     : m.error
@@ -171,50 +287,43 @@ export function ChatPanel({
               >
                 <p>{m.text}</p>
 
-                {m.role === 'assistant' && m.changes && m.changes.length > 0 && !m.applied && !m.discarded && (
-                  <div className="mt-3 border-t border-line pt-3">
-                    <div className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">
-                      Mudanças
-                    </div>
-                    <div className="mb-3 flex flex-wrap gap-1.5">
-                      {m.changes.map((change) => (
-                        <span key={change} className="brutal-tag">
-                          {change}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => applyMessage(m)}
-                        className="brutal-btn-yellow inline-flex items-center gap-1.5 px-3 py-1.5 text-2xs"
-                      >
-                        <Check className="h-3.5 w-3.5" />
-                        Aplicar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => discardMessage(m)}
-                        className="brutal-btn inline-flex items-center gap-1.5 px-3 py-1.5 text-2xs"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                        Descartar
-                      </button>
-                    </div>
+                {m.role === 'assistant' && m.changes && m.changes.length > 0 && !m.discarded && (
+                  <div className="mt-3 flex flex-wrap gap-1.5 border-t border-line pt-3">
+                    {m.changes.map((change) => (
+                      <span key={change} className="brutal-tag">
+                        {change}
+                      </span>
+                    ))}
                   </div>
                 )}
 
-                {m.applied && (
-                  <div className="mt-2 inline-flex items-center gap-1 text-2xs font-semibold text-ok">
-                    <Check className="h-3.5 w-3.5" />
-                    Aplicado ao currículo
+                {m.role === 'assistant' && m.before && m.profile && !m.discarded && (
+                  <DiffBlock before={m.before} after={m.profile} />
+                )}
+
+                {m.applied && !m.discarded && (
+                  <div className="mt-2 flex items-center gap-3">
+                    <span className="inline-flex items-center gap-1 text-2xs font-semibold text-ok">
+                      <Check className="h-3.5 w-3.5" />
+                      Aplicado ao currículo
+                    </span>
+                    {m.before && (
+                      <button
+                        type="button"
+                        onClick={() => undoMessage(m)}
+                        className="inline-flex items-center gap-1 text-2xs font-semibold text-muted underline underline-offset-4 hover:text-black"
+                      >
+                        <Undo2 className="h-3 w-3" />
+                        Desfazer
+                      </button>
+                    )}
                   </div>
                 )}
                 {m.discarded && (
-                  <div className="mt-2 text-2xs font-semibold text-muted">Descartado</div>
+                  <div className="mt-2 text-2xs font-semibold text-muted">Desfeito</div>
                 )}
 
-                {m.role === 'assistant' && !m.applied && !m.discarded && (
+                {m.role === 'assistant' && !m.discarded && (
                   <button
                     type="button"
                     aria-label="Copiar resposta"
@@ -256,8 +365,8 @@ export function ChatPanel({
         </div>
       </div>
 
-      <div className="border-t border-line bg-white px-6 py-4">
-        <div className="mx-auto flex w-full max-w-2xl items-end gap-2">
+      <div className="border-t border-line bg-white px-5 py-4">
+        <div className="flex items-end gap-2">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}

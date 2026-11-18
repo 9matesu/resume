@@ -100,6 +100,7 @@ export interface AdaptedResult {
   captured_chars?: number | null;
   adaptation: {
     id: string;
+    engine?: 'ai' | 'heuristic';
     match_score: number | null;
     applied_keywords?: string[];
     tailored_profile: CandidateProfile;
@@ -287,6 +288,40 @@ export async function adaptText(jobText: string, pageTitle = '', pageUrl = '', s
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || 'A captura não virou currículo.');
+  }
+  return withAbsolutePdf(await res.json());
+}
+
+export interface GrillQuestion {
+  id: string;
+  keyword: string;
+  text: string;
+}
+
+export async function fetchGrillQuestions(job: JobData, missing: string[], limit = 6): Promise<GrillQuestion[]> {
+  try {
+    const res = await fetch(`${API_BASE}/grill`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ job, missing, limit }),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data.questions) ? (data.questions as GrillQuestion[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function adaptGrilled(job: JobData, confirmed: string[]): Promise<AdaptedResult> {
+  const res = await fetch(`${API_BASE}/adapt-grilled`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ job, confirmed }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'A readaptação falhou.');
   }
   return withAbsolutePdf(await res.json());
 }

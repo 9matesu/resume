@@ -101,7 +101,8 @@ class AIProvider(abc.ABC):
 
     @staticmethod
     def _extract_json(text: str) -> dict:
-        """Tolerant JSON extraction: strips code fences, finds first {...}."""
+        """Tolerant JSON extraction: strips code fences, finds the first
+        balanced JSON object even when the model adds prose around it."""
         t = text.strip()
         if t.startswith("```"):
             t = t.split("```", 2)[1]
@@ -111,10 +112,45 @@ class AIProvider(abc.ABC):
         try:
             return json.loads(t)
         except json.JSONDecodeError:
-            start, end = t.find("{"), t.rfind("}")
-            if start != -1 and end > start:
-                return json.loads(t[start:end + 1])
-            raise AIError(f"A IA respondeu em um formato que não entendi: {t[:200]}", transient=True) from None
+            pass
+
+        start = t.find("{")
+        if start == -1:
+            raise AIError(
+                f"A IA respondeu em um formato que não entendi: {t[:200]}",
+                transient=True,
+            ) from None
+
+        # Varre até o fecha-chaves que equilibra a abertura, respeitando
+        # strings e escapes. Assim JSON extra ou prosa ao redor não derruba.
+        depth = 0
+        in_str = False
+        esc = False
+        for i in range(start, len(t)):
+            ch = t[i]
+            if in_str:
+                if esc:
+                    esc = False
+                elif ch == "\\":
+                    esc = True
+                elif ch == '"':
+                    in_str = False
+                continue
+            if ch == '"':
+                in_str = True
+            elif ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    try:
+                        return json.loads(t[start:i + 1])
+                    except json.JSONDecodeError:
+                        break
+        raise AIError(
+            f"A IA respondeu em um formato que não entendi: {t[:200]}",
+            transient=True,
+        ) from None
 
     @staticmethod
     def _content(data: dict) -> str:

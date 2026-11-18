@@ -284,53 +284,118 @@ def _refine_keywords(prov, master_profile: dict, job_data: dict,
     return state
 
 
-def _fallback_state(master_profile: dict, job_data: dict) -> dict:
-    """Estado sem IA: compila o perfil mestre como está, sem inventar nada."""
+def _apply_confirmed(master_profile: dict, confirmed: list[str]) -> tuple[dict, str]:
+    """Entrada do 'grilling': o usuário confirmou competências. Elas viram
+    skills do perfil e uma instrução extra para a IA. Nada é inventado: só
+    entra o que o usuário disse que sabe."""
+    if not confirmed:
+        return master_profile, ""
+    prof = json.loads(json.dumps(master_profile))
+    skills = [str(s) for s in (prof.get("skills") or [])]
+    have = " ".join(skills).lower()
+    added: list[str] = []
+    for raw in confirmed:
+        k = str(raw).strip()
+        if not k or k.lower() in have:
+            continue
+        skills.append(k)
+        have += " " + k.lower()
+        added.append(k)
+    prof["skills"] = skills
+    instr = ""
+    if added:
+        instr = ("O candidato confirmou que possui as seguintes competências: "
+                 + ", ".join(added)
+                 + ". Incorpore-as ao resumo, às habilidades e às descrições "
+                   "de experiência onde fizer sentido, usando a terminologia da vaga.")
+    return prof, instr
+
+
+def _heuristic_adapt(master_profile: dict, job_data: dict) -> dict:
+    """Adaptação determinística sem IA: reordena skills uteis e escreve um
+    resumo alinhado à vaga. Nunca inventa empregadores, datas ou métricas."""
     wanted = list(dict.fromkeys([str(k) for k in (job_data.get("keywords") or [])]
                                 + [str(x) for x in (job_data.get("requirements") or [])]))[:30]
-    missing = prompts.missing_keywords(wanted, master_profile)
-    gap = ("A IA não está configurada ou não respondeu. O currículo foi "
-           "compilado sem adaptação; configure a IA em Ajustes para adaptar.")
-    adapted = {**master_profile, "match_score": 0, "applied_keywords": [],
-               "honest_gaps": [gap]}
+    haystack = prompts._all_text(master_profile).lower()
+    have = [k for k in wanted if k.lower() in haystack]
+    skills = list(dict.fromkeys(have + [str(s) for s in (master_profile.get("skills") or [])]))
+    tailored = {**master_profile, "skills": skills}
+    title = (job_data.get("title") or "").strip()
+    company = (job_data.get("company") or "").strip()
+    base_summary = (master_profile.get("summary") or "").strip()
+    if title:
+        lead = f"Perfil alinhado à vaga de {title}"
+        if company:
+            lead += f" na {company}"
+        tailored["summary"] = (lead + ". " + base_summary).strip()
+    missing = prompts.missing_keywords(wanted, tailored)
+    gap = ("A IA não respondeu nesta captura; o currículo foi adaptado só com "
+           "heurística. Configure a IA em Ajustes para adaptar de verdade.")
     return {
-        "adapted_json": adapted, "tailored": master_profile,
-        "wanted": wanted, "missing": missing, "refined": False,
+        "adapted_json": {**tailored, "match_score": 0, "applied_keywords": have,
+                          "honest_gaps": [gap]},
+        "tailored": tailored,
+        "wanted": wanted,
+        "missing": missing,
+        "refined": False,
         "match_score": 0,
+        "engine": "heuristic",
     }
 
 
-def _run_adapt_pipeline(job_data: dict, captured_chars: int | None = None) -> dict:
+def _run_adapt_pipeline(job_data: dict, captured_chars: int | None = None,
+                        confirmed_keywords: list[str] | None = None) -> dict:
     """Shared pipeline: adapt master profile against job, compile LaTeX, save history."""
     cand = profile_model.get_active()
     if not cand:
         raise HTTPException(status_code=400, detail="Perfil mestre não encontrado. Complete o onboarding primeiro.")
     master_profile = cand["profile"]
+    master_profile, custom_instruction = _apply_confirmed(
+        master_profile, confirmed_keywords or [])
     s = get_settings()
     lang = latex_engine.detect_language(job_data)
     adapted_json = None
+    prov = None
+    engine = "heuristic"
 
     try:
         prov = gateway.get_provider(s)
         system_prompt, user_prompt = prompts.build_adapt_request(
-            master_profile, job_data, lang=lang
+            master_profile, job_data, lang=lang,
+            custom_instruction=custom_instruction,
         )
         adapted_raw = prov.chat(system_prompt, user_prompt, expect_json=True)
         adapted_json = gateway.AIProvider._extract_json(adapted_raw)
+        engine = "ai"
     except HTTPException:
         raise
     except AIError:
-        # Sem chave ou provedor fora: o pipeline ainda compila o perfil mestre.
+        # Sem chave ou provedor fora: ainda adapta heuristicamente.
         adapted_json = None
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"A adaptação quebrou: {e}")
 
     if adapted_json is not None:
         st = _refine_keywords(prov, master_profile, job_data, adapted_json, lang)
+        engine = "ai"
     else:
-        st = _fallback_state(master_profile, job_data)
+        st = _heuristic_adapt(master_profile, job_data)
+        engine = "heuristic"
 
     adapted_json, tailored_profile = st["adapted_json"], st["tailored"]
+
+    # Garante que as competências confirmadas no grilling estejam no perfil final.
+    if confirmed_keywords:
+        skills = [str(x) for x in (tailored_profile.get("skills") or [])]
+        have = " ".join(skills).lower()
+        for raw in confirmed_keywords:
+            k = str(raw).strip()
+            if k and k.lower() not in have:
+                skills.append(k)
+                have += " " + k.lower()
+        tailored_profile = {**tailored_profile, "skills": skills}
+        adapted_json = {**adapted_json, "skills": skills}
+
     wanted, missing, ats_refined = st["wanted"], st["missing"], st["refined"]
     match_score = st["match_score"]
     applied_keywords = [str(k) for k in (adapted_json.get("applied_keywords") or [])][:20]
@@ -365,6 +430,7 @@ def _run_adapt_pipeline(job_data: dict, captured_chars: int | None = None) -> di
         "captured_chars": captured_chars,
         "adaptation": {
             "id": res_rec["id"],
+            "engine": engine,
             "match_score": match_score,
             "applied_keywords": applied_keywords,
             "tailored_profile": tailored_profile,
@@ -413,6 +479,54 @@ def adapt_from_text(payload: TextAdaptPayload):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Não consegui extrair a vaga: {e}")
     return _run_adapt_pipeline(job_data, captured_chars=len(payload.job_text))
+
+
+class GrillPayload(BaseModel):
+    job: dict
+    missing: list[str] = []
+    limit: int = 6
+
+
+def _grill_text(kw: str) -> str:
+    kw = str(kw).strip()
+    if len(kw) <= 46:
+        return f"Você tem experiência com {kw}?"
+    return f"Você atende a este requisito: “{kw[:70].strip()}”?"
+
+
+@router.post("/grill")
+def grill_endpoint(payload: GrillPayload):
+    """Perguntas sim/não do 'grilling': o usuário confirma o que pode entrar
+    no currículo. Vêm das keywords/requisitos que o perfil ainda não cobre."""
+    pool: list[str] = []
+    for k in (payload.missing or []):
+        k = str(k).strip()
+        if k and k not in pool:
+            pool.append(k)
+    if not pool:
+        for k in list(payload.job.get("keywords") or []) + list(payload.job.get("requirements") or []):
+            k = str(k).strip()
+            if k and k not in pool:
+                pool.append(k)
+    limit = max(1, min(10, int(payload.limit or 6)))
+    questions = [
+        {"id": f"q{i + 1}", "keyword": kw, "text": _grill_text(kw)}
+        for i, kw in enumerate(pool[:limit])
+    ]
+    return {"questions": questions}
+
+
+class GrilledPayload(BaseModel):
+    job: dict
+    confirmed: list[str] = []
+
+
+@router.post("/adapt-grilled")
+def adapt_grilled_endpoint(payload: GrilledPayload):
+    """Readapta a vaga depois do grilling. Só entra o que o usuário confirmou."""
+    if not profile_model.get_active():
+        raise HTTPException(status_code=400, detail="Perfil mestre não encontrado. Complete o onboarding primeiro.")
+    return _run_adapt_pipeline(payload.job, confirmed_keywords=payload.confirmed)
 
 
 @router.post("/polish-bullet")

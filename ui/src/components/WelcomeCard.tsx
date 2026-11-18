@@ -8,17 +8,17 @@ const STEPS = [
   {
     icon: Camera,
     title: 'Capture a vaga',
-    text: 'Abra uma vaga no navegador e clique em Capturar. O resuMe lê o painel.',
+    text: 'Abra a vaga no navegador. O resuMe lê o painel e devolve o currículo.',
   },
   {
     icon: FileText,
-    title: 'Revise a adaptação',
-    text: 'Confira o currículo adaptado e ajuste o que quiser antes de enviar.',
+    title: 'Revise',
+    text: 'O currículo aparece na prévia. Ajuste o que quiser antes de baixar.',
   },
   {
     icon: Download,
     title: 'Baixe o PDF',
-    text: 'Exporte o PDF ou abra o Estúdio para editar o LaTeX com prévia ao lado.',
+    text: 'PDF na saída, gerado por LaTeX. Ou abra o Estúdio para editar o código.',
   },
 ];
 

@@ -23,8 +23,8 @@ interface OnboardingWizardProps {
 }
 
 const STEPS = [
-  { n: 1, label: '1. Enviar Currículo Base' },
-  { n: 2, label: '2. Verificar Perfil Mestre' },
+  { n: 1, label: '1. Seu currículo' },
+  { n: 2, label: '2. Seu perfil' },
   { n: 3, label: '3. IA e PDF' },
 ];
 
@@ -259,9 +259,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         <main className="flex-grow overflow-y-auto flex items-center justify-center p-4 md:p-8">
           <div className="w-full max-w-xl">
             <div className="mb-4 font-mono text-11 text-ink leading-relaxed">
-              Importe seu currículo original uma única vez. O resuMe o usará como{' '}
-              <strong className="text-black underline underline-offset-2">fonte absoluta de verdade</strong>{' '}
-              para montar currículos sob medida para qualquer vaga que você navegar.
+              Importe seu currículo uma única vez. O resuMe usa ele como{' '}
+              <strong className="text-black underline underline-offset-2">base</strong>{' '}
+              para montar currículos sob medida para cada vaga.
             </div>
             <div
               role="button"
@@ -283,7 +283,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                 {uploading ? 'Lendo o currículo…' : 'Arraste seu currículo para cá'}
               </h1>
               <p className="font-mono text-xs sm:text-sm text-ink mb-6 max-w-lg mx-auto font-medium">
-                Compativel com{' '}
+                Compatível com{' '}
                 {['PDF', 'DOCX', 'TXT', 'Markdown', 'LaTeX (.tex)'].map((f, i) => (
                   <React.Fragment key={f}>
                     {i > 0 && (i === 4 ? ' ou ' : ', ')}
@@ -300,7 +300,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                   onChange={handleFileInputChange}
                 />
                 <span className="brutal-btn inline-block py-2.5 px-6 text-xs sm:text-sm tracking-wider">
-                  {uploading ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Procurar no Computador'}
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin inline" /> : 'Escolher arquivo'}
                 </span>
               </div>
               {uploadError && (
@@ -328,7 +328,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         <main className="flex-grow overflow-y-auto px-4 py-6">
           <div className="max-w-2xl mx-auto space-y-8">
             <section>
-              <SectionLabel index="01" title="Informacoes Pessoais & Contato" />
+              <SectionLabel index="01" title="Informações pessoais & contato" />
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="field-1" className="text-2xs font-bold uppercase tracking-wider block mb-1">Nome Completo</label>
@@ -361,7 +361,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                   />
                 </div>
                 <div>
-                  <label htmlFor="field-4" className="text-2xs font-bold uppercase tracking-wider block mb-1">Localizacao</label>
+                  <label htmlFor="field-4" className="text-2xs font-bold uppercase tracking-wider block mb-1">Localização</label>
                   <input id="field-4"
                     type="text"
                     value={profile.personal.location}
@@ -394,7 +394,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             </section>
 
             <section>
-              <SectionLabel index="02" title="Resumo Profissional Mestre" />
+              <SectionLabel index="02" title="Resumo profissional" />
               <textarea
                 rows={3}
                 value={profile.summary}
@@ -406,7 +406,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
             <section>
               <div className="flex items-center justify-between mb-3">
-                <SectionLabel index="03" title={`Experiência Profissional (${profile.experience.length})`} />
+                <SectionLabel index="03" title={`Experiência profissional (${profile.experience.length})`} />
                 <button type="button" onClick={handleAddExperience} className="brutal-btn flex items-center gap-1.5 px-3 py-1.5 text-2xs">
                   <Plus className="w-3.5 h-3.5" />
                   Adicionar Cargo
@@ -436,7 +436,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                             updated[idx].title = e.target.value;
                             setProfile({ ...profile, experience: updated });
                           }}
-                          placeholder="Ex: Engenheiro de Software Senior"
+                          placeholder="Ex: Engenheiro de Software Sênior"
                           className="brutal-input"
                         />
                       </div>
@@ -455,7 +455,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         />
                       </div>
                       <div>
-                        <label htmlFor="field-9" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Periodo / Datas</label>
+                        <label htmlFor="field-9" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Período / Datas</label>
                         <input id="field-9"
                           type="text"
                           value={exp.period || ''}
@@ -534,7 +534,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
             <section>
               <div className="flex items-center justify-between mb-3">
-                <SectionLabel index="04" title={`Atividades de Liderança (${(profile.leadership || []).length})`} />
+                <SectionLabel index="04" title={`Atividades de liderança (${(profile.leadership || []).length})`} />
                 <button type="button" onClick={handleAddLeadership} className="brutal-btn flex items-center gap-1.5 px-3 py-1.5 text-2xs">
                   <Plus className="w-3.5 h-3.5" />
                   Adicionar Atividade
@@ -583,7 +583,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                         />
                       </div>
                       <div>
-                        <label htmlFor="field-13" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Periodo / Datas</label>
+                        <label htmlFor="field-13" className="text-2xs font-bold uppercase text-muted-strong block mb-0.5">Período / Datas</label>
                         <input id="field-13"
                           type="text"
                           value={lead.period || ''}
@@ -662,7 +662,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
 
             <section>
               <div className="flex items-center justify-between mb-3">
-                <SectionLabel index="05" title={`Formação Acadêmica (${profile.education.length})`} />
+                <SectionLabel index="05" title={`Formação acadêmica (${profile.education.length})`} />
                 <button type="button" onClick={handleAddEducation} className="brutal-btn flex items-center gap-1.5 px-3 py-1.5 text-2xs">
                   <Plus className="w-3.5 h-3.5" />
                   Adicionar Formação
@@ -743,7 +743,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
             </section>
 
             <section>
-              <SectionLabel index="06" title={`Inventário de Habilidades (${profile.skills.length})`} />
+              <SectionLabel index="06" title={`Habilidades (${profile.skills.length})`} />
               <div className="flex flex-wrap gap-2 mb-3">
                 {profile.skills.map((skill) => (
                   <span key={skill} className="brutal-tag">
@@ -937,9 +937,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
         <main className="flex-grow overflow-y-auto px-4 py-6">
           <div className="max-w-xl mx-auto space-y-6">
             <section>
-              <SectionLabel index="10" title="Provedor de Inteligencia Artificial" />
+              <SectionLabel index="10" title="Provedor de IA" />
               <p className="text-xs text-muted-strong font-mono -mt-1 mb-3">
-                Selecione o modelo que irá analisar as páginas de vaga e adaptar os currículos.
+                Escolha o modelo que vai ler as vagas e ajustar os currículos.
               </p>
 
               <div className="space-y-4">
@@ -955,7 +955,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                   onBaseUrlChange={setAiBaseUrl}
                   keyHint={
                     <span className="text-muted normal-case tracking-normal">
-                      (armazenada apenas no SQLite local)
+                      (guardada só no seu computador)
                     </span>
                   }
                 />
@@ -967,7 +967,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                   className="brutal-btn w-full py-2 text-xs flex items-center justify-center gap-2"
                 >
                   {testingAi && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>{testingAi ? 'Testando conexão...' : 'Testar Conexão com a IA'}</span>
+                  <span>{testingAi ? 'Testando...' : 'Testar IA'}</span>
                 </button>
 
                 {aiTestResult && (
@@ -990,7 +990,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete, 
                 Voltar
               </button>
               <button onClick={handleFinish} className="brutal-btn-yellow flex items-center gap-1.5 px-6 py-2.5 text-xs tracking-wider">
-                Concluir e Iniciar
+                Concluir
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

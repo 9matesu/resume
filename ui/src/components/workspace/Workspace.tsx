@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyRound } from 'lucide-react';
 import type {
   AdaptedResult,
@@ -24,6 +24,7 @@ import { Inspector } from './Inspector';
 import { ChatPanel } from '../studio/ChatPanel';
 import { ToastStack, useToasts } from '../Toast';
 import type { ResumeVersion } from './document';
+import { parseLatexToProfile, escapeLatex } from './latexProfile';
 
 const LatexEditor = lazy(() =>
   import('../studio/LatexEditor').then((m) => ({ default: m.LatexEditor })),
@@ -31,6 +32,10 @@ const LatexEditor = lazy(() =>
 
 const PdfViewer = lazy(() =>
   import('./PdfViewer').then((m) => ({ default: m.PdfViewer })),
+);
+
+const VisualEditor = lazy(() =>
+  import('./VisualEditor').then((m) => ({ default: m.VisualEditor })),
 );
 
 interface WorkspaceProps {
@@ -85,6 +90,43 @@ function newHistoryItem(data: AdaptedResult): HistoryItem {
   };
 }
 
+/** Trecho do .tex onde um campo vive, para não substituir o texto errado. */
+function scopeFor(tex: string, fieldId: string): string {
+  const key = fieldId.split('.')[0];
+  if (key === 'personal') {
+    const a = tex.indexOf('\\begin{center}');
+    const b = tex.indexOf('\\end{center}');
+    if (a >= 0 && b > a) return tex.slice(a, b);
+    return tex;
+  }
+  if (key === 'summary') {
+    const m = /\\section\{[^}]*(?:resumo|summary)[^}]*\}/i.exec(tex);
+    if (!m) return tex;
+    const next = /\\section\{/g;
+    next.lastIndex = m.index + m[0].length;
+    const n = next.exec(tex);
+    return tex.slice(m.index, n ? n.index : tex.length);
+  }
+  const map: Record<string, string> = {
+    experience: 'experi',
+    leadership: 'lideran',
+    education: 'educa',
+    projects: 'projeto',
+    certifications: 'certific',
+    skills: 'habilidade',
+    languages: 'habilidade',
+  };
+  const needle = map[key];
+  if (!needle) return tex;
+  const re = new RegExp(`\\\\section\\{[^}]*${needle}[^}]*\\}`, 'i');
+  const m = re.exec(tex);
+  if (!m) return tex;
+  const next = /\\section\{/g;
+  next.lastIndex = m.index + m[0].length;
+  const n = next.exec(tex);
+  return tex.slice(m.index, n ? n.index : tex.length);
+}
+
 export function Workspace({ initialData, onClose }: WorkspaceProps) {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [current, setCurrent] = useState<AdaptedResult>(initialData);
@@ -93,17 +135,23 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
   );
   const [pdfUrl, setPdfUrl] = useState(absUrl(initialData.adaptation.pdf_url));
   const [rawTex, setRawTex] = useState(initialData.adaptation.tex_code);
-  const [view, setView] = useState<WorkspaceView>('latex');
+  const [view, setView] = useState<WorkspaceView>('pdf');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [capturing, setCapturing] = useState(false);
   const [showAiSetup, setShowAiSetup] = useState(false);
   const [inspectorOpen, setInspectorOpen] = useState(true);
-  const [chatOpen, setChatOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(true);
   const [versions, setVersions] = useState<ResumeVersion[]>([]);
   const [undoStack, setUndoStack] = useState<CandidateProfile[]>([]);
   const [redoStack, setRedoStack] = useState<CandidateProfile[]>([]);
   const skipSave = useRef(true);
   const lastCompiledTex = useRef(initialData.adaptation.tex_code);
+  const fromTexRef = useRef(false);
+  const savedSnapshot = useRef<{ tex: string; profile: CandidateProfile } | null>(null);
+  if (savedSnapshot.current === null) {
+    savedSnapshot.current = { tex: initialData.adaptation.tex_code, profile };
+  }
+  const pdfProfile = useMemo(() => parseLatexToProfile(rawTex, profile), [rawTex, profile]);
   const { items: toasts, push: toast, dismiss } = useToasts();
 
   const loadHistory = async () => {
@@ -194,6 +242,37 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
     applyProfile(next);
   };
 
+  // Clique no PDF: reescreve o trecho no .tex (preserva o resto do arquivo).
+  const editPdfField = (fieldId: string, value: string, previous: string) => {
+    const oldEsc = escapeLatex(previous || '');
+    const newEsc = escapeLatex(value || '');
+    let nextTex = rawTex;
+
+    if (fieldId === 'personal.name') {
+      nextTex = rawTex.replace(
+        /(\\LARGE\s*\\textbf\{)[\s\S]*?(\})/,
+        (_m: string, a: string, b: string) => a + newEsc + b,
+      );
+    } else if (oldEsc) {
+      const scope = scopeFor(rawTex, fieldId);
+      const idx = scope.indexOf(oldEsc);
+      if (idx >= 0) {
+        const abs = rawTex.indexOf(scope) + idx;
+        nextTex = rawTex.slice(0, abs) + newEsc + rawTex.slice(abs + oldEsc.length);
+      }
+    }
+
+    if (nextTex === rawTex) {
+      // não achou o texto exato no .tex: cai no perfil
+      editField(fieldId, value);
+      return;
+    }
+    setRawTex(nextTex);
+    fromTexRef.current = true;
+    setProfile(parseLatexToProfile(nextTex, profile));
+    toast('Campo atualizado no LaTeX.', 'ok');
+  };
+
   const undo = () => {
     const previous = undoStack[undoStack.length - 1];
     if (!previous) return;
@@ -210,11 +289,14 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
     setProfile(next);
   };
 
+  const bustPdf = (url: string) =>
+    `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
+
   const saveProfile = async (profileToSave: CandidateProfile) => {
     setSaveStatus('saving');
     try {
       const res = await saveResumeEdit(current.adaptation.id, { profile: profileToSave });
-      setPdfUrl(res.pdf_url);
+      setPdfUrl(bustPdf(res.pdf_url));
       setRawTex(res.tex);
       lastCompiledTex.current = res.tex;
       setSaveStatus('saved');
@@ -243,6 +325,10 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
       skipSave.current = false;
       return;
     }
+    if (fromTexRef.current) {
+      fromTexRef.current = false;
+      return;
+    }
     setSaveStatus('saving');
     const timer = setTimeout(() => {
       void saveProfile(profile);
@@ -250,6 +336,21 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, current.adaptation.id]);
+
+  // LaTeX → perfil: mantém o visual e o chat coerentes quando o .tex é editado
+  // direto. Não persiste o perfil; quem manda é o .tex.
+  useEffect(() => {
+    if (view !== 'latex') return;
+    const timer = setTimeout(() => {
+      const parsed = parseLatexToProfile(rawTex, profile);
+      if (JSON.stringify(parsed) !== JSON.stringify(profile)) {
+        fromTexRef.current = true;
+        setProfile(parsed);
+      }
+    }, 700);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawTex, view]);
 
   useEffect(() => {
     return onCaptureResult(
@@ -343,7 +444,7 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
 
   const downloadPdf = async () => {
     try {
-      const res = await saveResumeEdit(current.adaptation.id, { profile });
+      const res = await saveResumeEdit(current.adaptation.id, { tex_code: rawTex });
       setPdfUrl(res.pdf_url);
       setRawTex(res.tex);
       const anchor = document.createElement('a');
@@ -364,9 +465,10 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
   const compileLatex = async (silent = false) => {
     try {
       const res = await saveResumeEdit(current.adaptation.id, { tex_code: rawTex });
-      setPdfUrl(res.pdf_url);
+      setPdfUrl(bustPdf(res.pdf_url));
       setRawTex(res.tex);
       lastCompiledTex.current = res.tex;
+      savedSnapshot.current = { tex: res.tex, profile };
       if (!silent) toast('PDF atualizado.', 'ok');
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Não compilei o PDF.';
@@ -390,14 +492,7 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
   };
 
   return (
-    <div
-      className="flex h-dvh w-full flex-col overflow-hidden bg-wash text-ink"
-      style={
-        {
-          '--panel-offset': chatOpen ? '376px' : inspectorOpen ? '336px' : '16px',
-        } as CSSProperties
-      }
-    >
+    <div className="flex h-dvh w-full flex-col overflow-hidden bg-wash text-ink">
       <CommandBar
         title={current.job.title}
         company={current.job.company}
@@ -411,15 +506,9 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
         canUndo={undoStack.length > 0}
         canRedo={redoStack.length > 0}
         inspectorOpen={inspectorOpen}
-        onToggleInspector={() => {
-          setChatOpen(false);
-          setInspectorOpen((open) => !open);
-        }}
+        onToggleInspector={() => setInspectorOpen((open) => !open)}
         chatOpen={chatOpen}
-        onToggleChat={() => {
-          setInspectorOpen(false);
-          setChatOpen((open) => !open);
-        }}
+        onToggleChat={() => setChatOpen((open) => !open)}
         onClose={onClose}
       />
 
@@ -432,7 +521,31 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
           onCapture={() => void capture()}
         />
 
+        {inspectorOpen && (
+          <div className="hidden h-full w-[300px] shrink-0 border-r border-line bg-white lg:block">
+            <Inspector
+              versions={versions}
+              onRestore={restoreVersion}
+              saveStatus={saveStatus}
+            />
+          </div>
+        )}
+
         <main className="relative min-w-0 flex-1 overflow-hidden">
+          {view === 'visual' && (
+            <div className="h-full">
+              <Suspense
+                fallback={
+                  <div className="flex h-full items-center justify-center bg-white text-xs text-muted">
+                    Carregando editor visual…
+                  </div>
+                }
+              >
+                <VisualEditor profile={profile} onChange={applyProfile} />
+              </Suspense>
+            </div>
+          )}
+
           {view === 'latex' && (
             <div className="h-full p-4">
               <Suspense
@@ -463,8 +576,9 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
               >
                 <PdfViewer
                   pdfUrl={pdfUrl}
-                  profile={profile}
-                  onEditField={editField}
+                  profile={pdfProfile}
+                  onEditField={editPdfField}
+                  onOpenCode={() => setView('latex')}
                 />
               </Suspense>
             </div>
@@ -510,7 +624,7 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
           )}
         </main>
 
-        {chatOpen ? (
+        {chatOpen && (
           <div className="hidden h-full w-[360px] shrink-0 border-l border-line bg-white lg:block">
             <ChatPanel
               resumeId={current.adaptation.id}
@@ -522,14 +636,7 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
               atsCoverage={current.adaptation.ats?.coverage ?? null}
             />
           </div>
-        ) : inspectorOpen ? (
-          <Inspector
-            versions={versions}
-            onRestore={restoreVersion}
-            saveStatus={saveStatus}
-            onClose={onClose}
-          />
-        ) : null}
+        )}
       </div>
 
       <ToastStack items={toasts} onDismiss={dismiss} />

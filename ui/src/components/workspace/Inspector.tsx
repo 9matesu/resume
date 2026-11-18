@@ -1,16 +1,15 @@
-import { Clock, FileCode } from 'lucide-react';
+import { Clock } from 'lucide-react';
 import type { ResumeVersion } from './document';
 
 interface InspectorProps {
   versions: ResumeVersion[];
   onRestore: (version: ResumeVersion) => void;
   saveStatus: 'saved' | 'saving' | 'error';
-  onClose: () => void;
 }
 
-export function Inspector({ versions, onRestore, saveStatus, onClose }: InspectorProps) {
+export function Inspector({ versions, onRestore, saveStatus }: InspectorProps) {
   return (
-    <aside className="hidden h-full w-[300px] shrink-0 flex-col border-l border-line bg-white lg:flex">
+    <aside className="flex h-full w-full flex-col bg-white">
       <div className="flex h-11 shrink-0 items-center justify-between border-b border-line px-3">
         <span className="text-2xs font-semibold uppercase tracking-wide text-muted">Inspetor</span>
         <span
@@ -28,17 +27,6 @@ export function Inspector({ versions, onRestore, saveStatus, onClose }: Inspecto
 
       <div className="min-h-0 flex-1 overflow-y-auto p-4">
         <div className="flex flex-col gap-6">
-          <div className="flex items-start gap-2">
-            <FileCode className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
-            <div>
-              <div className="text-xs font-semibold text-ink">Editor LaTeX</div>
-              <p className="mt-1 text-2xs leading-relaxed text-muted">
-                Edite o código à esquerda como se estivesse dentro do arquivo.
-                O PDF ao lado atualiza sozinho depois de você parar de digitar.
-              </p>
-            </div>
-          </div>
-
           <div>
             <div className="mb-2 text-2xs font-semibold uppercase tracking-wide text-muted">
               Atalhos
@@ -87,13 +75,6 @@ export function Inspector({ versions, onRestore, saveStatus, onClose }: Inspecto
               A fonte do PDF fica em <strong>Ajustes → Documento</strong>. Padrão:
               Latin Modern.
             </p>
-            <button
-              type="button"
-              onClick={onClose}
-              className="brutal-btn mt-2 w-full px-3 py-2 text-2xs"
-            >
-              Fechar workspace
-            </button>
           </div>
         </div>
       </div>

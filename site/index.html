@@ -3,212 +3,305 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>resuMe: currículo adaptado a cada vaga</title>
-<meta name="description" content="Extensão Chrome gratuita. Captura a vaga na tela, adapta seu currículo e gera o PDF. Roda no seu PC, sem conta, sem servidor." />
-<meta property="og:title" content="resuMe: currículo adaptado a cada vaga" />
-<meta property="og:description" content="Captura a vaga no navegador e devolve um PDF pronto para o recrutador. Grátis, sem conta, roda offline." />
+<title>resuMe — o currículo para cada vaga</title>
+<meta name="description" content="Extensão Chrome. Lê a vaga aberta no navegador, ajusta seu currículo e gera o PDF. Sem conta." />
+<meta property="og:title" content="resuMe — o currículo para cada vaga" />
+<meta property="og:description" content="Lê a vaga no navegador e devolve o PDF. Sem conta." />
 <meta property="og:image" content="https://matesu.me/resume/assets/demo-poster.jpg" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://matesu.me/resume/" />
 <link rel="canonical" href="https://matesu.me/resume/" />
 <link rel="icon" type="image/svg+xml" href="logo.svg" />
 <link rel="preload" href="fonts/switzer.woff2" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="fonts/instrument-regular.woff2" as="font" type="font/woff2" crossorigin />
 <link rel="stylesheet" href="landing.css" />
 <script src="landing.js" defer></script>
 </head>
 <body>
 
+<div class="intro" id="intro" aria-hidden="true">
+  <div class="intro-mark">resu<span class="me">Me</span></div>
+  <div class="intro-bar"><span></span></div>
+</div>
+
 <header class="site">
   <div class="wrap bar">
-    <a class="wordmark" href="./">resu<span class="me">Me</span></a>
+    <a class="wordmark" href="#top">resu<span class="me">Me</span></a>
     <nav class="top">
-      <a href="#como" class="hide-sm">Como funciona</a>
-      <a href="#faq" class="hide-sm">Perguntas</a>
-      <a href="https://github.com/9matesu/resume" class="hide-sm">GitHub</a>
-      <a class="btn sm" href="https://github.com/9matesu/resume/releases/download/v1.2.0/resuMe-1.2.0-setup.exe" download>Instalar</a>
+      <a href="#como-usar" class="hide-sm">como usar</a>
+      <a href="#baixar">baixar</a>
+      <a href="#faq" class="hide-sm">perguntas</a>
+      <a href="https://github.com/9matesu/resume" class="hide-sm">github</a>
+      <a class="nav-cta" href="https://github.com/9matesu/resume/releases/download/v1.2.0/resuMe-1.2.0-setup.exe" download data-exe="https://github.com/9matesu/resume/releases/download/v1.2.0/resuMe-1.2.0-setup.exe">instalar</a>
     </nav>
   </div>
+  <div class="progress" aria-hidden="true"></div>
 </header>
 
+<nav class="dots" id="dots" aria-label="Seções"></nav>
+<div class="pager" id="pager" aria-hidden="true"><span id="pg-num">01</span><span class="pager-sep">/</span><span id="pg-total">08</span></div>
+
 <main>
-  <!-- Hero -->
-  <section class="hero page">
-    <div class="hero-bg" aria-hidden="true">
-      <video muted autoplay loop playsinline disablepictureinpicture preload="metadata"
-             poster="assets/demo-poster.jpg" src="assets/demo.mp4"></video>
-    </div>
-    <div class="hero-scrim" aria-hidden="true"></div>
-    <div class="wrap">
-      <span class="free-badge">Grátis · sem conta · roda no seu PC</span>
-      <h1>Um currículo para cada vaga.</h1>
-      <p class="sub">
-        O resuMe lê a vaga aberta no seu navegador e reescreve seu currículo para ela.
-        Você revisa cada linha e baixa o PDF.
-      </p>
-      <div class="cta-row">
-        <a class="btn install-cta" href="https://github.com/9matesu/resume/releases/download/v1.2.0/resuMe-1.2.0-setup.exe" download data-exe="https://github.com/9matesu/resume/releases/download/v1.2.0/resuMe-1.2.0-setup.exe">
-          Instalar grátis
-        </a>
-        <a class="btn ghost" href="https://github.com/9matesu/resume/releases/download/v1.2.0/resuMe-1.2.0-windows-x64.zip">zip portável</a>
-        <a class="btn ghost" href="#como">Ver como funciona</a>
-      </div>
-      <p class="meta cta-note">Windows 10/11 · Google Chrome · leva uns 5 minutos</p>
-    </div>
-    <span class="scroll-hint">Role</span>
-  </section>
 
-  <!-- Como funciona -->
-  <section id="como" class="content page">
-    <div class="wrap">
-      <p class="kicker">Três passos</p>
-      <h2>Como funciona</h2>
-      <div class="steps-big">
-        <div class="st reveal">
-          <div>
-            <h3>Instale</h3>
-            <p>Baixe e abra o <code>resuMe-setup.exe</code>. Ele registra o motor,
-            abre o Chrome na página certa e copia o caminho da extensão.
-            Sem terminal, sem permissão de administrador.</p>
+  <section class="hero snap" id="top" data-section data-theme="dark" data-header="dark">
+    <div class="wrap hero-inner">
+      <h1 class="hero-title" id="hero-rot" aria-live="polite">Seu currículo já devia estar pronto.</h1>
+      <div class="hero-bottom">
+        <p class="hero-sub">Você abre a vaga. O resuMe ajusta o currículo. Você baixa o PDF.</p>
+        <div class="hero-side">
+          <div class="cta-row">
+            <a class="btn btn-accent install-cta" href="https://github.com/9matesu/resume/releases/download/v1.2.0/resuMe-1.2.0-setup.exe" download data-exe="https://github.com/9matesu/resume/releases/download/v1.2.0/resuMe-1.2.0-setup.exe">instalar</a>
+            <a class="btn btn-ghost" href="#como-usar">como usar</a>
           </div>
+          <p class="hero-meta">Windows 10/11 · Chrome · versão 1.2</p>
         </div>
-        <div class="st reveal">
-          <div>
-            <h3>Envie seu currículo uma vez</h3>
-            <p>PDF, Word ou texto. O resuMe monta seu perfil mestre a partir dele.
-            O que não estiver no perfil, a IA não escreve no currículo.</p>
-          </div>
+      </div>
+    </div>
+    <div class="hero-ghost" aria-hidden="true">resuMe</div>
+    <div class="ticker" aria-hidden="true">
+      <div class="ticker-track">
+        <div class="ticker-group">
+          <span>“cinco anos de experiência” em tecnologia de dois</span>
+          <span>“currículo_final_v7_AGORA_VAI.pdf”</span>
+          <span>o formulário pede “o que já está no PDF”</span>
+          <span>possui experiência em liderança de equipe?</span>
+          <span>“o mercado agradece”</span>
         </div>
-        <div class="st reveal">
-          <div>
-            <h3>Capture e baixe</h3>
-            <p>Na página da vaga, clique em Capturar e aponte para o texto.
-            Confira a prévia e salve o PDF. <code>Esc</code> cancela a qualquer momento.</p>
-          </div>
+        <div class="ticker-group">
+          <span>“cinco anos de experiência” em tecnologia de dois</span>
+          <span>“currículo_final_v7_AGORA_VAI.pdf”</span>
+          <span>o formulário pede “o que já está no PDF”</span>
+          <span>possui experiência em liderança de equipe?</span>
+          <span>“o mercado agradece”</span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Recursos -->
-  <section class="content page">
+  <section class="manifesto snap" id="manifesto" data-section data-theme="light" data-header="light">
     <div class="wrap">
-      <p class="kicker">O que importa</p>
-      <h2>Feito para quem se candidata todo dia</h2>
-      <ul class="cards">
-        <li class="card reveal"><h3>Prévia editável</h3><p>O texto capturado aparece antes de qualquer envio. Corrija ali, na hora.</p></li>
-        <li class="card reveal"><h3>Match honesto</h3><p>A IA reorganiza os fatos do seu perfil com a ênfase da vaga. Empresa, data e habilidade inventadas, não entram.</p></li>
-        <li class="card reveal"><h3>PDF legível por ATS</h3><p>Layout limpo, gerado em LaTeX, que os sistemas de recrutamento conseguem ler.</p></li>
-        <li class="card reveal"><h3>Roda offline</h3><p>O motor mora no seu computador. Sem fila de servidor e sem internet obrigatória para compilar.</p></li>
-        <li class="card reveal"><h3>Sua IA</h3><p>OpenAI, Gemini, Anthropic, Groq ou Ollama local. Você decide quem recebe os dados.</p></li>
-        <li class="card reveal"><h3>Qualquer site de vaga</h3><p>LinkedIn, Gupy, Indeed, Greenhouse. Onde há texto, há captura.</p></li>
-      </ul>
-    </div>
-  </section>
-
-  <!-- Promessa -->
-  <section id="promessa" class="content page">
-    <div class="wrap">
-      <p class="kicker">Sem jargão</p>
-      <h2>O que o resuMe não promete</h2>
-      <p class="serif pull reveal" style="font-size:clamp(22px,3.4vw,32px);max-width:28ch;margin-bottom:24px">
-        Sem promessa de sinergia nem de alinhamento estratégico. Só o seu currículo, ajustado à vaga.
+      <p class="manifesto-big" data-write>
+        O mercado chama de “<span class="mark"><span class="swap"><span class="swap-a">processo seletivo</span><span class="swap-b" aria-hidden="true">trabalho de graça</span></span></span>”
+        o trabalho de reescrever o mesmo currículo para cada vaga.
+        O resuMe faz essa parte. Você fica com o resto do dia.
       </p>
-      <ul class="cards" style="grid-template-columns:1fr 1fr">
-        <li class="card reveal"><h3>Não cria experiência</h3><p>Se você não fez, não aparece. O programa lista o que falta em vez de preencher.</p></li>
-        <li class="card reveal"><h3>Não garante entrevista</h3><p>Um currículo ajustado passa do filtro com mais frequência. O resto é com o recrutador.</p></li>
-      </ul>
-      <!-- TODO-PROVA-SOCIAL: publicar depoimentos reais com nome e empresa quando existirem; nada inventado -->
+      <div class="manifesto-cols">
+        <div class="manifesto-card reveal">
+          <h3>A vaga</h3>
+          <p>Pede “cinco anos de experiência” numa tecnologia de dois anos. Todo mundo finge que não viu.</p>
+        </div>
+        <div class="manifesto-card reveal">
+          <h3>O formulário</h3>
+          <p>Pede para “redigitar o que já está no PDF”. Depois diz que faltou informação.</p>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- Privacidade -->
-  <section id="privacidade" class="content page">
+  <section class="manifesto manifesto--dark snap" id="ze-ruela" data-section data-theme="dark" data-header="dark">
     <div class="wrap">
-      <p class="kicker">Privacidade</p>
-      <h2>Seus dados ficam com você</h2>
-      <figure class="shot-frame reveal" style="max-width:720px;margin-inline:auto">
-        <img src="assets/demo-poster.jpg" width="1280" height="720" alt="Currículo adaptado com 87% de compatibilidade" loading="lazy" />
-      </figure>
-      <ul class="cards" style="grid-template-columns:1fr 1fr;margin-top:28px">
-        <li class="card reveal"><h3>Sem servidores nossos</h3><p>Porque não existem. A extensão conversa apenas com o motor no seu PC.</p></li>
-        <li class="card reveal"><h3>Com Ollama, zero dados trafegam</h3><p>Seu currículo não sai da máquina em nenhum momento.</p></li>
-      </ul>
-      <p class="meta" style="margin-top:16px">Detalhes em <a href="https://github.com/9matesu/resume/blob/master/docs/PRIVACIDADE.md">PRIVACIDADE.md</a>.</p>
+      <p class="statement" data-write>
+        O “<span class="swap"><span class="swap-a">empreendedor digital</span><span class="swap-b" aria-hidden="true">zé ruela</span></span>” também faz uma ferramenta dessas.
+        <span class="mark">Cobra pra você ganhar “a parte dele”.</span>
+        Pelo amor de Deus.
+      </p>
+      <p class="statement-sub" data-write>
+        Hoje em dia tá fácil fazer ferramenta, não tá? Ganhe quem souber
+        “<span class="mark"><span class="swap"><span class="swap-a">dar balão no capitalismo.</span><span class="swap-b" aria-hidden="true">cobrar por isso.</span></span></span>”
+        O resuMe é sem conta e com código aberto.
+      </p>
+      <div class="manifesto-cols manifesto-cols--dark">
+        <div class="manifesto-card reveal">
+          <h3><span class="swap"><span class="swap-a">empreendedor digital</span><span class="swap-b" aria-hidden="true">zé ruela</span></span></h3>
+          <p>Faz a ferramenta, cobra a parte dele e chama de “ecossistema”.</p>
+        </div>
+        <div class="manifesto-card reveal">
+          <h3>resuMe</h3>
+          <p>Faz a ferramenta, entrega o PDF e não manda “boleto”.</p>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- FAQ -->
-  <section id="faq" class="content page">
+  <section class="workflow snap" id="como-usar" data-section data-theme="light" data-header="light">
     <div class="wrap">
-      <p class="kicker">Perguntas frequentes</p>
-      <h2>Dúvidas</h2>
-      <details class="reveal">
-        <summary>É grátis de verdade?</summary>
-        <p>Sim. O <a href="https://github.com/9matesu/resume">código é aberto</a>.
-        O único custo possível é a API de IA que você usar. Com Ollama local, fica em zero.</p>
-      </details>
-      <details class="reveal">
-        <summary>Preciso criar conta ou colocar cartão?</summary>
-        <p>Não. Abra o instalador, deixe trabalhar e cole o caminho no Chrome.</p>
-      </details>
-      <details class="reveal">
-        <summary>Meus dados vão para algum servidor?</summary>
-        <p>Vão apenas para o provedor de IA que você configurar. Sem telemetria, sem analytics.</p>
-      </details>
-      <details class="reveal">
-        <summary>Funciona no macOS ou Linux?</summary>
-        <p>Por enquanto, Windows 10/11. O motor é Python, o caminho para outros sistemas está aberto.</p>
-      </details>
-      <details class="reveal">
-        <summary>O Windows alertou que o arquivo não é confiável. É seguro?</summary>
-        <p>O SmartScreen dispara em qualquer executável sem certificado pago. O código é aberto para auditoria.
-        Veja o <a href="https://github.com/9matesu/resume/blob/master/docs/INSTALACAO.md">guia de instalação</a>.</p>
-      </details>
-      <details class="reveal">
-        <summary>A IA pode inventar experiência no meu currículo?</summary>
-        <p>Não. Ela reorganiza os fatos do seu perfil com a ênfase da vaga.
-        Você revisa cada linha no Estúdio antes de enviar.</p>
-      </details>
+      <div class="section-head reveal">
+        <h2 data-split>Como usar</h2>
+        <p>Quatro passos. Uns cinco minutos. “Só isso?” Quase.</p>
+      </div>
+
+      <div class="flow">
+        <ol class="flow-list">
+          <li class="flow-step reveal">
+            <span class="flow-num">01</span>
+            <div>
+              <h3>Instale</h3>
+              <p>Baixe e abra o <code>resuMe-1.2.0-setup.exe</code>. Ele registra o motor,
+                abre o Chrome na página certa e copia o caminho da extensão.
+                Sem terminal, sem pedir administrador.</p>
+            </div>
+          </li>
+          <li class="flow-step reveal">
+            <span class="flow-num">02</span>
+            <div>
+              <h3>Mande seu currículo uma vez</h3>
+              <p>PDF, Word ou texto. O resuMe monta seu perfil mestre.
+                Depois, cada vaga é só uma captura.</p>
+            </div>
+          </li>
+          <li class="flow-step reveal">
+            <span class="flow-num">03</span>
+            <div>
+              <h3>Capture a vaga</h3>
+              <p>Abra a vaga em qualquer site, clique em capturar e aponte para o texto.
+                <code>Esc</code> cancela a qualquer momento.</p>
+            </div>
+          </li>
+          <li class="flow-step reveal">
+            <span class="flow-num">04</span>
+            <div>
+              <h3>Revise e baixe</h3>
+              <p>A prévia aparece antes do PDF. Ajuste o que quiser
+                e baixe o arquivo pronto.</p>
+            </div>
+          </li>
+        </ol>
+
+        <aside class="tips reveal">
+          <h3>Dicas</h3>
+          <ul>
+            <li>Mande o currículo mais completo que tiver.</li>
+            <li>Capture o painel da vaga, não “a página inteira”.</li>
+            <li>Use Ollama local se quiser que nada saia da máquina.</li>
+            <li>Funciona em qualquer site: abriu, puxou.</li>
+            <li>Funciona em LinkedIn, Gupy, Indeed e Greenhouse.</li>
+            <li>Se o Windows reclamar, é o “SmartScreen”.</li>
+          </ul>
+        </aside>
+      </div>
     </div>
   </section>
 
-  <!-- CTA final -->
-  <section id="baixar" class="content page final">
+  <section class="download snap" id="baixar" data-section data-theme="light" data-header="light">
+    <div class="wrap download-grid">
+      <div class="download-copy">
+        <h2 class="reveal" data-split>Baixar o resuMe</h2>
+        <p>Instalador para Windows. Sem conta, sem servidor. Pode instalar?</p>
+        <div class="cta-row reveal">
+          <a class="btn install-cta" href="https://github.com/9matesu/resume/releases/download/v1.2.0/resuMe-1.2.0-setup.exe" download data-exe="https://github.com/9matesu/resume/releases/download/v1.2.0/resuMe-1.2.0-setup.exe">instalar</a>
+          <a class="btn btn-ghost" href="https://github.com/9matesu/resume/releases">ver releases</a>
+        </div>
+      </div>
+
+      <dl class="package reveal">
+        <div class="pkg-row"><dt>Versão</dt><dd>1.2</dd></div>
+        <div class="pkg-row"><dt>Instalador</dt><dd>resuMe-1.2.0-setup.exe</dd></div>
+        <div class="pkg-row"><dt>Requisitos</dt><dd>Windows 10/11 · Google Chrome</dd></div>
+        <div class="pkg-row"><dt>Instalação</dt><dd>cerca de 5 minutos</dd></div>
+        <div class="pkg-row"><dt>Entrada</dt><dd>PDF, Word ou texto</dd></div>
+        <div class="pkg-row"><dt>Saída</dt><dd>PDF em LaTeX, legível por ATS</dd></div>
+        <div class="pkg-row"><dt>Motor</dt><dd>local; IA por API</dd></div>
+        <div class="pkg-row"><dt>IA</dt><dd>OpenAI, Gemini, Anthropic, Groq ou Ollama local · chaves gratuitas</dd></div>
+        <div class="pkg-row"><dt>Conta</dt><dd>nenhuma</dd></div>
+        <div class="pkg-row"><dt>Código</dt><dd>aberto</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="privacy snap" id="privacidade" data-section data-theme="dark" data-header="dark">
     <div class="wrap">
-      <h2>Instale e capture a primeira vaga hoje.</h2>
-      <a class="btn install-cta" style="font-size:15px;padding:18px 32px" href="https://github.com/9matesu/resume/releases/download/v1.2.0/resuMe-1.2.0-setup.exe" download data-exe="https://github.com/9matesu/resume/releases/download/v1.2.0/resuMe-1.2.0-setup.exe">
-        Instalar resuMe 1.2, grátis
-      </a>
-      <p class="meta" style="margin-top:14px">Windows · Chrome · sem conta</p>
+      <div class="section-head reveal">
+        <h2 data-split>Seus dados ficam com você?</h2>
+      </div>
+      <div class="manifesto-cols manifesto-cols--dark">
+        <div class="manifesto-card reveal">
+          <h3>Sem servidores nossos</h3>
+          <p>A extensão fala com o motor no seu PC e com o provedor de IA que você escolher. Sem servidor nosso no meio.</p>
+        </div>
+        <div class="manifesto-card reveal">
+          <h3>Com “Ollama” local</h3>
+          <p>Com Ollama local, nada sai da máquina. Com uma API, só vai o que você mandar.</p>
+        </div>
+      </div>
+      <p class="privacy-link reveal"><a href="https://github.com/9matesu/resume/blob/master/docs/PRIVACIDADE.md">PRIVACIDADE.md</a></p>
+    </div>
+  </section>
+
+  <section class="faq-section snap" id="faq" data-section data-theme="light" data-header="light">
+    <div class="wrap faq-grid">
+      <div class="section-head reveal">
+        <h2 data-split>Dúvidas</h2>
+      </div>
+      <div class="faq">
+        <details class="reveal">
+          <summary>Quanto custa?</summary>
+          <p>O código é aberto. Você escolhe o provedor de IA; uma chave gratuita resolve,
+            porque o resuMe usa pouca API.</p>
+        </details>
+        <details class="reveal">
+          <summary>Preciso criar conta?</summary>
+          <p>Não. Abra o instalador, deixe trabalhar e cole o caminho no Chrome.</p>
+        </details>
+        <details class="reveal">
+          <summary>Meus dados vão para algum servidor?</summary>
+          <p>Para o provedor de IA que você escolher. Sem “telemetria”, sem “analytics”.</p>
+        </details>
+        <details class="reveal">
+          <summary>Funciona no Mac ou Linux?</summary>
+          <p>Por enquanto, Windows 10/11. O motor é Python; outros sistemas ficam para depois.</p>
+        </details>
+        <details class="reveal">
+          <summary>O Windows bloqueou o arquivo. E agora?</summary>
+          <p>É o “SmartScreen”, que dispara em qualquer executável sem certificado pago. O código é aberto.
+            Veja o <a href="https://github.com/9matesu/resume/blob/master/docs/INSTALACAO.md">guia de instalação</a>.</p>
+        </details>
+        <details class="reveal">
+          <summary>O que a IA faz com meu currículo?</summary>
+          <p>Reescreve o que já está no seu perfil com a ênfase da vaga.
+            Você vê cada linha no “Estúdio” antes de baixar.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="final snap" id="final" data-section data-theme="light" data-header="light">
+    <div class="wrap">
+      <p class="final-big" data-write>Pare de reescrever currículo.</p>
+      <div class="cta-row reveal">
+        <a class="btn btn-dark install-cta" href="https://github.com/9matesu/resume/releases/download/v1.2.0/resuMe-1.2.0-setup.exe" download data-exe="https://github.com/9matesu/resume/releases/download/v1.2.0/resuMe-1.2.0-setup.exe">instalar</a>
+        <a class="btn btn-ghost-dark" href="https://github.com/9matesu/resume/releases">ver releases</a>
+      </div>
     </div>
   </section>
 
   <dialog id="howto">
-    <h3>Quase lá</h3>
+    <h3>Falta um passo</h3>
     <ol>
-      <li>O download do <code>resuMe-setup.exe</code> já começou. Abra e clique <strong>Instalar</strong>.</li>
+      <li>O download do <code>resuMe-1.2.0-setup.exe</code> já começou. Abra e clique <strong>Instalar</strong>.</li>
       <li>O instalador abre o Chrome na página de extensões com o caminho copiado. Ative <strong>Modo do desenvolvedor</strong>, clique <strong>Carregar sem compactação</strong> e cole (Ctrl+V).</li>
     </ol>
-    <p class="meta" style="margin-top:12px">O motor inicia sozinho com o Chrome. Zero terminal.</p>
-    <form method="dialog"><button class="btn sm" style="margin-top:16px">Fechar</button></form>
+    <p class="dialog-meta">O motor inicia sozinho com o Chrome. Zero terminal.</p>
+    <form method="dialog"><button class="btn sm" type="submit">fechar</button></form>
   </dialog>
 </main>
 
-<footer class="site">
-  <div class="wrap" style="display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap">
-    <span>resuMe © 2026</span>
-    <span>
-      <a href="https://github.com/9matesu/resume">GitHub</a> ·
-      <a href="https://github.com/9matesu/resume/releases">Releases</a> ·
-      <a href="https://github.com/9matesu/resume/blob/master/docs/EXTENSAO.md">Docs</a>
-    </span>
+<footer class="site-footer" data-theme="dark">
+  <div class="wrap footer-inner">
+    <span class="footer-mark">resu<span class="me">Me</span></span>
+    <div class="footer-meta">
+      <span>© 2026 · feito por matesu</span>
+      <span>O mercado não vai mudar. O currículo, sim.</span>
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/9matesu/resume">github</a>
+      <a href="https://github.com/9matesu/resume/releases">releases</a>
+      <a href="https://github.com/9matesu/resume/blob/master/docs/EXTENSAO.md">docs</a>
+    </div>
   </div>
 </footer>
 
 <div class="sticky-bar">
-  <span class="wordmark" style="font-size:13px">resu<span class="me">Me</span></span>
-  <a class="btn sm install-cta" href="https://github.com/9matesu/resume/releases/download/v1.2.0/resuMe-1.2.0-setup.exe" download data-exe="https://github.com/9matesu/resume/releases/download/v1.2.0/resuMe-1.2.0-setup.exe">Instalar</a>
+  <span class="wordmark">resu<span class="me">Me</span></span>
+  <a class="btn btn-accent sm install-cta" href="https://github.com/9matesu/resume/releases/download/v1.2.0/resuMe-1.2.0-setup.exe" download data-exe="https://github.com/9matesu/resume/releases/download/v1.2.0/resuMe-1.2.0-setup.exe">instalar</a>
 </div>
 
 </body>

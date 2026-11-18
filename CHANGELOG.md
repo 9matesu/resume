@@ -2,6 +2,22 @@
 
 ## [unreleased]
 
+### Correções
+
+- Clique no PDF: o overlay do PDF.js passou a usar as coordenadas do viewport
+  (não o espaço PDF). Clicar no nome, cargo ou experiência abre o campo certo.
+- Chat com IA aplica a mudança na hora: o perfil atualizado entra no currículo,
+  o autosave recompila o PDF e a prévia recarrega com cache-buster. Cada
+  resposta tem "Desfazer".
+- Adaptação mira 100% de ATS: o prompt cobre palavras-chave adjacentes e
+  reescreve experiências com a terminologia da vaga, sem inventar empregador,
+  data, diploma, certificação ou métrica.
+- "Grilling" depois da captura: perguntas sim/não sobre o que o usuário sabe.
+  Cada "sim" vira competência confirmada e readapta o currículo
+  (`/api/grill`, `/api/adapt-grilled`).
+- Sem IA, a captura ainda adapta heuristicamente (reordena skills e alinha o
+  resumo à vaga) e avisa no painel.
+
 ### Estúdio e design
 
 - Novo workspace único com navegação compacta, editor LaTeX e inspetor.
