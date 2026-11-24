@@ -15,7 +15,7 @@ import {
 } from '../../services/api';
 import { isExtension, onCaptureResult, startAutoCapture } from '../../chrome';
 import { cvFilename } from '../../cvFilename';
-import { CommandBar, type WorkspaceView } from './CommandBar';
+import { CommandBar } from './CommandBar';
 import { HistorySheet } from './HistorySheet';
 import { StructurePanel } from './StructurePanel';
 import { MetricsPanel } from './MetricsPanel';
@@ -34,15 +34,7 @@ import {
   type TargetProfile,
 } from './layout';
 
-const LatexEditor = lazy(() =>
-  import('../studio/LatexEditor').then((m) => ({ default: m.LatexEditor })),
-);
-
 const PdfViewer = lazy(() => import('./PdfViewer').then((m) => ({ default: m.PdfViewer })));
-
-const VisualEditor = lazy(() =>
-  import('./VisualEditor').then((m) => ({ default: m.VisualEditor })),
-);
 
 interface WorkspaceProps {
   initialData: AdaptedResult;
@@ -144,7 +136,6 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
   const [profile, setProfile] = useState<CandidateProfile>(initialData.adaptation.tailored_profile);
   const [pdfUrl, setPdfUrl] = useState(absUrl(initialData.adaptation.pdf_url));
   const [rawTex, setRawTex] = useState(initialData.adaptation.tex_code);
-  const [view, setView] = useState<WorkspaceView>('document');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
@@ -159,6 +150,8 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
   const [target, setTarget] = useState<TargetProfile>(() =>
     readTarget(initialData.adaptation.id),
   );
+  /** Pedido para abrir um campo no PDF, vindo da folha Estrutura. */
+  const [focusRequest, setFocusRequest] = useState<{ fieldId: string; seq: number } | null>(null);
 
   const skipSave = useRef(true);
   const lastCompiledTex = useRef(initialData.adaptation.tex_code);
@@ -348,21 +341,6 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile]);
 
-  // .tex editado à mão: o texto manda. Perfil é reconstruído e salvo junto para
-  // as métricas e o chat não ficarem olhando para uma versão antiga.
-  useEffect(() => {
-    if (view !== 'latex') return;
-    if (rawTex === lastCompiledTex.current) return;
-    const timer = window.setTimeout(() => {
-      const parsed = parseLatexToProfile(rawTex, profile);
-      fromTexRef.current = true;
-      setProfile(parsed);
-      queueSave({ tex_code: rawTex, profile: parsed }, 0);
-    }, 1200);
-    return () => window.clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rawTex, view]);
-
   // Clique no PDF: reescreve o trecho no .tex (preserva o resto do arquivo).
   const editPdfField = (fieldId: string, value: string, previous: string) => {
     const oldEsc = escapeLatex(previous || '');
@@ -549,25 +527,6 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
     }
   };
 
-  const saveLatexNow = async () => {
-    const parsed = parseLatexToProfile(rawTex, profile);
-    fromTexRef.current = true;
-    setProfile(parsed);
-    await saveResumeEdit(idRef.current, { tex_code: rawTex, profile: parsed })
-      .then((res) => {
-        setPdfUrl(bustPdf(res.pdf_url));
-        setRawTex(res.tex);
-        lastCompiledTex.current = res.tex;
-        setSaveStatus('saved');
-        setSavedAt(Date.now());
-        toast('PDF atualizado.', 'ok');
-      })
-      .catch((err: unknown) => {
-        setSaveStatus('error');
-        toast(err instanceof Error ? err.message : 'Não compilei o PDF.', 'error');
-      });
-  };
-
   const restoreVersion = (version: ResumeVersion) => {
     applyProfile(version.profile);
     toast('Versão restaurada.', 'ok');
@@ -602,17 +561,18 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
     setRightSheet((prev) => (prev === sheet ? null : sheet));
   };
 
+  /** Abre no PDF o primeiro campo da seção escolhida na folha Estrutura. */
   const editSection = (type: ResumeSectionType) => {
+    const fieldId =
+      type === 'summary'
+        ? 'summary'
+        : type === 'skills'
+          ? 'skills.0'
+          : type === 'certifications'
+            ? 'certifications.0'
+            : `${type}.0.title`;
     setLeftSheet(null);
-    setView('fields');
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        const el = document.getElementById(`section-${type}`);
-        el?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-        const input = el?.querySelector<HTMLInputElement>('input, textarea');
-        input?.focus({ preventScroll: true });
-      });
-    });
+    setFocusRequest({ fieldId, seq: Date.now() });
   };
 
   // Atalhos: ⌘K abre o chat, Esc fecha folha, ⌘Z/⇧⌘Z desfaz, ⌘S baixa.
@@ -666,8 +626,6 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
         company={current.job.company}
         saveStatus={saveStatus}
         savedAgo={savedAgo}
-        view={view}
-        onViewChange={setView}
         onDownload={() => void downloadPdf()}
         onUndo={undo}
         onRedo={redo}
@@ -685,56 +643,23 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
       />
 
       <main className="relative min-w-0 flex-1 overflow-hidden">
-        {view === 'document' && (
-          <div className="h-full overflow-hidden">
-            <Suspense
-              fallback={
-                <div className="flex h-full items-center justify-center text-xs text-muted">
-                  Abrindo o documento…
-                </div>
-              }
-            >
-              <PdfViewer
-                pdfUrl={pdfUrl}
-                profile={pdfProfile}
-                onEditField={editPdfField}
-                onOpenCode={() => setView('latex')}
-                onPages={setPages}
-              />
-            </Suspense>
-          </div>
-        )}
-
-        {view === 'latex' && (
-          <div className="h-full p-2">
-            <Suspense
-              fallback={
-                <div className="flex h-full items-center justify-center text-xs text-muted">
-                  Carregando editor…
-                </div>
-              }
-            >
-              <LatexEditor
-                value={rawTex}
-                onChange={setRawTex}
-                onSave={() => void saveLatexNow()}
-                errorMessage={saveStatus === 'error' ? 'Não salvou. Tente de novo.' : undefined}
-              />
-            </Suspense>
-          </div>
-        )}
-
-        {view === 'fields' && (
+        <div className="h-full overflow-hidden">
           <Suspense
             fallback={
               <div className="flex h-full items-center justify-center text-xs text-muted">
-                Carregando campos…
+                Abrindo o documento…
               </div>
             }
           >
-            <VisualEditor profile={profile} onChange={applyProfile} />
+            <PdfViewer
+              pdfUrl={pdfUrl}
+              profile={pdfProfile}
+              onEditField={editPdfField}
+              onPages={setPages}
+              focusRequest={focusRequest}
+            />
           </Suspense>
-        )}
+        </div>
 
         {showAiSetup && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/95 p-6">

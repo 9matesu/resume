@@ -28,9 +28,10 @@ desfazer, métricas com explicação e "Seu alvo" em três perguntas.
 
 ### W-01 editar no documento
 
-O candidato clica numa linha do PDF e edita o texto no lugar. Enter aplica, Esc
-cancela. O autosave recompila e o PDF recarrega sem sair da página. Cobre o
-campo personalizado que o `pdf.js` consegue mapear para o perfil.
+O candidato clica em qualquer palavra do PDF e edita o texto no lugar. Enter
+aplica, Esc cancela. O autosave recompila e o PDF recarrega sem sair da página.
+Cada palavra é ligada a um campo; nenhuma fica inerte. O `.tex` é escrito
+direto, sem aba de código visível.
 
 - Código: `ui/src/components/workspace/PdfViewer.tsx`, `Workspace.tsx`
 - Critério: clique abre o campo certo; salvar muda o `.tex` e o PDF na mesma URL.
@@ -94,15 +95,15 @@ objetivo é medir a experiência, não o candidato.
 - **Por que importa**: se o usuário demora para achar onde clicar, a edição no
   lugar falhou mesmo com o recurso implementado.
 
-### M-02 taxa de edição no documento
+### M-02 cobertura de palavras clicáveis
 
-- **Pergunta**: das edições feitas, quantas passam pelo PDF em vez das abas
-  TeX/Campos?
-- **Fórmula**: `cliques_em_ws_hit / (cliques_em_ws_hit + trocas_para_latex + trocas_para_campos)`.
-- **Alvo**: ≥ 60% dos usuários que editam usam o documento ao menos uma vez.
-- **Instrumentação**: contadores por `view` no `CommandBar.onViewChange` e no
-  `PdfViewer.openField`, agregados por sessão.
-- **Por que importa**: mostra se o documento maximizado virou o caminho principal.
+- **Pergunta**: quantas palavras do PDF têm área de edição?
+- **Fórmula**: `palavras_com_data_field / palavras_renderizadas`.
+- **Alvo**: 100% das palavras visíveis, em 1280×800 e 390×844.
+- **Instrumentação**: contagem de `.ws-hit[data-field]` contra tokens gerados no
+  `PdfViewer`, no E2E `toda palavra do PDF é clicável`.
+- **Por que importa**: com uma única superfície de edição, palavra inerte é
+  palavra que o usuário não consegue mudar sem sair da tela.
 
 ### M-03 cliques por mudança concluída
 

@@ -10,15 +10,11 @@ import {
   X,
 } from 'lucide-react';
 
-export type WorkspaceView = 'document' | 'latex' | 'fields';
-
 interface CommandBarProps {
   title: string;
   company: string;
   saveStatus: 'saved' | 'saving' | 'error';
   savedAgo: string;
-  view: WorkspaceView;
-  onViewChange: (view: WorkspaceView) => void;
   onDownload: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -34,12 +30,6 @@ interface CommandBarProps {
   onToggleChat: () => void;
   onClose: () => void;
 }
-
-const VIEWS: { id: WorkspaceView; label: string; short: string }[] = [
-  { id: 'document', label: 'Documento', short: 'Doc' },
-  { id: 'latex', label: 'LaTeX', short: 'TeX' },
-  { id: 'fields', label: 'Campos', short: 'Campos' },
-];
 
 const tone = (value: number | null) => {
   if (value == null) return 'muted';
@@ -57,8 +47,6 @@ export function CommandBar({
   company,
   saveStatus,
   savedAgo,
-  view,
-  onViewChange,
   onDownload,
   onUndo,
   onRedo,
@@ -151,24 +139,6 @@ export function CommandBar({
         >
           <Redo2 className="h-3.5 w-3.5" />
         </button>
-      </div>
-
-      <div className="ws-tabs shrink-0" role="tablist" aria-label="Modo de edição">
-        {VIEWS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            role="tab"
-            aria-selected={view === item.id}
-            onClick={() => onViewChange(item.id)}
-            className="ws-tab"
-            data-active={view === item.id ? 'true' : 'false'}
-            title={item.label}
-          >
-            <span className="hidden md:inline">{item.label}</span>
-            <span className="md:hidden">{item.short}</span>
-          </button>
-        ))}
       </div>
 
       <div className="flex shrink-0 items-center gap-1">

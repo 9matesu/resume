@@ -5,6 +5,7 @@ per batch item: output/resumes/<batch>/<company-slug>/resume.{tex,pdf}.
 """
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -23,6 +24,26 @@ class LatexError(Exception):
     def __init__(self, message: str, transient: bool = False):
         super().__init__(message)
         self.transient = transient
+
+
+def hidden_process_kwargs() -> dict:
+    """Opções de subprocess para não abrir janela de console no Windows.
+
+    O backend roda escondido (pythonw via native host), mas o compilador filho
+    herda o console e o Windows abre uma janela cmd/conhost para o pdflatex do
+    MiKTeX. Cada autosave gera até quatro processos, o que enche a tela. Usamos
+    CREATE_NO_WINDOW junto com STARTUPINFO/SW_HIDE: o segundo cobre o caso em
+    que o MiKTeX delega a um cmd.exe interno. Em outros sistemas, nada muda.
+    """
+    kwargs: dict = {}
+    if os.name == "nt":
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        startup = subprocess.STARTUPINFO()
+        startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startup.wShowWindow = subprocess.SW_HIDE
+        kwargs["creationflags"] = flags
+        kwargs["startupinfo"] = startup
+    return kwargs
 
 
 def list_templates() -> list[str]:
@@ -274,7 +295,8 @@ def compile_pdf(tex_source: str, workdir: Path, candidate_name: str | None = Non
                 if comp_type == "tectonic":
                     proc = subprocess.run(
                         [comp_path, "-X", "compile", str(tex_path), "--outdir", str(tmp_path)],
-                        capture_output=True, text=True, timeout=300
+                        capture_output=True, text=True, timeout=300,
+                        **hidden_process_kwargs()
                     )
                     if proc.returncode != 0:
                         log_tail = proc.stdout[-1500:] if proc.stdout else (proc.stderr or "Compilation error")
@@ -286,6 +308,7 @@ def compile_pdf(tex_source: str, workdir: Path, candidate_name: str | None = Non
                              "-output-directory", str(tmp_path), str(tex_path)],
                             capture_output=True, text=True, timeout=180,
                             cwd=str(tmp_path),
+                            **hidden_process_kwargs()
                         )
                         if proc.returncode != 0:
                             log_tail = _extract_errors(proc.stdout) or proc.stdout[-1500:]

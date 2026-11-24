@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as pdfjs from 'pdfjs-dist';
 import workerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-import { Check, Minus, Plus, SquareArrowOutUpRight } from 'lucide-react';
+import { Check, Minus, Plus } from 'lucide-react';
 import type { CandidateProfile } from '../../services/api';
 
 pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
@@ -16,8 +16,9 @@ interface PdfViewerProps {
   pdfUrl: string;
   profile: CandidateProfile;
   onEditField: (fieldId: string, value: string, previous: string) => void;
-  onOpenCode?: () => void;
   onPages?: (pages: number) => void;
+  /** Pedido externo (folha Estrutura) para abrir um campo específico. */
+  focusRequest?: { fieldId: string; seq: number } | null;
 }
 
 interface RawItem {
@@ -37,9 +38,51 @@ interface Line {
   fontSize: number;
 }
 
+/** Uma palavra do PDF, com sua área clicável e o campo que edita. */
+interface Token {
+  key: string;
+  text: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  fieldId: string;
+  label: string;
+}
+
 interface PageBox {
   width: number;
   height: number;
+}
+
+/** Cabeçalhos de seção do template → primeiro campo editável daquela seção. */
+const SECTION_FIELD: Record<string, string> = {
+  resumo: 'summary',
+  'resumo profissional': 'summary',
+  summary: 'summary',
+  experiência: 'experience.0.title',
+  'experiência profissional': 'experience.0.title',
+  experience: 'experience.0.title',
+  liderança: 'leadership.0.title',
+  'atividades de liderança': 'leadership.0.title',
+  leadership: 'leadership.0.title',
+  formação: 'education.0.institution',
+  'formação acadêmica': 'education.0.institution',
+  education: 'education.0.institution',
+  projetos: 'projects.0.name',
+  projects: 'projects.0.name',
+  habilidades: 'skills.0',
+  'habilidades técnicas': 'skills.0',
+  skills: 'skills.0',
+  certificações: 'certifications.0',
+  certifications: 'certifications.0',
+  idiomas: 'languages.0.name',
+  languages: 'languages.0.name',
+};
+
+function sectionField(text: string): string | undefined {
+  const key = normalize(text).replace(/[:.]/g, '').trim();
+  return SECTION_FIELD[key];
 }
 
 interface Editing {
@@ -172,6 +215,37 @@ function bestField(chunk: string, fields: Field[]): Field | undefined {
   return bestScore >= 0.55 ? best : undefined;
 }
 
+/**
+ * Divide um item de texto em palavras com áreas próprias. Cada palavra herda o
+ * campo do item inteiro: editar qualquer uma abre o campo completo, não só o
+ * fragmento clicado.
+ */
+function tokenize(item: RawItem, fields: Field[]): Token[] {
+  const field = fields.find((f) => f.id === item.fieldId);
+  const label = field?.label || sectionField(item.str) || 'Texto do currículo';
+  const words = (item.str || '').trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+  const totalChars = words.reduce((sum, w) => sum + w.length, 0) || 1;
+  const gap = item.fontSize * 0.28;
+  const usable = Math.max(item.width - gap * (words.length - 1), 1);
+  let cursor = item.left;
+  return words.map((word, index) => {
+    const width = Math.max(3, (word.length / totalChars) * usable);
+    const token: Token = {
+      key: `${item.left.toFixed(1)}-${item.top.toFixed(1)}-${index}`,
+      text: word,
+      left: cursor,
+      top: item.top,
+      width,
+      height: item.fontSize,
+      fieldId: item.fieldId || sectionField(item.str) || '',
+      label,
+    };
+    cursor += width + gap;
+    return token;
+  });
+}
+
 /** Agrupa itens de texto que estão na mesma linha visual. */
 function groupLines(items: RawItem[]): Line[] {
   const lines: Line[] = [];
@@ -206,11 +280,17 @@ function groupLines(items: RawItem[]): Line[] {
 /**
  * Documento editável por cima do PDF.
  *
- * O PDF é a verdade visual: cada linha vira uma área clicável. O clique abre o
- * campo no lugar, e a edição volta para o .tex pelo Workspace. Nada de modal,
- * nada de formulário paralelo.
+ * O PDF é a verdade visual: cada palavra vira uma área clicável. O clique abre
+ * o campo no lugar, e a edição volta para o .tex pelo Workspace. Nada de modal,
+ * nada de formulário paralelo, nada de código LaTeX na tela.
  */
-export function PdfViewer({ pdfUrl, profile, onEditField, onOpenCode, onPages }: PdfViewerProps) {
+export function PdfViewer({
+  pdfUrl,
+  profile,
+  onEditField,
+  onPages,
+  focusRequest,
+}: PdfViewerProps) {
   const stageRef = useRef<HTMLDivElement>(null);
   const docRef = useRef<pdfjs.PDFDocumentProxy | null>(null);
   const tokenRef = useRef(0);
@@ -228,7 +308,7 @@ export function PdfViewer({ pdfUrl, profile, onEditField, onOpenCode, onPages }:
   const [error, setError] = useState('');
   const [scale, setScale] = useState(1);
   const [baseSizes, setBaseSizes] = useState<PageBox[]>([]);
-  const [itemsByPage, setItemsByPage] = useState<Record<number, RawItem[]>>({});
+  const [tokensByPage, setTokensByPage] = useState<Record<number, Token[]>>({});
   const [editing, setEditing] = useState<Editing | null>(null);
   const [hovered, setHovered] = useState<{ page: number; fieldId: string } | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
@@ -242,7 +322,7 @@ export function PdfViewer({ pdfUrl, profile, onEditField, onOpenCode, onPages }:
     setLoading(true);
     setError('');
     setEditing(null);
-    setItemsByPage({});
+    setTokensByPage({});
 
     const load = async () => {
       try {
@@ -299,7 +379,7 @@ export function PdfViewer({ pdfUrl, profile, onEditField, onOpenCode, onPages }:
     const fields = buildFields(profile);
 
     const draw = async () => {
-      const next: Record<number, RawItem[]> = {};
+      const next: Record<number, Token[]> = {};
       for (let i = 1; i <= baseSizes.length; i++) {
         if (tokenRef.current !== token) return;
         const page = await pdf.getPage(i);
@@ -344,20 +424,31 @@ export function PdfViewer({ pdfUrl, profile, onEditField, onOpenCode, onPages }:
           }
         }
 
+        // Um campo por linha, propagado para cada palavra. Quando a linha não
+        // casa com nenhum valor do perfil, tenta o cabeçalho de seção e, por
+        // fim, herda o campo da linha anterior (bullets quebrados em várias
+        // linhas continuam editáveis).
+        let previousField = '';
+        const pageTokens: Token[] = [];
         for (const line of lines) {
           const withField = line.items.find((it) => it.fieldId);
-          if (withField) {
-            line.items.forEach((it) => { if (!it.fieldId) it.fieldId = withField.fieldId; });
-          } else {
-            const field = bestField(line.str, fields);
-            if (field) line.items.forEach((it) => { if (!it.fieldId) it.fieldId = field.id; });
+          let resolved = withField?.fieldId;
+          if (!resolved) resolved = sectionField(line.str);
+          if (!resolved) resolved = bestField(line.str, fields)?.id;
+          if (!resolved) resolved = previousField;
+          if (resolved) previousField = resolved;
+          line.items.forEach((it) => {
+            if (!it.fieldId && resolved) it.fieldId = resolved;
+          });
+          for (const item of line.items) {
+            pageTokens.push(...tokenize(item, fields));
           }
         }
 
-        next[i] = raw;
+        next[i] = pageTokens;
       }
       if (tokenRef.current !== token) return;
-      setItemsByPage(next);
+      setTokensByPage(next);
       setLoading(false);
     };
     void draw().catch((err) => {
@@ -369,25 +460,54 @@ export function PdfViewer({ pdfUrl, profile, onEditField, onOpenCode, onPages }:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baseSizes, scale, pdfUrl]);
 
-  const openField = useCallback(
-    (page: number, item: RawItem) => {
-      if (!item.fieldId) return;
-      const field = fieldMap.find((f) => f.id === item.fieldId);
-      if (!field) return;
+  const openFieldAt = useCallback(
+    (fieldId: string, page: number, left: number, top: number, fontSize: number, width = 0) => {
+      const field = fieldMap.find((f) => f.id === fieldId);
+      if (!field) return false;
       setEditing({
         page,
         fieldId: field.id,
         label: field.label,
         previous: field.value,
         value: field.value,
-        left: item.left,
-        top: item.top,
-        width: Math.max(item.width, 160),
-        fontSize: item.fontSize,
+        left,
+        top,
+        width: Math.max(width, 180),
+        fontSize: Math.max(fontSize, 11),
       });
+      return true;
     },
     [fieldMap],
   );
+
+  const openToken = useCallback(
+    (page: number, token: Token) => {
+      if (!token.fieldId) return;
+      openFieldAt(token.fieldId, page, token.left, token.top, token.height, token.width);
+    },
+    [openFieldAt],
+  );
+
+  // Pedido da folha Estrutura: abre o campo no PDF e rola até a palavra.
+  useEffect(() => {
+    if (!focusRequest) return;
+    let found = false;
+    for (const [pageKey, tokens] of Object.entries(tokensByPage)) {
+      const token = tokens.find((t) => t.fieldId === focusRequest.fieldId);
+      if (!token) continue;
+      const page = Number(pageKey);
+      openFieldAt(focusRequest.fieldId, page, token.left, token.top, token.height, token.width);
+      const host = stageRef.current?.querySelector(`[data-page-host="${page}"]`);
+      host?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      found = true;
+      break;
+    }
+    if (!found) {
+      // Campo ainda sem palavra renderizada: abre na primeira página.
+      openFieldAt(focusRequest.fieldId, 1, 40, 60, 12);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusRequest?.seq]);
 
   const commit = useCallback(() => {
     if (!editing) return;
@@ -445,7 +565,7 @@ export function PdfViewer({ pdfUrl, profile, onEditField, onOpenCode, onPages }:
             const page = index + 1;
             const width = Math.floor(size.width * scale);
             const height = Math.floor(size.height * scale);
-            const items = itemsByPage[page] || [];
+            const tokens = tokensByPage[page] || [];
             return (
               <div
                 key={page}
@@ -455,51 +575,32 @@ export function PdfViewer({ pdfUrl, profile, onEditField, onOpenCode, onPages }:
               >
                 <div data-page-host={page} />
                 <div className="absolute inset-0">
-                  {items.map((item, itemIndex) =>
-                    item.fieldId ? (
-                      <button
-                        key={itemIndex}
-                        type="button"
-                        onClick={() => openField(page, item)}
-                        onMouseEnter={() => setHovered({ page, fieldId: item.fieldId as string })}
-                        onMouseLeave={() => setHovered(null)}
-                        onFocus={() => setHovered({ page, fieldId: item.fieldId as string })}
-                        onBlur={() => setHovered(null)}
-                        aria-label={`Editar: ${
-                          fieldMap.find((f) => f.id === item.fieldId)?.label || 'campo'
-                        }`}
-                        data-field={item.fieldId}
-                        data-active={editing?.fieldId === item.fieldId ? 'true' : 'false'}
-                        className={`ws-hit ${
-                          flash === item.fieldId ? 'ws-flash' : ''
-                        }`}
-                        style={{
-                          left: item.left,
-                          top: item.top,
-                          width: Math.max(8, item.width),
-                          height: Math.max(8, item.fontSize),
-                          fontSize: item.fontSize,
-                          lineHeight: 1,
-                        }}
-                      >
-                        {item.str}
-                      </button>
-                    ) : (
-                      <span
-                        key={itemIndex}
-                        className="pointer-events-none absolute whitespace-pre"
-                        style={{
-                          left: item.left,
-                          top: item.top,
-                          fontSize: item.fontSize,
-                          lineHeight: 1,
-                          color: 'transparent',
-                        }}
-                      >
-                        {item.str}
-                      </span>
-                    ),
-                  )}
+                  {tokens.map((token) => (
+                    <button
+                      key={token.key}
+                      type="button"
+                      onClick={() => openToken(page, token)}
+                      onMouseEnter={() => setHovered({ page, fieldId: token.fieldId })}
+                      onMouseLeave={() => setHovered(null)}
+                      onFocus={() => setHovered({ page, fieldId: token.fieldId })}
+                      onBlur={() => setHovered(null)}
+                      aria-label={`Editar: ${token.label}`}
+                      data-field={token.fieldId || undefined}
+                      data-active={editing?.fieldId === token.fieldId ? 'true' : 'false'}
+                      title={token.label}
+                      className={`ws-hit ${flash === token.fieldId ? 'ws-flash' : ''}`}
+                      style={{
+                        left: token.left,
+                        top: token.top,
+                        width: Math.max(4, token.width),
+                        height: Math.max(8, token.height),
+                        fontSize: Math.max(8, token.height),
+                        lineHeight: 1,
+                      }}
+                    >
+                      {token.text}
+                    </button>
+                  ))}
 
                   {editing && editing.page === page && (
                     <textarea
@@ -562,7 +663,7 @@ export function PdfViewer({ pdfUrl, profile, onEditField, onOpenCode, onPages }:
               Clique para editar: <strong className="text-ink">{hoveredLabel}</strong>
             </span>
           ) : (
-            <span>Clique em qualquer linha para editar no lugar.</span>
+            <span>Clique em qualquer palavra para editar no lugar.</span>
           )}
         </div>
       )}
@@ -595,17 +696,6 @@ export function PdfViewer({ pdfUrl, profile, onEditField, onOpenCode, onPages }:
           </button>
           {pageCount > 1 && (
             <span className="border-l border-line pl-2 text-2xs text-muted">{pageCount} páginas</span>
-          )}
-          {onOpenCode && (
-            <button
-              type="button"
-              onClick={onOpenCode}
-              title="Ver o código LaTeX"
-              aria-label="Ver o código LaTeX"
-              className="ws-icon-btn h-6 w-6"
-            >
-              <SquareArrowOutUpRight className="h-3.5 w-3.5" />
-            </button>
           )}
         </div>
       )}

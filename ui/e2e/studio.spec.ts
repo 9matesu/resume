@@ -1,4 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { test, expect, type Page } from '@playwright/test';
+
+const PDF_FIXTURE = readFileSync(
+  fileURLToPath(new URL('./fixtures/resume-fixture.pdf', import.meta.url)),
+);
 
 const ADAPTED = {
   job: {
@@ -55,7 +61,7 @@ async function mockStudio(page: Page) {
     return route.fulfill({ json: currentDetail });
   });
   await page.route('**/api/resumes/res1/pdf*', (r) => r.fulfill({
-    status: 200, contentType: 'application/pdf', body: '%PDF-1.4 fake',
+    status: 200, contentType: 'application/pdf', body: PDF_FIXTURE,
   }));
   await page.goto('/studio.html');
 }
@@ -63,10 +69,12 @@ async function mockStudio(page: Page) {
 test.describe('studio workspace', () => {
   test('abre com documento em destaque, uma linha de barra e sem overflow', async ({ page }) => {
     await mockStudio(page);
-    await expect(page.getByRole('tab', { name: /Documento/ })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('tab', { name: /Documento/ })).toHaveAttribute('aria-selected', 'true');
-    await expect(page.getByTestId('pdf-stage')).toBeVisible();
+    await expect(page.getByTestId('pdf-stage')).toBeVisible({ timeout: 10_000 });
     await expect(page.getByRole('button', { name: 'Baixar PDF' })).toBeVisible();
+    // Nada de código LaTeX ou formulário paralelo na tela.
+    await expect(page.getByTestId('latex-editor')).toHaveCount(0);
+    await expect(page.locator('[data-section]')).toHaveCount(0);
+    await expect(page.getByRole('tab')).toHaveCount(0);
 
     const barHeight = await page.locator('.ws-bar').evaluate((el) => el.getBoundingClientRect().height);
     expect(barHeight).toBeLessThanOrEqual(49);
@@ -78,13 +86,14 @@ test.describe('studio workspace', () => {
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
     expect(overflow).toBeLessThanOrEqual(1);
+    await expect(page.locator('.ws-hit').first()).toBeVisible({ timeout: 15_000 });
     await page.screenshot({ path: 'e2e/screenshots/studio-loaded.png' });
   });
 
   test('390px: nada vaza e "Mais" abre candidaturas/estrutura/métricas', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await mockStudio(page);
-    await expect(page.getByRole('tab', { name: 'Doc' })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByTestId('pdf-stage')).toBeVisible({ timeout: 10_000 });
 
     await page.getByRole('button', { name: 'Mais ações' }).click();
     await expect(page.getByRole('menuitem', { name: 'Candidaturas' })).toBeVisible();
@@ -167,7 +176,7 @@ test.describe('studio workspace', () => {
     }, ADAPTED);
     await page.route('**/api/resumes/res1', (r) => r.fulfill({ json: ADAPTED }));
     await page.route('**/api/resumes/res1/pdf*', (r) => r.fulfill({
-      status: 200, contentType: 'application/pdf', body: '%PDF-1.4 fake',
+      status: 200, contentType: 'application/pdf', body: PDF_FIXTURE,
     }));
     await page.route('**/api/resumes/res1/chat', (r) => r.fulfill({
       json: { reply: 'Resumo ajustado.', profile: revised },
@@ -192,16 +201,42 @@ test.describe('studio workspace', () => {
     await expect(chat.getByText('Desfeito')).toBeVisible();
   });
 
-  test('tabs Documento/TeX/Campos trocam de view', async ({ page }) => {
+  test('toda palavra do PDF é clicável e edita o LaTeX', async ({ page }) => {
     await mockStudio(page);
-    await page.getByRole('tab', { name: 'TeX' }).click();
-    await expect(page.getByTestId('latex-editor')).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('.cm-lineNumbers')).toBeVisible();
+    const stage = page.getByTestId('pdf-stage');
+    await expect(stage).toBeVisible({ timeout: 10_000 });
 
-    await page.getByRole('tab', { name: 'Campos' }).click();
-    await expect(page.locator('[data-section="summary"]')).toBeVisible({ timeout: 10_000 });
-    await page.getByRole('tab', { name: 'Doc' }).click();
-    await expect(page.getByTestId('pdf-stage')).toBeVisible();
+    // Cada palavra renderizada virou um alvo de clique com campo associado.
+    const hits = page.locator('.ws-hit');
+    await expect(hits.first()).toBeVisible({ timeout: 15_000 });
+    const count = await hits.count();
+    expect(count).toBeGreaterThan(5);
+    const fields = await hits.evaluateAll((els) =>
+      els.map((el) => el.getAttribute('data-field')),
+    );
+    expect(fields.every((f) => !!f)).toBe(true);
+
+    // Clique numa palavra da seção Resumo abre a textarea no lugar.
+    const summaryWord = page.locator('.ws-hit[data-field="summary"]').first();
+    await expect(summaryWord).toBeVisible();
+    await summaryWord.click();
+    const editor = page.getByTestId('pdf-inline-input');
+    await expect(editor).toBeVisible();
+    await expect(editor).toHaveValue('Profissional de segurança com foco em Linux e redes.');
+
+    // Enter aplica e o PUT recebe o tex_code com o valor editado.
+    const puts: string[] = [];
+    page.on('request', (req) => {
+      if (req.url().endsWith('/api/resumes/res1') && req.method() === 'PUT') {
+        puts.push(req.postData() || '');
+      }
+    });
+    await editor.fill('Resumo novo para a vaga.');
+    await editor.press('Enter');
+    await expect(editor).toHaveCount(0);
+    // A edição vai direto para o .tex: o PUT traz tex_code e profile com o valor.
+    await expect.poll(() => puts.length, { timeout: 15_000 }).toBeGreaterThan(0);
+    expect(puts.some((p) => p.includes('Resumo novo para a vaga.'))).toBe(true);
   });
 
   test('empty studio explica o próximo passo', async ({ page }) => {

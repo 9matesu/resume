@@ -165,17 +165,19 @@ Atores: candidato, workspace React, PDF.js.
 Pré-condições: adaptação aberta no Estúdio com pdf_url e tex_code.
 
 Fluxo principal:
-1. Workspace abre na aba Documento, com a barra única de 48 px e sem painéis laterais fixos.
-2. PdfViewer renderiza cada página e mapeia linhas de texto para campos do perfil.
-3. Candidato clica numa linha: uma textarea abre no lugar do texto, com o valor atual.
-4. Enter ou blur aplica; Esc cancela. O campo mapeado é reescrito no trecho certo do .tex.
-5. Workspace salva perfil e tex, backend recompila e a página recarrega com cache-buster.
-6. HUD inferior mostra o nome do campo e o atalho; o flash confirma o ponto editado.
+1. Workspace abre direto no documento, com a barra única de 48 px e sem painéis laterais fixos.
+2. PdfViewer renderiza cada página e divide o texto em palavras; cada palavra vira uma área clicável ligada a um campo.
+3. Cabeçalhos de seção e palavras sem match exato herdam o campo da linha ou da seção: nenhuma palavra fica inerte.
+4. Candidato clica em qualquer palavra: uma textarea abre no lugar, com o valor do campo inteiro.
+5. Enter ou blur aplica; Esc cancela. O campo é reescrito no trecho certo do .tex (nada de código LaTeX visível).
+6. Workspace salva perfil e tex, backend recompila e a página recarrega com cache-buster.
+7. HUD inferior mostra o nome do campo e o atalho; o flash confirma o ponto editado.
 
 Fluxos alternativos e exceções:
-- Linha sem campo correspondente: clique não abre editor; a página segue legível.
+- Palavra sem campo: herda o campo da linha anterior; se ainda assim não houver, abre o primeiro campo da seção.
 - Texto com escape LaTeX: o valor é escapado antes de entrar no .tex.
 - Falha de compile: status muda para "Não salvou" e o PDF anterior permanece.
+- Compilador MiKTeX: roda sem janela de console (CREATE_NO_WINDOW + SW_HIDE), sem spam na tela.
 
 Pós-condições: mesmo resume_id com tex_code e PDF atualizados; versão nova na lista.
 
