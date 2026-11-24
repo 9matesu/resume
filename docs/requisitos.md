@@ -20,6 +20,10 @@ Compilação LaTeX com Tectonic ou pdflatex.
 | RF-10 | Configura provedor IA, modelo, chave por provedor e URL base. Testa a chave antes de salvar e guarda chaves por provedor. | backend/app/services/ai/gateway.py:336 | Trocar ai_provider em /api/settings e salvar api_key com provider_for_key mantém chaves separadas por provedor no catálogo. |
 | RF-11 | Inicia motor e Chrome com perfil isolado por script leve sem pip install nem build. Reusa o motor se a porta já responde. | Abrir-resuMe.ps1:1 | Duplo clique abre chrome com --load-extension e GET http://127.0.0.1:8322/api/health retorna ok sem instalar dependências. |
 | RF-12 | Cobre painel e Estúdio com testes Playwright e screenshots por cenário. Valida nome do PDF, layout 400px e ausência de overflow. | ui/e2e/sidepanel.spec.ts:37 | npx playwright test passa e gera e2e/screenshots/sidepanel-capture.png, studio-loaded.png e studio-mobile.png. |
+| RF-13 | Abre o workspace com o documento maximizado e uma barra única de 48 px. Candidaturas/Estrutura e Métricas/Chat ficam em folhas sobrepostas, sem reflow do PDF. | ui/src/components/workspace/CommandBar.tsx, Workspace.tsx | Em 1280×800 a barra mede ≤ 49 px; em 390×844 não há overflow e o menu "Mais" abre as folhas. |
+| RF-14 | Permite editar clicando no texto do PDF, com textarea no lugar, Enter para aplicar e Esc para cancelar. O autosave recompila e recarrega a página. | ui/src/components/workspace/PdfViewer.tsx | Clique numa linha mapeada abre o campo; salvar atualiza tex_code e pdf_url no mesmo registro. |
+| RF-15 | Reordena seções e itens por arrastar (HTML5 DnD) e por setas, e oculta seções com o olho. A ordem e visibilidade são respeitadas pelo template LaTeX. | ui/src/components/workspace/StructurePanel.tsx, layout.ts, backend/app/templates/editorial/resume.tex.j2 | profile.layout.sections persistido; render_tex com visible false omite a seção do PDF. |
+| RF-16 | Mostra métricas com fonte e explicação e recalcula a cobertura ATS no backend a cada salvamento. Palavras faltantes têm resposta de um clique e o chat recebe "Seu alvo" como contexto. | ui/src/components/workspace/MetricsPanel.tsx, backend/app/api/routes.py:_ats_snapshot | PUT /api/resumes/{id} retorna ats recomputado; clicar "tenho" adiciona a skill e reduz a lista de faltantes. |
 
 ## Requisitos não funcionais
 
@@ -46,3 +50,10 @@ Compilação LaTeX com Tectonic ou pdflatex.
 - RF-10 configurações multi-provedor -> UC-08
 - RF-11 launcher leve -> UC-02, UC-04
 - RF-12 E2E com screenshots -> todos os UC de regressão
+- RF-13 workspace de uma tela com folhas laterais -> W-01, W-05
+- RF-14 edição inline no PDF -> W-01
+- RF-15 ordem e visibilidade de seções -> W-02
+- RF-16 métricas explicadas e ATS recomputado -> W-03, W-04
+
+A pesquisa de casos de uso e as métricas de sucesso do workspace estão em
+`docs/metricas.md` (W-01 a W-05 e M-01 a M-08).

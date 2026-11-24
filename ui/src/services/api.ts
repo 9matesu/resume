@@ -329,7 +329,12 @@ export async function adaptGrilled(job: JobData, confirmed: string[]): Promise<A
 export async function saveResumeEdit(
   id: string,
   payload: { profile?: CandidateProfile; tex_code?: string }
-): Promise<{ status: string; tex: string; pdf_url: string }> {
+): Promise<{
+  status: string;
+  tex: string;
+  pdf_url: string;
+  ats?: AdaptedResult['adaptation']['ats'];
+}> {
   const res = await fetch(`${API_BASE}/resumes/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },

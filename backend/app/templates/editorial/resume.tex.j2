@@ -91,107 +91,107 @@
 \vspace{0.2cm}
 
 <% if lang == 'en' -%>
-<%- set L = {'summary': 'Professional Summary', 'experience': 'Experience',
-             'skills': 'Technical Skills', 'education': 'Education', 'projects': 'Projects',
+<%- set L = {'summary': 'Professional Summary', 'leadership': 'Leadership Activities',
+             'experience': 'Experience', 'skills': 'Technical Skills',
+             'education': 'Education', 'projects': 'Projects',
              'certifications': 'Certifications', 'technical': 'Technologies',
              'languages': 'Languages'} -%>
 <%- else -%>
-<%- set L = {'summary': 'Resumo Profissional', 'experience': 'Experiência Profissional',
-             'skills': 'Habilidades Técnicas', 'education': 'Formação Acadêmica', 'projects': 'Projetos',
+<%- set L = {'summary': 'Resumo Profissional', 'leadership': 'Atividades de Liderança',
+             'experience': 'Experiência Profissional', 'skills': 'Habilidades Técnicas',
+             'education': 'Formação Acadêmica', 'projects': 'Projetos',
              'certifications': 'Certificações', 'technical': 'Tecnologias',
              'languages': 'Idiomas'} -%>
 <%- endif %>
 
+<#
+  Ordem das seções. O editor visual envia resume.layout.sections na ordem em
+  que o usuário arrastou; `visible: false` remove a seção do PDF. Sem layout,
+  a ordem abaixo é a padrão. Tipos desconhecidos são ignorados.
+#>
+<% set default_order = ['summary', 'experience', 'leadership', 'education',
+                        'projects', 'skills', 'certifications'] -%>
+<% set ns = namespace(order=[], hidden=[]) -%>
+<% for s in ((resume.layout or {}).get('sections') or []) -%>
+<% if s.get('type') in default_order -%>
+<% if s.get('visible', True) -%>
+<% if s.get('type') not in ns.order -%><% set ns.order = ns.order + [s.get('type')] -%><% endif -%>
+<% else -%>
+<% if s.get('type') not in ns.hidden -%><% set ns.hidden = ns.hidden + [s.get('type')] -%><% endif -%>
+<% endif -%>
+<% endif -%>
+<% endfor -%>
+<% for t in default_order -%>
+<% if t not in ns.order and t not in ns.hidden -%><% set ns.order = ns.order + [t] -%><% endif -%>
+<% endfor -%>
+
+<% macro sec_summary() -%>
 <% if resume.summary -%>
 \section{<< L['summary'] >>}
 << resume.summary | esc >>
 
-<%- endif %>
+<% endif -%>
+<% endmacro -%>
 
-<% if resume.experience -%>
-\section{<< L['experience'] >>}
-<%- for exp in resume.experience %>
-\cventry{<< (exp.get('company') or exp.get('role') or '') | esc >>}{<< (exp.get('location') or '') | esc >>}{<< (exp.get('role') or exp.get('title') or '') | esc >>}{<< exp | dates | esc >>}
-<%- set bl = exp | bullets %>
-<%- if bl %>
+<% macro sec_entries(key, title) -%>
+<% if resume[key] -%>
+\section{<< title >>}
+<% for entry in resume[key] -%>
+\cventry{<< (entry.get('company') or entry.get('org') or entry.get('institution') or entry.get('name') or entry.get('role') or entry.get('title') or '') | esc >>}{<< (entry.get('location') or '') | esc >>}{<< (entry.get('role') or entry.get('title') or entry.get('degree') or entry.get('course') or '') | esc >>}{<< entry | dates | esc >>}
+<% set bl = entry | bullets -%>
+<% if bl -%>
 \begin{itemize}
-<%- for b in bl %>
+<% for b in bl -%>
     \item << b | esc >>
-<%- endfor %>
+<% endfor -%>
 \end{itemize}
-<%- elif exp.get('description') %>
+<% elif entry.get('description') -%>
 \begin{itemize}
-    \item << exp['description'] | esc >>
+    \item << entry['description'] | esc >>
 \end{itemize}
-<%- endif %>
+<% endif -%>
 \vspace{0.2em}
-<%- endfor %>
+<% endfor -%>
 
-<%- endif %>
+<% endif -%>
+<% endmacro -%>
 
-<% if resume.education -%>
-\section{<< L['education'] >>}
-<%- for ed in resume.education %>
-\cventry{<< (ed.get('institution') or '') | esc >>}{<< (ed.get('location') or '') | esc >>}{<< (ed.get('degree') or ed.get('course') or '') | esc >>}{<< ed | dates | esc >>}
-<%- set bl = ed | bullets %>
-<%- if bl %>
-\begin{itemize}
-<%- for b in bl %>
-    \item << b | esc >>
-<%- endfor %>
-\end{itemize}
-<%- elif ed.get('description') %>
-\begin{itemize}
-    \item << ed['description'] | esc >>
-\end{itemize}
-<%- endif %>
-\vspace{0.2em}
-<%- endfor %>
-
-<%- endif %>
-
-<% if resume.projects -%>
-\section{<< L['projects'] >>}
-<%- for p in resume.projects %>
-\cventry{<< (p.get('name') or '') | esc >>}{<< (p.get('location') or '') | esc >>}{<< (p.get('role') or 'Projeto') | esc >>}{<< p | dates | esc >>}
-<%- set bl = p | bullets %>
-<%- if bl %>
-\begin{itemize}
-<%- for b in bl %>
-    \item << b | esc >>
-<%- endfor %>
-\end{itemize}
-<%- elif p.get('description') %>
-\begin{itemize}
-    \item << p['description'] | esc >>
-\end{itemize}
-<%- endif %>
-\vspace{0.2em}
-<%- endfor %>
-
-<%- endif %>
-
+<% macro sec_skills() -%>
 <% if resume.skills or resume.languages -%>
 \section{<< L['skills'] >>}
 \begin{itemize}
-<%- if resume.skills %>
+<% if resume.skills -%>
     \item \textbf{<< L['technical'] >>:} << resume.skills | names | esc >>
-<%- endif %>
-<%- if resume.languages %>
+<% endif -%>
+<% if resume.languages -%>
     \item \textbf{<< L['languages'] >>:} << resume.languages | names | esc >>
-<%- endif %>
+<% endif -%>
 \end{itemize}
 
-<%- endif %>
+<% endif -%>
+<% endmacro -%>
 
+<% macro sec_certifications() -%>
 <% if resume.certifications -%>
 \section{<< L['certifications'] >>}
 \begin{itemize}
-<%- for c in resume.certifications %>
+<% for c in resume.certifications -%>
     \item << (c.get('name') or '') | esc >>
-<%- endfor %>
+<% endfor -%>
 \end{itemize}
 
-<%- endif %>
+<% endif -%>
+<% endmacro -%>
+
+<% for key in ns.order -%>
+<% if key == 'summary' -%><< sec_summary() >>
+<% elif key == 'experience' -%><< sec_entries('experience', L['experience']) >>
+<% elif key == 'leadership' -%><< sec_entries('leadership', L['leadership']) >>
+<% elif key == 'education' -%><< sec_entries('education', L['education']) >>
+<% elif key == 'projects' -%><< sec_entries('projects', L['projects']) >>
+<% elif key == 'skills' -%><< sec_skills() >>
+<% elif key == 'certifications' -%><< sec_certifications() >>
+<% endif -%>
+<% endfor -%>
 
 \end{document}

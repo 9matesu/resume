@@ -269,6 +269,7 @@ export const StudioWorkspace: React.FC<StudioWorkspaceProps> = ({ adaptedData, o
                 profile={profile}
                 onProfileChange={setProfile}
                 onToast={toast}
+                onClose={() => {}}
                 matchScore={matchScore}
                 atsCoverage={adaptedData.adaptation.ats?.coverage ?? null}
               />

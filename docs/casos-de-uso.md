@@ -158,3 +158,101 @@ Fluxos alternativos e exceções:
 - Modelo vazio: tela detecta modelos via POST /api/models e pede escolha explícita.
 
 Pós-condições: próxima adaptação usa o novo provedor. Chave antiga do outro provedor permanece guardada.
+
+## W-01 editar no documento maximizado
+
+Atores: candidato, workspace React, PDF.js.
+Pré-condições: adaptação aberta no Estúdio com pdf_url e tex_code.
+
+Fluxo principal:
+1. Workspace abre na aba Documento, com a barra única de 48 px e sem painéis laterais fixos.
+2. PdfViewer renderiza cada página e mapeia linhas de texto para campos do perfil.
+3. Candidato clica numa linha: uma textarea abre no lugar do texto, com o valor atual.
+4. Enter ou blur aplica; Esc cancela. O campo mapeado é reescrito no trecho certo do .tex.
+5. Workspace salva perfil e tex, backend recompila e a página recarrega com cache-buster.
+6. HUD inferior mostra o nome do campo e o atalho; o flash confirma o ponto editado.
+
+Fluxos alternativos e exceções:
+- Linha sem campo correspondente: clique não abre editor; a página segue legível.
+- Texto com escape LaTeX: o valor é escapado antes de entrar no .tex.
+- Falha de compile: status muda para "Não salvou" e o PDF anterior permanece.
+
+Pós-condições: mesmo resume_id com tex_code e PDF atualizados; versão nova na lista.
+
+## W-02 reordenar e ocultar seções
+
+Atores: candidato, folha Estrutura, template Jinja.
+Pré-condições: perfil carregado no workspace.
+
+Fluxo principal:
+1. Candidato abre Estrutura na barra; a folha sobrepõe o documento sem empurrá-lo.
+2. Arrasta uma seção para mudar a ordem, ou usa as setas por teclado.
+3. Arrasta um item dentro de uma seção para reordenar experiências, skills etc.
+4. Clica no olho para esconder uma seção do PDF sem apagar seu conteúdo.
+5. Workspace grava profile.layout.sections; autosave recompila.
+6. Template editorial percorre ns.order e só emite seções visíveis.
+
+Fluxos alternativos e exceções:
+- Seção vazia: continua na lista, sem itens para expandir.
+- Arraste cancelado: nada muda; o destaque de destino some.
+- Restaurar versão: volta o perfil da versão escolhida.
+
+Pós-condições: PDF sai na ordem escolhida; esconder e mostrar é reversível.
+
+## W-03 entender as métricas
+
+Atores: candidato, folha Métricas, motor local.
+Pré-condições: adaptação com match_score e keywords/requirements da vaga.
+
+Fluxo principal:
+1. Candidato clica no chip ATS na barra; a folha abre com quatro métricas.
+2. Cada métrica mostra valor, fonte (medido/estimado) e o que o número significa.
+3. Palavras da vaga faltando aparecem com "tenho" e "não".
+4. "tenho" adiciona a palavra a skills, salva e a cobertura é recalculada no backend.
+5. "não" dispensa a palavra só na sessão.
+6. Em "Seu alvo", candidato escolhe momento, tom e área; vira localStorage por resume.
+
+Fluxos alternativos e exceções:
+- Sem keywords na vaga: painel diz que a cobertura aparecerá na próxima captura.
+- IA indisponível na captura: Aderência aparece como estimado e o texto explica a heurística.
+- Palavra já em Habilidades: aviso em vez de duplicata.
+
+Pós-condições: cobertura ATS reflete o perfil atual; alvo fica disponível para o chat.
+
+## W-04 ajustar com IA sem perder o controle
+
+Atores: candidato, folha Chat, backend /api/resumes/{id}/chat.
+Pré-condições: perfil carregado e "Seu alvo" opcionalmente preenchido.
+
+Fluxo principal:
+1. Candidato abre o chat na barra ou com ⌘K.
+2. Escreve o pedido; o contexto do alvo entra como prefixo, marcado como não-editable.
+3. Três passos de progresso aparecem enquanto a IA responde.
+4. A resposta entra no currículo, o autosave recompila e o PDF muda atrás da folha.
+5. Cada resposta traz chips do que mudou, diff colapsável e "Desfazer".
+6. Candidato desfaz se não gostar; o perfil anterior volta.
+
+Fluxos alternativos e exceções:
+- Sem chave: backend devolve erro legível; nenhuma mudança entra.
+- Resposta sem alteração: diff não aparece.
+- Mensagem vazia: botão Enviar fica desativado.
+
+Pós-condições: mudança aplicada e auditável; desfazer restaura o estado anterior.
+
+## W-05 trocar de candidatura
+
+Atores: candidato, folha Candidaturas.
+Pré-condições: ao menos uma adaptação no histórico.
+
+Fluxo principal:
+1. Candidato abre Candidaturas na barra.
+2. Lista com busca por vaga ou empresa e botão de capturar nova vaga.
+3. Selecionar item carrega detail, perfil, tex e PDF daquela vaga.
+4. A folha fecha e o documento permanece maximizado no mesmo lugar.
+
+Fluxos alternativos e exceções:
+- Mesmo item: folha só fecha, sem recarregar.
+- Falha de load: aviso e nada é sobrescrito.
+- Em 390 px: backdrop fecha a folha ao toque fora.
+
+Pós-condições: workspace mostra a candidatura escolhida, sem salvar a anterior por cima.

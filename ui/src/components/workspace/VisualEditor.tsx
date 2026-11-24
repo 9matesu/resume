@@ -50,15 +50,17 @@ function Section({
   onAdd,
   addLabel,
   children,
+  id,
 }: {
   title: string;
   count?: number;
   onAdd?: () => void;
   addLabel?: string;
   children: ReactNode;
+  id?: string;
 }) {
   return (
-    <section className="space-y-3">
+    <section className="space-y-3 scroll-mt-4" id={id} data-section={id}>
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-2xs font-bold uppercase tracking-wider text-muted">
           {title}
@@ -149,9 +151,9 @@ export function VisualEditor({ profile, onChange }: VisualEditorProps) {
   };
 
   return (
-    <div className="h-full overflow-y-auto bg-white p-6">
+    <div className="h-full overflow-y-auto bg-white p-4 sm:p-6">
       <div className="mx-auto max-w-3xl space-y-8 pb-10">
-        <div className="space-y-2">
+        <div className="space-y-2" id="section-personal" data-section="personal">
           <span className="text-2xs font-bold uppercase tracking-wider text-muted">Dados pessoais</span>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <Field label="Nome" value={personal.name} onChange={(v) => setPersonal('name', v)} />
@@ -166,13 +168,14 @@ export function VisualEditor({ profile, onChange }: VisualEditorProps) {
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2" id="section-summary" data-section="summary">
           <span className="text-2xs font-bold uppercase tracking-wider text-muted">Resumo</span>
           <Field label="Resumo profissional" value={profile.summary} onChange={(v) => set({ summary: v })} rows={4} />
         </div>
 
         <Section
           title="Experiência"
+          id="section-experience"
           count={experience.length}
           onAdd={() =>
             set({
@@ -213,6 +216,7 @@ export function VisualEditor({ profile, onChange }: VisualEditorProps) {
 
         <Section
           title="Liderança e atividades"
+          id="section-leadership"
           count={leadership.length}
           onAdd={() =>
             set({
@@ -253,6 +257,7 @@ export function VisualEditor({ profile, onChange }: VisualEditorProps) {
 
         <Section
           title="Formação"
+          id="section-education"
           count={education.length}
           onAdd={() => set({ education: [...education, { institution: '', degree: '', year: '', location: '' }] })
           }
@@ -312,7 +317,7 @@ export function VisualEditor({ profile, onChange }: VisualEditorProps) {
           ))}
         </Section>
 
-        <div className="space-y-2">
+        <div className="space-y-2" id="section-skills" data-section="skills">
           <span className="text-2xs font-bold uppercase tracking-wider text-muted">Habilidades</span>
           <div className="flex flex-wrap gap-1.5">
             {(profile.skills || []).map((skill, index) => (
@@ -348,6 +353,7 @@ export function VisualEditor({ profile, onChange }: VisualEditorProps) {
 
         <Section
           title="Projetos"
+          id="section-projects"
           count={projects.length}
           onAdd={() =>
             set({
@@ -427,6 +433,7 @@ export function VisualEditor({ profile, onChange }: VisualEditorProps) {
 
         <Section
           title="Certificações"
+          id="section-certifications"
           count={certifications.length}
           onAdd={() => set({ certifications: [...certifications, { name: '' }] })}
         >
@@ -457,6 +464,7 @@ export function VisualEditor({ profile, onChange }: VisualEditorProps) {
 
         <Section
           title="Idiomas"
+          id="section-languages"
           count={languages.length}
           onAdd={() => set({ languages: [...languages, { name: '', level: '' }] })}
         >

@@ -4,6 +4,7 @@ import type {
   AdaptedResult,
   CandidateProfile,
   HistoryItem,
+  ResumeSectionType,
 } from '../../services/api';
 import {
   absUrl,
@@ -12,27 +13,32 @@ import {
   fetchResumeDetail,
   saveResumeEdit,
 } from '../../services/api';
-import {
-  isExtension,
-  onCaptureResult,
-  startAutoCapture,
-} from '../../chrome';
+import { isExtension, onCaptureResult, startAutoCapture } from '../../chrome';
 import { cvFilename } from '../../cvFilename';
 import { CommandBar, type WorkspaceView } from './CommandBar';
-import { NavPane } from './NavPane';
-import { Inspector } from './Inspector';
+import { HistorySheet } from './HistorySheet';
+import { StructurePanel } from './StructurePanel';
+import { MetricsPanel } from './MetricsPanel';
 import { ChatPanel } from '../studio/ChatPanel';
 import { ToastStack, useToasts } from '../Toast';
 import type { ResumeVersion } from './document';
 import { parseLatexToProfile, escapeLatex } from './latexProfile';
+import {
+  SENIORITY_LABEL,
+  TONE_LABEL,
+  atsPercent,
+  readTarget,
+  relativeTime,
+  targetPrompt,
+  writeTarget,
+  type TargetProfile,
+} from './layout';
 
 const LatexEditor = lazy(() =>
   import('../studio/LatexEditor').then((m) => ({ default: m.LatexEditor })),
 );
 
-const PdfViewer = lazy(() =>
-  import('./PdfViewer').then((m) => ({ default: m.PdfViewer })),
-);
+const PdfViewer = lazy(() => import('./PdfViewer').then((m) => ({ default: m.PdfViewer })));
 
 const VisualEditor = lazy(() =>
   import('./VisualEditor').then((m) => ({ default: m.VisualEditor })),
@@ -127,32 +133,53 @@ function scopeFor(tex: string, fieldId: string): string {
   return tex.slice(m.index, n ? n.index : tex.length);
 }
 
+interface PendingSave {
+  tex_code?: string;
+  profile?: CandidateProfile;
+}
+
 export function Workspace({ initialData, onClose }: WorkspaceProps) {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [current, setCurrent] = useState<AdaptedResult>(initialData);
-  const [profile, setProfile] = useState<CandidateProfile>(
-    initialData.adaptation.tailored_profile,
-  );
+  const [profile, setProfile] = useState<CandidateProfile>(initialData.adaptation.tailored_profile);
   const [pdfUrl, setPdfUrl] = useState(absUrl(initialData.adaptation.pdf_url));
   const [rawTex, setRawTex] = useState(initialData.adaptation.tex_code);
-  const [view, setView] = useState<WorkspaceView>('pdf');
+  const [view, setView] = useState<WorkspaceView>('document');
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error'>('saved');
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+  const [now, setNow] = useState(Date.now());
+  const [pages, setPages] = useState(1);
   const [capturing, setCapturing] = useState(false);
   const [showAiSetup, setShowAiSetup] = useState(false);
-  const [inspectorOpen, setInspectorOpen] = useState(true);
-  const [chatOpen, setChatOpen] = useState(true);
+  const [leftSheet, setLeftSheet] = useState<'history' | 'structure' | null>(null);
+  const [rightSheet, setRightSheet] = useState<'metrics' | 'chat' | null>(null);
   const [versions, setVersions] = useState<ResumeVersion[]>([]);
   const [undoStack, setUndoStack] = useState<CandidateProfile[]>([]);
   const [redoStack, setRedoStack] = useState<CandidateProfile[]>([]);
+  const [target, setTarget] = useState<TargetProfile>(() =>
+    readTarget(initialData.adaptation.id),
+  );
+
   const skipSave = useRef(true);
   const lastCompiledTex = useRef(initialData.adaptation.tex_code);
   const fromTexRef = useRef(false);
-  const savedSnapshot = useRef<{ tex: string; profile: CandidateProfile } | null>(null);
-  if (savedSnapshot.current === null) {
-    savedSnapshot.current = { tex: initialData.adaptation.tex_code, profile };
-  }
+  const idRef = useRef(initialData.adaptation.id);
+  const saveTimer = useRef<number | null>(null);
+  const pending = useRef<PendingSave | null>(null);
+
   const pdfProfile = useMemo(() => parseLatexToProfile(rawTex, profile), [rawTex, profile]);
   const { items: toasts, push: toast, dismiss } = useToasts();
+  const atsCoverage = atsPercent(current.adaptation.ats);
+  const fitScore = current.adaptation.match_score ?? null;
+
+  useEffect(() => {
+    idRef.current = current.adaptation.id;
+  }, [current.adaptation.id]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 20000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const loadHistory = async () => {
     try {
@@ -170,6 +197,7 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
 
   useEffect(() => {
     void readVersions(current.adaptation.id).then(setVersions);
+    setTarget(readTarget(current.adaptation.id));
   }, [current.adaptation.id]);
 
   useEffect(() => {
@@ -180,6 +208,14 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
         setPdfUrl(detail.adaptation.pdf_url);
         setRawTex(detail.adaptation.tex_code);
         lastCompiledTex.current = detail.adaptation.tex_code;
+        setCurrent((prev) => ({
+          ...prev,
+          adaptation: {
+            ...prev.adaptation,
+            ats: detail.adaptation.ats ?? prev.adaptation.ats,
+            match_score: detail.adaptation.match_score ?? prev.adaptation.match_score,
+          },
+        }));
       })
       .catch(() => {
         // mantém a URL inicial
@@ -226,7 +262,19 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
       next.skills[Number(parts[1])] = value;
     } else if (parts[0] === 'projects') {
       const list = [...(next.projects || [])];
-      (list[Number(parts[1])] as unknown as Record<string, string>)[parts[2]] = value;
+      const index = Number(parts[1]);
+      if (parts[2] === 'description') {
+        const description = list[index].description;
+        const bullets = Array.isArray(description)
+          ? [...description]
+          : description
+            ? [String(description)]
+            : [];
+        bullets[Number(parts[3])] = value;
+        (list[index] as { description?: string[] }).description = bullets;
+      } else {
+        (list[index] as unknown as Record<string, string>)[parts[2]] = value;
+      }
       next.projects = list;
     } else if (parts[0] === 'certifications') {
       const list = [...(next.certifications || [])];
@@ -241,6 +289,79 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
     }
     applyProfile(next);
   };
+
+  const bustPdf = (url: string) => `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
+
+  const pushVersion = (saved: CandidateProfile) => {
+    const id = idRef.current;
+    setVersions((prev) => {
+      const list = [{ id: Date.now(), at: Date.now(), profile: saved }, ...prev].slice(0, 20);
+      void writeVersions(id, list);
+      return list;
+    });
+  };
+
+  const flushSave = async () => {
+    const payload = pending.current;
+    if (!payload) return;
+    pending.current = null;
+    setSaveStatus('saving');
+    try {
+      const res = await saveResumeEdit(idRef.current, payload);
+      setPdfUrl(bustPdf(res.pdf_url));
+      setRawTex(res.tex);
+      lastCompiledTex.current = res.tex;
+      setSaveStatus('saved');
+      setSavedAt(Date.now());
+      setCurrent((prev) => ({
+        ...prev,
+        adaptation: { ...prev.adaptation, ats: res.ats ?? prev.adaptation.ats },
+      }));
+      if (payload.profile) pushVersion(payload.profile);
+    } catch (err: unknown) {
+      setSaveStatus('error');
+      const message = err instanceof Error ? err.message : 'Não salvou.';
+      toast(message, 'error');
+    }
+  };
+
+  const queueSave = (payload: PendingSave, delay = 800) => {
+    pending.current = { ...(pending.current || {}), ...payload };
+    setSaveStatus('saving');
+    if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(() => {
+      saveTimer.current = null;
+      void flushSave();
+    }, delay);
+  };
+
+  useEffect(() => {
+    if (skipSave.current) {
+      skipSave.current = false;
+      return;
+    }
+    if (fromTexRef.current) {
+      fromTexRef.current = false;
+      return;
+    }
+    queueSave({ profile }, 700);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
+
+  // .tex editado à mão: o texto manda. Perfil é reconstruído e salvo junto para
+  // as métricas e o chat não ficarem olhando para uma versão antiga.
+  useEffect(() => {
+    if (view !== 'latex') return;
+    if (rawTex === lastCompiledTex.current) return;
+    const timer = window.setTimeout(() => {
+      const parsed = parseLatexToProfile(rawTex, profile);
+      fromTexRef.current = true;
+      setProfile(parsed);
+      queueSave({ tex_code: rawTex, profile: parsed }, 0);
+    }, 1200);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawTex, view]);
 
   // Clique no PDF: reescreve o trecho no .tex (preserva o resto do arquivo).
   const editPdfField = (fieldId: string, value: string, previous: string) => {
@@ -267,10 +388,11 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
       editField(fieldId, value);
       return;
     }
+    const nextProfile = parseLatexToProfile(nextTex, profile);
     setRawTex(nextTex);
     fromTexRef.current = true;
-    setProfile(parseLatexToProfile(nextTex, profile));
-    toast('Campo atualizado no LaTeX.', 'ok');
+    setProfile(nextProfile);
+    queueSave({ tex_code: nextTex, profile: nextProfile }, 500);
   };
 
   const undo = () => {
@@ -279,6 +401,7 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
     setRedoStack((prev) => [...prev, profile]);
     setUndoStack((prev) => prev.slice(0, -1));
     setProfile(previous);
+    toast('Alteração desfeita.', 'info');
   };
 
   const redo = () => {
@@ -287,70 +410,8 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
     setUndoStack((prev) => [...prev, profile]);
     setRedoStack((prev) => prev.slice(0, -1));
     setProfile(next);
+    toast('Alteração refeita.', 'info');
   };
-
-  const bustPdf = (url: string) =>
-    `${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`;
-
-  const saveProfile = async (profileToSave: CandidateProfile) => {
-    setSaveStatus('saving');
-    try {
-      const res = await saveResumeEdit(current.adaptation.id, { profile: profileToSave });
-      setPdfUrl(bustPdf(res.pdf_url));
-      setRawTex(res.tex);
-      lastCompiledTex.current = res.tex;
-      setSaveStatus('saved');
-      const list = [
-        { id: Date.now(), at: Date.now(), profile: profileToSave },
-        ...versions,
-      ].slice(0, 20);
-      setVersions(list);
-      void writeVersions(current.adaptation.id, list);
-      setHistory((prev) =>
-        prev.map((item) =>
-          item.id === current.adaptation.id
-            ? { ...item, match_score: current.adaptation.match_score ?? item.match_score }
-            : item,
-        ),
-      );
-    } catch (err: unknown) {
-      setSaveStatus('error');
-      const message = err instanceof Error ? err.message : 'Não salvou.';
-      toast(message, 'error');
-    }
-  };
-
-  useEffect(() => {
-    if (skipSave.current) {
-      skipSave.current = false;
-      return;
-    }
-    if (fromTexRef.current) {
-      fromTexRef.current = false;
-      return;
-    }
-    setSaveStatus('saving');
-    const timer = setTimeout(() => {
-      void saveProfile(profile);
-    }, 800);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile, current.adaptation.id]);
-
-  // LaTeX → perfil: mantém o visual e o chat coerentes quando o .tex é editado
-  // direto. Não persiste o perfil; quem manda é o .tex.
-  useEffect(() => {
-    if (view !== 'latex') return;
-    const timer = setTimeout(() => {
-      const parsed = parseLatexToProfile(rawTex, profile);
-      if (JSON.stringify(parsed) !== JSON.stringify(profile)) {
-        fromTexRef.current = true;
-        setProfile(parsed);
-      }
-    }, 700);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rawTex, view]);
 
   useEffect(() => {
     return onCaptureResult(
@@ -364,12 +425,15 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
         skipSave.current = true;
         setCurrent(data);
         setProfile(data.adaptation.tailored_profile);
-        setPdfUrl(data.adaptation.pdf_url);
+        setPdfUrl(absUrl(data.adaptation.pdf_url));
         setRawTex(data.adaptation.tex_code);
         lastCompiledTex.current = data.adaptation.tex_code;
         setUndoStack([]);
         setRedoStack([]);
-        setHistory((prev) => [newHistoryItem(data), ...prev.filter((i) => i.id !== data.adaptation.id)]);
+        setHistory((prev) => [
+          newHistoryItem(data),
+          ...prev.filter((item) => item.id !== data.adaptation.id),
+        ]);
         setCapturing(false);
         toast('Currículo pronto.', 'ok');
       },
@@ -383,16 +447,24 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
   }, []);
 
   const selectItem = async (item: HistoryItem) => {
+    if (item.id === current.adaptation.id) {
+      setLeftSheet(null);
+      return;
+    }
     try {
       const detail = await fetchResumeDetail(item.id);
+      if (saveTimer.current) window.clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+      pending.current = null;
       skipSave.current = true;
       setCurrent(detail);
       setProfile(detail.adaptation.tailored_profile);
-      setPdfUrl(detail.adaptation.pdf_url);
+      setPdfUrl(bustPdf(detail.adaptation.pdf_url));
       setRawTex(detail.adaptation.tex_code);
       lastCompiledTex.current = detail.adaptation.tex_code;
       setUndoStack([]);
       setRedoStack([]);
+      setLeftSheet(null);
       void readVersions(detail.adaptation.id).then(setVersions);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Não abri essa candidatura.';
@@ -443,10 +515,24 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
   };
 
   const downloadPdf = async () => {
+    if (saveTimer.current) window.clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+    const queued = pending.current;
+    pending.current = null;
+    const payload: PendingSave = queued?.tex_code
+      ? { tex_code: queued.tex_code, profile: queued.profile }
+      : queued?.profile
+        ? { profile: queued.profile }
+        : { tex_code: rawTex };
     try {
-      const res = await saveResumeEdit(current.adaptation.id, { tex_code: rawTex });
-      setPdfUrl(res.pdf_url);
+      setSaveStatus('saving');
+      const res = await saveResumeEdit(idRef.current, payload);
+      setPdfUrl(bustPdf(res.pdf_url));
       setRawTex(res.tex);
+      lastCompiledTex.current = res.tex;
+      setSaveStatus('saved');
+      setSavedAt(Date.now());
+      if (payload.profile) pushVersion(payload.profile);
       const anchor = document.createElement('a');
       anchor.href = res.pdf_url;
       anchor.download =
@@ -457,39 +543,121 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
       document.body.removeChild(anchor);
       toast('PDF baixado.', 'ok');
     } catch (err: unknown) {
+      setSaveStatus('error');
       const message = err instanceof Error ? err.message : 'Não consegui gerar o PDF.';
       toast(message, 'error');
     }
   };
 
-  const compileLatex = async (silent = false) => {
-    try {
-      const res = await saveResumeEdit(current.adaptation.id, { tex_code: rawTex });
-      setPdfUrl(bustPdf(res.pdf_url));
-      setRawTex(res.tex);
-      lastCompiledTex.current = res.tex;
-      savedSnapshot.current = { tex: res.tex, profile };
-      if (!silent) toast('PDF atualizado.', 'ok');
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Não compilei o PDF.';
-      if (!silent) toast(message, 'error');
-    }
+  const saveLatexNow = async () => {
+    const parsed = parseLatexToProfile(rawTex, profile);
+    fromTexRef.current = true;
+    setProfile(parsed);
+    await saveResumeEdit(idRef.current, { tex_code: rawTex, profile: parsed })
+      .then((res) => {
+        setPdfUrl(bustPdf(res.pdf_url));
+        setRawTex(res.tex);
+        lastCompiledTex.current = res.tex;
+        setSaveStatus('saved');
+        setSavedAt(Date.now());
+        toast('PDF atualizado.', 'ok');
+      })
+      .catch((err: unknown) => {
+        setSaveStatus('error');
+        toast(err instanceof Error ? err.message : 'Não compilei o PDF.', 'error');
+      });
   };
-
-  useEffect(() => {
-    if (view !== 'latex') return;
-    if (rawTex === lastCompiledTex.current) return;
-    const timer = setTimeout(() => {
-      void compileLatex(true);
-    }, 1500);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rawTex, view]);
 
   const restoreVersion = (version: ResumeVersion) => {
     applyProfile(version.profile);
     toast('Versão restaurada.', 'ok');
   };
+
+  const confirmKeyword = (keyword: string) => {
+    const clean = keyword.trim();
+    if (!clean) return;
+    const exists = (profile.skills || []).some(
+      (skill) => String(skill).toLowerCase() === clean.toLowerCase(),
+    );
+    if (exists) {
+      toast('Essa palavra já está em Habilidades.', 'info');
+      return;
+    }
+    applyProfile({ ...profile, skills: [...(profile.skills || []), clean] });
+    toast(`“${clean}” entrou em Habilidades.`, 'ok');
+  };
+
+  const changeTarget = (next: TargetProfile) => {
+    setTarget(next);
+    writeTarget(current.adaptation.id, next);
+  };
+
+  const openLeft = (sheet: 'history' | 'structure') => {
+    setRightSheet(null);
+    setLeftSheet((prev) => (prev === sheet ? null : sheet));
+  };
+
+  const openRight = (sheet: 'metrics' | 'chat') => {
+    setLeftSheet(null);
+    setRightSheet((prev) => (prev === sheet ? null : sheet));
+  };
+
+  const editSection = (type: ResumeSectionType) => {
+    setLeftSheet(null);
+    setView('fields');
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        const el = document.getElementById(`section-${type}`);
+        el?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        const input = el?.querySelector<HTMLInputElement>('input, textarea');
+        input?.focus({ preventScroll: true });
+      });
+    });
+  };
+
+  // Atalhos: ⌘K abre o chat, Esc fecha folha, ⌘Z/⇧⌘Z desfaz, ⌘S baixa.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const el = event.target as HTMLElement | null;
+      const typing =
+        !!el &&
+        (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+      if (event.key === 'Escape') {
+        setLeftSheet(null);
+        setRightSheet(null);
+        return;
+      }
+      const mod = event.metaKey || event.ctrlKey;
+      if (mod && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setLeftSheet(null);
+        setRightSheet('chat');
+        return;
+      }
+      if (typing) return;
+      if (mod && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        void downloadPdf();
+        return;
+      }
+      if (mod && event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        if (event.shiftKey) redo();
+        else undo();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
+  const savedAgo = savedAt ? relativeTime(savedAt, now) : 'sem edição';
+  const targetLabel = [
+    SENIORITY_LABEL[target.seniority],
+    TONE_LABEL[target.tone],
+    target.area.trim(),
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <div className="flex h-dvh w-full flex-col overflow-hidden bg-wash text-ink">
@@ -497,147 +665,177 @@ export function Workspace({ initialData, onClose }: WorkspaceProps) {
         title={current.job.title}
         company={current.job.company}
         saveStatus={saveStatus}
+        savedAgo={savedAgo}
         view={view}
         onViewChange={setView}
-        onCapture={() => void capture()}
         onDownload={() => void downloadPdf()}
         onUndo={undo}
         onRedo={redo}
         canUndo={undoStack.length > 0}
         canRedo={redoStack.length > 0}
-        inspectorOpen={inspectorOpen}
-        onToggleInspector={() => setInspectorOpen((open) => !open)}
-        chatOpen={chatOpen}
-        onToggleChat={() => setChatOpen((open) => !open)}
+        fitScore={fitScore}
+        atsCoverage={atsCoverage}
+        leftSheet={leftSheet}
+        rightSheet={rightSheet}
+        onOpenHistory={() => openLeft('history')}
+        onOpenStructure={() => openLeft('structure')}
+        onOpenMetrics={() => openRight('metrics')}
+        onToggleChat={() => openRight('chat')}
         onClose={onClose}
       />
 
-      <div className="flex min-h-0 flex-1">
-        <NavPane
+      <main className="relative min-w-0 flex-1 overflow-hidden">
+        {view === 'document' && (
+          <div className="h-full overflow-hidden">
+            <Suspense
+              fallback={
+                <div className="flex h-full items-center justify-center text-xs text-muted">
+                  Abrindo o documento…
+                </div>
+              }
+            >
+              <PdfViewer
+                pdfUrl={pdfUrl}
+                profile={pdfProfile}
+                onEditField={editPdfField}
+                onOpenCode={() => setView('latex')}
+                onPages={setPages}
+              />
+            </Suspense>
+          </div>
+        )}
+
+        {view === 'latex' && (
+          <div className="h-full p-2">
+            <Suspense
+              fallback={
+                <div className="flex h-full items-center justify-center text-xs text-muted">
+                  Carregando editor…
+                </div>
+              }
+            >
+              <LatexEditor
+                value={rawTex}
+                onChange={setRawTex}
+                onSave={() => void saveLatexNow()}
+                errorMessage={saveStatus === 'error' ? 'Não salvou. Tente de novo.' : undefined}
+              />
+            </Suspense>
+          </div>
+        )}
+
+        {view === 'fields' && (
+          <Suspense
+            fallback={
+              <div className="flex h-full items-center justify-center text-xs text-muted">
+                Carregando campos…
+              </div>
+            }
+          >
+            <VisualEditor profile={profile} onChange={applyProfile} />
+          </Suspense>
+        )}
+
+        {showAiSetup && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/95 p-6">
+            <div className="w-full max-w-md rounded-xl border border-line bg-white p-6 shadow-mac">
+              <div className="mb-3 flex items-center gap-2">
+                <KeyRound className="h-4 w-4 text-muted" />
+                <h2 className="text-lg font-semibold">Configure a IA primeiro</h2>
+              </div>
+              <p className="mb-4 text-2xs leading-relaxed text-muted">
+                Sem IA, o currículo não é adaptado. Faça:
+              </p>
+              <ol className="mb-5 list-decimal space-y-1 pl-5 text-2xs text-muted-strong">
+                <li>Abra Ajustes no painel lateral.</li>
+                <li>Escolha o provedor e o modelo.</li>
+                <li>Cole a chave de API e teste.</li>
+                <li>Volte para Capturar.</li>
+              </ol>
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAiSetup(false)}
+                  className="brutal-btn px-3 py-2 text-2xs"
+                >
+                  Agora não
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAiSetup(false);
+                    onClose();
+                  }}
+                  className="brutal-btn-yellow px-3 py-2 text-2xs"
+                >
+                  Abrir ajustes
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {(leftSheet || rightSheet) && (
+        <div
+          className="ws-sheet-backdrop sm:hidden"
+          onClick={() => {
+            setLeftSheet(null);
+            setRightSheet(null);
+          }}
+          aria-hidden="true"
+        />
+      )}
+
+      {leftSheet === 'history' && (
+        <HistorySheet
           history={history}
           currentId={current.adaptation.id}
           capturing={capturing}
           onSelect={(item) => void selectItem(item)}
           onCapture={() => void capture()}
+          onClose={() => setLeftSheet(null)}
         />
+      )}
 
-        {inspectorOpen && (
-          <div className="hidden h-full w-[300px] shrink-0 border-r border-line bg-white lg:block">
-            <Inspector
-              versions={versions}
-              onRestore={restoreVersion}
-              saveStatus={saveStatus}
-            />
-          </div>
-        )}
+      {leftSheet === 'structure' && (
+        <StructurePanel
+          profile={profile}
+          onChange={applyProfile}
+          onClose={() => setLeftSheet(null)}
+          onEditSection={editSection}
+          versions={versions}
+          onRestore={restoreVersion}
+        />
+      )}
 
-        <main className="relative min-w-0 flex-1 overflow-hidden">
-          {view === 'visual' && (
-            <div className="h-full">
-              <Suspense
-                fallback={
-                  <div className="flex h-full items-center justify-center bg-white text-xs text-muted">
-                    Carregando editor visual…
-                  </div>
-                }
-              >
-                <VisualEditor profile={profile} onChange={applyProfile} />
-              </Suspense>
-            </div>
-          )}
+      {rightSheet === 'metrics' && (
+        <MetricsPanel
+          adaptation={current.adaptation}
+          profile={profile}
+          pages={pages}
+          savedAt={savedAt}
+          target={target}
+          onTargetChange={changeTarget}
+          onConfirmKeyword={confirmKeyword}
+          onClose={() => setRightSheet(null)}
+        />
+      )}
 
-          {view === 'latex' && (
-            <div className="h-full p-4">
-              <Suspense
-                fallback={
-                  <div className="flex h-full items-center justify-center bg-white text-xs text-muted">
-                    Carregando editor…
-                  </div>
-                }
-              >
-                <LatexEditor
-                  value={rawTex}
-                  onChange={setRawTex}
-                  onSave={() => void compileLatex()}
-                  errorMessage={saveStatus === 'error' ? 'Não salvou. Tente de novo.' : undefined}
-                />
-              </Suspense>
-            </div>
-          )}
-
-          {view === 'pdf' && (
-            <div className="h-full overflow-hidden bg-wash">
-              <Suspense
-                fallback={
-                  <div className="flex h-full items-center justify-center bg-white text-xs text-muted">
-                    Carregando PDF…
-                  </div>
-                }
-              >
-                <PdfViewer
-                  pdfUrl={pdfUrl}
-                  profile={pdfProfile}
-                  onEditField={editPdfField}
-                  onOpenCode={() => setView('latex')}
-                />
-              </Suspense>
-            </div>
-          )}
-
-          {showAiSetup && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/95 p-6">
-              <div className="w-full max-w-md rounded-xl border border-line bg-white p-6 shadow-mac">
-                <div className="mb-3 flex items-center gap-2">
-                  <KeyRound className="h-4 w-4 text-muted" />
-                  <h2 className="text-lg font-semibold">Configure a IA primeiro</h2>
-                </div>
-                <p className="mb-4 text-2xs leading-relaxed text-muted">
-                  Sem IA, o currículo não é adaptado. Faça:
-                </p>
-                <ol className="mb-5 list-decimal space-y-1 pl-5 text-2xs text-muted-strong">
-                  <li>Abra Ajustes no painel lateral.</li>
-                  <li>Escolha o provedor e o modelo.</li>
-                  <li>Cole a chave de API e teste.</li>
-                  <li>Volte para Capturar.</li>
-                </ol>
-                <div className="flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowAiSetup(false)}
-                    className="brutal-btn px-3 py-2 text-2xs"
-                  >
-                    Agora não
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAiSetup(false);
-                      onClose();
-                    }}
-                    className="brutal-btn-yellow px-3 py-2 text-2xs"
-                  >
-                    Abrir ajustes
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </main>
-
-        {chatOpen && (
-          <div className="hidden h-full w-[360px] shrink-0 border-l border-line bg-white lg:block">
-            <ChatPanel
-              resumeId={current.adaptation.id}
-              job={current.job}
-              profile={profile}
-              onProfileChange={applyProfile}
-              onToast={toast}
-              matchScore={current.adaptation.match_score ?? 0}
-              atsCoverage={current.adaptation.ats?.coverage ?? null}
-            />
-          </div>
-        )}
-      </div>
+      {rightSheet === 'chat' && (
+        <ChatPanel
+          resumeId={current.adaptation.id}
+          job={current.job}
+          profile={profile}
+          onProfileChange={applyProfile}
+          onToast={toast}
+          onClose={() => setRightSheet(null)}
+          matchScore={current.adaptation.match_score ?? undefined}
+          atsCoverage={atsCoverage}
+          targetContext={targetPrompt(target)}
+          targetLabel={targetLabel}
+        />
+      )}
 
       <ToastStack items={toasts} onDismiss={dismiss} />
     </div>

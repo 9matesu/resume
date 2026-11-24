@@ -249,6 +249,30 @@ def _clamp_score(raw) -> float:
         return 0.0
 
 
+def _ats_snapshot(profile: dict, job: dict) -> dict:
+    """Cobertura ATS recalculada do zero contra as keywords salvas da vaga.
+
+    Serve para o editor mostrar o número certo depois de cada edição, em vez de
+    repetir a foto da captura. Sem keywords na vaga, devolve zero honesto.
+    """
+    wanted = list(dict.fromkeys(
+        [str(k) for k in (job.get("keywords") or [])]
+        + [str(x) for x in (job.get("requirements") or [])]
+    ))[:30]
+    if not wanted:
+        return {"coverage": 0.0, "wanted": 0, "covered": [], "missing": [],
+                "refined": False}
+    missing = prompts.missing_keywords(wanted, profile or {})
+    covered = [k for k in wanted if k not in missing]
+    return {
+        "coverage": round(100.0 * len(covered) / len(wanted), 1),
+        "wanted": len(wanted),
+        "covered": covered[:30],
+        "missing": missing[:15],
+        "refined": True,
+    }
+
+
 def _refine_keywords(prov, master_profile: dict, job_data: dict,
                      adapted_json: dict, lang: str) -> dict:
     """Passe 2 (um só): caça keywords ATS que ficaram de fora, sem inventar.
@@ -600,6 +624,8 @@ def get_resume_detail(res_id: str):
             "company": job_rec.get("company", ""),
             "location": job_rec.get("location", ""),
             "url": job_rec.get("url", ""),
+            "keywords": job_rec.get("keywords") or [],
+            "requirements": job_rec.get("requirements") or [],
         },
         "adaptation": {
             "id": res["id"],
@@ -609,6 +635,7 @@ def get_resume_detail(res_id: str):
             "tex_code": res["tex_code"],
             "pdf_url": f"/api/resumes/{res['id']}/pdf",
             "pdf_filename": Path(res["pdf_path"]).name if res.get("pdf_path") else "",
+            "ats": _ats_snapshot(res["tailored_profile"], job_rec),
         },
     }
 
@@ -645,7 +672,13 @@ def update_resume(res_id: str, payload: ResumeUpdatePayload):
     if payload.profile is not None:
         cols["tailored_json"] = payload.profile
     job_model.update_adapted_resume(res_id, **cols)
-    return {"status": "saved", "tex": tex, "pdf_url": f"/api/resumes/{res_id}/pdf"}
+    job_rec = job_model.get_job(res["job_id"]) or {}
+    return {
+        "status": "saved",
+        "tex": tex,
+        "pdf_url": f"/api/resumes/{res_id}/pdf",
+        "ats": _ats_snapshot(prof, job_rec),
+    }
 
 @router.delete("/resumes/{res_id}")
 def delete_resume_endpoint(res_id: str):

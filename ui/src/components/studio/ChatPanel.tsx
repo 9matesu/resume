@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
-import { ArrowUp, Check, Copy, Sparkles, Trash2, Undo2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowUp, Check, Copy, Sparkles, Trash2, Undo2, X } from 'lucide-react';
 import { sendResumeChat } from '../../services/api';
 import type { CandidateProfile, JobData } from '../../services/api';
 
@@ -9,8 +9,12 @@ interface ChatPanelProps {
   profile: CandidateProfile;
   onProfileChange: (profile: CandidateProfile) => void;
   onToast: (message: string, tone?: 'ok' | 'error' | 'info') => void;
+  onClose: () => void;
   matchScore?: number;
   atsCoverage?: number | null;
+  /** Contexto do alvo ("pleno, tom direto, área X"). Não vai para o currículo. */
+  targetContext?: string;
+  targetLabel?: string;
 }
 
 interface Message {
@@ -33,9 +37,11 @@ interface DiffLine {
 const SUGGESTIONS = [
   'Deixe o resumo mais direto para esta vaga.',
   'Reescreva as descrições com verbos de ação.',
-  'Aumente a cobertura ATS ao máximo.',
-  'Reduza o currículo para uma página.',
+  'Aproxime as palavras do anúncio sem inventar nada.',
+  'Corte o que não fala com esta vaga.',
 ];
+
+const STEPS = ['Lendo a vaga e o seu currículo', 'Reescrevendo só o que você pediu', 'Conferindo fatos e tamanho'];
 
 function profileToLines(p: CandidateProfile): string[] {
   const out: string[] = [];
@@ -119,40 +125,42 @@ function diffLines(before: string[], after: string[]): DiffLine[] {
 }
 
 function DiffBlock({ before, after }: { before: CandidateProfile; after: CandidateProfile }) {
-  const lines = useMemo(() => diffLines(profileToLines(before), profileToLines(after)), [before, after]);
-  const changed = lines.some((line) => line.type !== 'ctx');
-  if (!changed) return null;
+  const lines = useMemo(
+    () => diffLines(profileToLines(before), profileToLines(after)),
+    [before, after],
+  );
+  const added = lines.filter((line) => line.type === 'add').length;
+  const removed = lines.filter((line) => line.type === 'del').length;
+  if (added + removed === 0) return null;
 
   return (
-    <div className="mt-3 overflow-hidden rounded-lg border border-white/10 bg-[#0d0d0d]">
-      <div className="flex items-center justify-between border-b border-white/10 px-3 py-1.5">
-        <span className="font-mono text-[10px] text-white/50">diff · currículo.tex</span>
-        <span className="font-mono text-[10px] text-white/30">
-          {lines.filter((l) => l.type === 'add').length}+
-          {lines.filter((l) => l.type === 'del').length}−
+    <details className="mt-2.5 rounded-lg border border-line bg-wash">
+      <summary className="cursor-pointer select-none px-2.5 py-1.5 text-2xs font-semibold text-muted-strong">
+        Ver o que mudou
+        <span className="ml-1.5 font-normal text-subtle">
+          +{added} −{removed}
         </span>
-      </div>
-      <div className="max-h-72 overflow-auto whitespace-pre p-3 font-mono text-[10.5px] leading-relaxed">
+      </summary>
+      <div className="max-h-56 overflow-auto border-t border-line px-2.5 py-2 text-[10.5px] leading-relaxed ws-scroll-thin">
         {lines.map((line, index) => (
           <div
             key={index}
             className={
               line.type === 'add'
-                ? 'bg-emerald-500/10 text-emerald-300'
+                ? 'text-ok'
                 : line.type === 'del'
-                  ? 'bg-rose-500/10 text-rose-300'
-                  : 'text-white/40'
+                  ? 'text-danger line-through decoration-danger/40'
+                  : 'text-subtle'
             }
           >
-            <span className="mr-3 inline-block w-5 select-none text-right text-white/20">
-              {index + 1}
+            <span className="mr-2 inline-block w-2 select-none">
+              {line.type === 'add' ? '+' : line.type === 'del' ? '−' : ' '}
             </span>
-            <span className="select-none">{line.type === 'add' ? '+ ' : line.type === 'del' ? '− ' : '  '}</span>
             {line.text || ' '}
           </div>
         ))}
       </div>
-    </div>
+    </details>
   );
 }
 
@@ -164,29 +172,61 @@ function describeChanges(before: CandidateProfile, after: CandidateProfile): str
   if (JSON.stringify(before.education) !== JSON.stringify(after.education)) changes.push('Formação');
   if (JSON.stringify(before.skills) !== JSON.stringify(after.skills)) changes.push('Habilidades');
   if (JSON.stringify(before.projects) !== JSON.stringify(after.projects)) changes.push('Projetos');
-  if (JSON.stringify(before.certifications) !== JSON.stringify(after.certifications)) changes.push('Certificações');
+  if (JSON.stringify(before.certifications) !== JSON.stringify(after.certifications)) {
+    changes.push('Certificações');
+  }
   if (JSON.stringify(before.languages) !== JSON.stringify(after.languages)) changes.push('Idiomas');
   return changes.length ? changes : ['Texto'];
 }
 
+/**
+ * Chat de edição em folha lateral.
+ *
+ * A resposta já entra no currículo: o autosave recompila e o PDF muda atrás da
+ * folha. Cada mensagem tem desfazer. O diff fica guardado, não aberto.
+ */
 export function ChatPanel({
   resumeId,
   job,
   profile,
   onProfileChange,
   onToast,
+  onClose,
   matchScore,
   atsCoverage,
+  targetContext,
+  targetLabel,
 }: ChatPanelProps) {
-  const initialMessage: Message = {
-    id: 1,
-    role: 'assistant',
-    text: `Estou com o currículo de ${job.title} na ${job.company}. Diga o que mudar. Eu aplico.`,
-  };
+  const initialMessage: Message = useMemo(
+    () => ({
+      id: 1,
+      role: 'assistant',
+      text: `Estou com o currículo de ${job.title} na ${job.company}. Diga o que mudar. Eu aplico e você desfaz se não gostar.`,
+    }),
+    [job.title, job.company],
+  );
   const [messages, setMessages] = useState<Message[]>([initialMessage]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [step, setStep] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (!sending) {
+      setStep(0);
+      return;
+    }
+    const timers = [
+      window.setTimeout(() => setStep(1), 1200),
+      window.setTimeout(() => setStep(2), 3200),
+    ];
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, [sending]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {
@@ -202,8 +242,10 @@ export function ChatPanel({
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setSending(true);
+    scrollToBottom();
     try {
-      const res = await sendResumeChat(resumeId, message, profile);
+      const payload = targetContext ? `${targetContext}\n\n${message}` : message;
+      const res = await sendResumeChat(resumeId, payload, profile);
       const changes = describeChanges(before, res.profile);
       onProfileChange(res.profile);
       setMessages((prev) => [
@@ -230,6 +272,7 @@ export function ChatPanel({
       scrollToBottom();
     } finally {
       setSending(false);
+      inputRef.current?.focus();
     }
   };
 
@@ -243,54 +286,76 @@ export function ChatPanel({
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-wash">
-      <div className="shrink-0 border-b border-line bg-white px-5 py-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 text-2xs font-semibold uppercase tracking-wide text-muted">
-              <Sparkles className="h-3.5 w-3.5" />
-              Ajustes com IA
-            </div>
-            <div className="truncate text-sm font-semibold text-ink">{job.title}</div>
-            <div className="text-2xs text-muted">na {job.company}</div>
+    <div
+      className="ws-sheet ws-sheet-right w-[400px] max-w-[96vw]"
+      role="dialog"
+      aria-label="Ajustar com IA"
+    >
+      <header className="flex shrink-0 items-start justify-between gap-3 border-b border-line px-4 py-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-muted">
+            <Sparkles className="h-3.5 w-3.5" />
+            Ajustar com IA
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            {!!matchScore && matchScore > 0 && (
-              <span className="brutal-tag brutal-tag-yellow">{matchScore.toFixed(0)}% match</span>
-            )}
-            {atsCoverage != null && <span className="brutal-tag">{atsCoverage.toFixed(0)}% ATS</span>}
-            <button
-              type="button"
-              aria-label="Limpar conversa"
-              title="Limpar conversa"
-              onClick={() => setMessages([initialMessage])}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted transition-colors hover:bg-wash hover:text-black"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
+          <div className="mt-0.5 truncate text-sm font-semibold text-ink">{job.title}</div>
+          <div className="truncate text-2xs text-muted">na {job.company}</div>
         </div>
-      </div>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            aria-label="Limpar conversa"
+            title="Limpar conversa"
+            onClick={() => setMessages([initialMessage])}
+            className="ws-icon-btn"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+          <button type="button" onClick={onClose} aria-label="Fechar chat" className="ws-icon-btn">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      </header>
 
-      <div ref={listRef} className="flex-1 min-h-0 overflow-y-auto px-5 py-5">
-        <div className="flex flex-col gap-4">
+      {(matchScore != null || atsCoverage != null) && (
+        <div className="flex shrink-0 items-center gap-1.5 border-b border-line px-4 py-1.5">
+          {matchScore != null && matchScore > 0 && (
+            <span className="ws-chip h-6" data-tone={matchScore >= 70 ? 'ok' : matchScore >= 45 ? 'warn' : 'danger'}>
+              {Math.round(matchScore)}% aderência
+            </span>
+          )}
+          {atsCoverage != null && (
+            <span
+              className="ws-chip h-6"
+              data-tone={atsCoverage >= 70 ? 'ok' : atsCoverage >= 45 ? 'warn' : 'danger'}
+            >
+              {Math.round(atsCoverage)}% ATS
+            </span>
+          )}
+        </div>
+      )}
+
+      <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4 ws-scroll-thin">
+        <div className="flex flex-col gap-3">
           {messages.map((m) => (
             <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`max-w-[92%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+                className={`max-w-[94%] ws-bubble ${
                   m.role === 'user'
-                    ? 'bg-black text-white'
+                    ? 'ws-bubble-user'
                     : m.error
                       ? 'border border-danger/30 bg-danger-wash text-danger'
-                      : 'border border-line bg-white text-ink shadow-mac'
+                      : 'ws-bubble-ai'
                 }`}
               >
-                <p>{m.text}</p>
+                <p className="whitespace-pre-wrap">{m.text}</p>
 
                 {m.role === 'assistant' && m.changes && m.changes.length > 0 && !m.discarded && (
-                  <div className="mt-3 flex flex-wrap gap-1.5 border-t border-line pt-3">
+                  <div className="mt-2 flex flex-wrap gap-1">
                     {m.changes.map((change) => (
-                      <span key={change} className="brutal-tag">
+                      <span
+                        key={change}
+                        className="rounded-full border border-line bg-wash px-1.5 py-0.5 text-[10px] font-semibold text-muted-strong"
+                      >
                         {change}
                       </span>
                     ))}
@@ -304,14 +369,14 @@ export function ChatPanel({
                 {m.applied && !m.discarded && (
                   <div className="mt-2 flex items-center gap-3">
                     <span className="inline-flex items-center gap-1 text-2xs font-semibold text-ok">
-                      <Check className="h-3.5 w-3.5" />
-                      Aplicado ao currículo
+                      <Check className="h-3 w-3" />
+                      No currículo
                     </span>
                     {m.before && (
                       <button
                         type="button"
                         onClick={() => undoMessage(m)}
-                        className="inline-flex items-center gap-1 text-2xs font-semibold text-muted underline underline-offset-4 hover:text-black"
+                        className="inline-flex items-center gap-1 text-2xs font-semibold text-muted underline underline-offset-4 hover:text-ink"
                       >
                         <Undo2 className="h-3 w-3" />
                         Desfazer
@@ -319,9 +384,7 @@ export function ChatPanel({
                     )}
                   </div>
                 )}
-                {m.discarded && (
-                  <div className="mt-2 text-2xs font-semibold text-muted">Desfeito</div>
-                )}
+                {m.discarded && <div className="mt-1.5 text-2xs font-semibold text-muted">Desfeito</div>}
 
                 {m.role === 'assistant' && !m.discarded && (
                   <button
@@ -332,9 +395,10 @@ export function ChatPanel({
                       void navigator.clipboard.writeText(m.text);
                       onToast('Resposta copiada.', 'ok');
                     }}
-                    className="mt-2 flex h-6 w-6 items-center justify-center rounded-md text-subtle transition-colors hover:bg-wash hover:text-black"
+                    className="mt-1.5 inline-flex items-center gap-1 text-[10px] text-subtle hover:text-ink"
                   >
-                    <Copy className="h-3.5 w-3.5" />
+                    <Copy className="h-3 w-3" />
+                    Copiar
                   </button>
                 )}
               </div>
@@ -342,20 +406,32 @@ export function ChatPanel({
           ))}
 
           {sending && (
-            <div className="flex items-center gap-2 text-xs text-muted">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-brand" />
-              Editando…
+            <div className="flex flex-col gap-1.5 rounded-xl border border-line bg-white p-3">
+              {STEPS.map((label, index) => (
+                <div key={label} className="ws-step" data-done={index < step ? 'true' : 'false'}>
+                  {index < step ? (
+                    <Check className="h-3.5 w-3.5 text-ok" />
+                  ) : (
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        index === step ? 'bg-mac-yellow ws-dot-pulse' : 'bg-line-strong'
+                      }`}
+                    />
+                  )}
+                  {label}
+                </div>
+              ))}
             </div>
           )}
 
           {!sending && messages.length === 1 && (
-            <div className="flex flex-wrap gap-2 pt-1">
+            <div className="flex flex-col gap-1.5 pt-1">
               {SUGGESTIONS.map((s) => (
                 <button
                   key={s}
                   type="button"
                   onClick={() => void send(s)}
-                  className="rounded-full border border-line bg-white px-3 py-1.5 text-left text-2xs text-muted-strong transition-colors hover:bg-wash"
+                  className="rounded-lg border border-line bg-white px-2.5 py-1.5 text-left text-2xs leading-relaxed text-muted-strong transition-colors hover:border-line-strong hover:text-ink"
                 >
                   {s}
                 </button>
@@ -365,9 +441,18 @@ export function ChatPanel({
         </div>
       </div>
 
-      <div className="border-t border-line bg-white px-5 py-4">
-        <div className="flex items-end gap-2">
+      <div className="shrink-0 border-t border-line bg-white px-3 py-2.5">
+        {targetLabel && (
+          <div className="mb-1.5 flex items-center gap-1.5 text-[10px] text-muted">
+            <span className="rounded-full border border-line bg-wash px-1.5 py-0.5 font-semibold">
+              Seu alvo
+            </span>
+            <span className="truncate">{targetLabel}</span>
+          </div>
+        )}
+        <div className="flex items-end gap-1.5">
           <textarea
+            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {
@@ -377,19 +462,23 @@ export function ChatPanel({
               }
             }}
             rows={1}
-            placeholder="Peça uma mudança. Enter envia, Shift+Enter quebra linha."
-            className="max-h-32 min-h-10 flex-1 resize-none rounded-2xl border border-line bg-wash px-4 py-2.5 text-sm text-ink outline-none transition-shadow placeholder:text-subtle focus:border-line-strong focus:bg-white focus:ring-4 focus:ring-brand/25"
+            placeholder="Peça uma mudança. Enter envia."
+            aria-label="Mensagem para a IA"
+            className="max-h-28 min-h-9 flex-1 resize-none rounded-xl border border-line bg-wash px-3 py-2 text-xs leading-relaxed text-ink outline-none transition-shadow placeholder:text-subtle focus:border-line-strong focus:bg-white focus:ring-2 focus:ring-brand/40"
           />
           <button
             type="button"
             aria-label="Enviar mensagem"
             onClick={() => void send(input)}
             disabled={!input.trim() || sending}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black text-white transition-transform active:scale-95 disabled:opacity-40"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black text-white transition-transform active:scale-95 disabled:opacity-40"
           >
             <ArrowUp className="h-4 w-4" />
           </button>
         </div>
+        <p className="mt-1 text-[10px] text-subtle">
+          Shift+Enter quebra linha. A mudança entra na hora; dá para desfazer em cada resposta.
+        </p>
       </div>
     </div>
   );
