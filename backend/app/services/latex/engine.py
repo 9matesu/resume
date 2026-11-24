@@ -37,12 +37,12 @@ def hidden_process_kwargs() -> dict:
     """
     kwargs: dict = {}
     if os.name == "nt":
-        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
-        startup = subprocess.STARTUPINFO()
-        startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        startup.wShowWindow = subprocess.SW_HIDE
-        kwargs["creationflags"] = flags
-        kwargs["startupinfo"] = startup
+        # CREATE_NO_WINDOW é a flag correta para executáveis de console: o
+        # Windows não cria conhost e os pipes de capture_output continuam
+        # funcionando. DETACHED_PROCESS quebra os pipes. O MiKTeX ainda pode
+        # abrir conhost via subprocesso interno; por isso o Tectonic (binário
+        # único) é preferido em find_compiler().
+        kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
     return kwargs
 
 
@@ -241,6 +241,11 @@ def find_compiler() -> tuple[str | None, str | None]:
     w_tectonic = shutil.which("tectonic")
     if w_tectonic:
         return "tectonic", w_tectonic
+    # Sem Tectonic instalado, tenta baixar o binário portátil antes de cair
+    # para o MiKTeX: o pdflatex dele abre conhost na tela a cada compilação.
+    downloaded = download_tectonic_if_missing()
+    if downloaded:
+        return "tectonic", downloaded
     w_pdflatex = shutil.which("pdflatex")
     if w_pdflatex:
         return "pdflatex", w_pdflatex
